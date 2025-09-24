@@ -16,7 +16,6 @@ A complete authentication starter template built with **Next.js 15**, **Better A
 - **Email Verification** - Verify email addresses on signup
 - **Password Reset** - Secure password reset flow
 - **Magic Link Login** - One-click login via email
-- **Custom Email Templates** - Beautiful HTML email templates
 
 ### 👤 User Management
 
@@ -43,13 +42,13 @@ A complete authentication starter template built with **Next.js 15**, **Better A
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js (App Router)
+- **Language**: TypeScript
 - **Authentication**: Better Auth
-- **Database**: PostgreSQL with Prisma ORM
-- **Styling**: Tailwind CSS + Radix UI
+- **Database**: PostgreSQL (Neon)
+- **ORM**: Prisma
+- **Styling**: Tailwind CSS + Shadcn/ui
 - **Email**: Nodemailer
-- **TypeScript**: Full type safety
-- **Icons**: Lucide React
 
 ## 📦 Quick Start
 
@@ -61,20 +60,7 @@ A complete authentication starter template built with **Next.js 15**, **Better A
 
 ### Installation
 
-1. **Clone the repository**
-
-```bash
-git clone https://github.com/yourusername/nextjs-better-auth-starter.git
-cd nextjs-better-auth-starter
-```
-
-2. **Install dependencies**
-
-```bash
-npm install
-```
-
-3. **Environment Setup**
+**Environment Setup**
    Create a `.env.local` file in the root directory:
 
 ```env
@@ -101,7 +87,7 @@ NODEMAILER_PASS="your-app-password"
 ADMIN_EMAILS="admin@example.com;admin2@example.com"
 ```
 
-4. **Database Setup**
+**Database Setup**
 
 ```bash
 # Generate Prisma client
@@ -111,13 +97,12 @@ npx prisma generate
 npx prisma db push
 ```
 
-5. **Run the development server**
+**Run the development server**
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 📁 Project Structure
 
@@ -138,93 +123,6 @@ src/
 │   ├── auth-client.ts    # Client-side auth
 │   └── prisma.ts         # Prisma client
 └── middleware.ts          # Route protection
-```
-
-## 🔧 Configuration
-
-### OAuth Setup
-
-#### Google OAuth
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing
-3. Enable Google+ API
-4. Create OAuth 2.0 credentials
-5. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
-
-#### GitHub OAuth
-
-1. Go to GitHub Settings > Developer settings > OAuth Apps
-2. Create a new OAuth App
-3. Set Authorization callback URL: `http://localhost:3000/api/auth/callback/github`
-
-### Email Configuration
-
-The template supports any SMTP provider. For Gmail:
-
-1. Enable 2-Factor Authentication
-2. Generate an App Password
-3. Use the app password in `NODEMAILER_PASS`
-
-## 🚀 Deployment
-
-### Database
-
-Deploy your PostgreSQL database (recommended: [Neon](https://neon.tech/), [Supabase](https://supabase.com/), or [PlanetScale](https://planetscale.com/))
-
-### Application
-
-Deploy to [Vercel](https://vercel.com/), [Netlify](https://netlify.com/), or any platform supporting Next.js:
-
-```bash
-npm run build
-npm start
-```
-
-Update your environment variables with production values.
-
-## 📖 Usage Examples
-
-### Protecting Routes
-
-```tsx
-// middleware.ts
-import { auth } from "@/lib/auth";
-
-export default auth((request) => {
-  if (!request.auth && request.nextUrl.pathname.startsWith("/profile")) {
-    return Response.redirect(new URL("/auth/login", request.url));
-  }
-});
-```
-
-### Using Session Data
-
-```tsx
-"use client";
-import { useSession } from "@/lib/auth-client";
-
-export function ProfileComponent() {
-  const { data: session } = useSession();
-
-  if (!session) return <div>Not logged in</div>;
-
-  return <div>Welcome, {session.user.name}!</div>;
-}
-```
-
-### Server-side Authentication
-
-```tsx
-import { auth } from "@/lib/auth";
-
-export default async function ProtectedPage() {
-  const session = await auth.api.getSession({ headers: headers() });
-
-  if (!session) redirect("/auth/login");
-
-  return <div>Protected content</div>;
-}
 ```
 
 ## 🤝 Contributing

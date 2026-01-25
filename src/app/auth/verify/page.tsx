@@ -2,18 +2,18 @@ import { ReturnButton } from "@/components/return-button";
 import { SendVerificationEmailForm } from "@/components/send-verification-email-form";
 import { redirect } from "next/navigation";
 
-interface LoginErrorPageProps {
+interface VerifyEmailPageProps {
   searchParams: Promise<{
     error: string;
   }>;
 }
 
-export default async function LoginErrorPage({
+export default async function VerifyEmailPage({
   searchParams,
-}: LoginErrorPageProps) {
+}: VerifyEmailPageProps) {
   const error = (await searchParams).error;
 
-  if (!error) redirect("/profile");
+  if (!error) redirect("/onboarding");
 
   return (
     <div className="px-8 py-16 container mx-auto max-w-screen-lg space-y-8">

@@ -1,10 +1,7 @@
 "use client";
 
-import { StarIcon } from "lucide-react";
+import { Sparkles, Mail } from "lucide-react";
 import { useRef, useState } from "react";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Button } from "./ui/button";
 import { signIn } from "@/lib/auth-client";
 import { toast } from "sonner";
 
@@ -17,12 +14,12 @@ export default function MagicLinkLoginForm() {
     evt.preventDefault();
     const formData = new FormData(evt.target as HTMLFormElement);
     const email = String(formData.get("email"));
-    if (!email) return toast.error("Email is required");
+    if (!email) return toast.error("L'email est requis");
 
     await signIn.magicLink({
       email,
       name: email.split("@")[0],
-      callbackURL: "/profile",
+      callbackURL: "/dashboard",
       fetchOptions: {
         onRequest: () => {
           setIsPending(true);
@@ -34,7 +31,7 @@ export default function MagicLinkLoginForm() {
           toast.error(ctx.error.message);
         },
         onSuccess: () => {
-          toast.success("Magic link sent to email. Please check your inbox.");
+          toast.success("Lien magique envoyé ! Vérifiez votre boîte mail.");
           if (ref.current) ref.current.open = false;
           (evt.target as HTMLFormElement).reset();
         },
@@ -46,23 +43,37 @@ export default function MagicLinkLoginForm() {
     <div>
       <details
         ref={ref}
-        className="max-w-sm rounded-md border border-purple-500 overflow-hidden"
+        className="rounded-lg border border-purple-500/30 bg-purple-500/10 overflow-hidden transition-all hover:border-purple-500/50"
       >
-        <summary className="flex gap-2 items-center px-2 py-1 bg-purple-500 text-white hover:bg-purple-600/80 transition cursor-pointer">
-          Magic Link Login
-          <StarIcon size={16} />
+        <summary className="flex gap-2 items-center px-4 py-2.5 bg-gradient-to-r from-purple-500/20 to-purple-500/10 text-purple-300 hover:text-purple-200 transition cursor-pointer">
+          <Sparkles size={16} />
+          <span className="text-sm font-medium">Magic Link</span>
         </summary>
 
-        <form onSubmit={handleSubmit} className="px-2 py-1">
-          <Label htmlFor="email" className="sr-only">
+        <form onSubmit={handleSubmit} className="p-4 space-y-3">
+          <label htmlFor="magic-link-email" className="sr-only">
             Email
-          </Label>
-          <div className="flex gap-2 items-center">
-            <Input type="email" id="email" name="email" placeholder="Email" />
-            <Button type="submit" disabled={isPending}>
-              Send
-            </Button>
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Mail className="h-4 w-4 text-zinc-500" />
+            </div>
+            <input
+              type="email"
+              id="magic-link-email"
+              name="email"
+              placeholder="votre.email@exemple.fr"
+              required
+              className="block w-full pl-10 pr-3 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+            />
           </div>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="w-full px-4 py-2 bg-purple-500 hover:bg-purple-600 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all"
+          >
+            {isPending ? "Envoi..." : "Envoyer le lien magique"}
+          </button>
         </form>
       </details>
     </div>

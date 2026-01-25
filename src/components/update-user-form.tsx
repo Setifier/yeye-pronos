@@ -1,35 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { updateUser } from "@/lib/auth-client";
 
 interface UpdateUserFormProps {
   name: string;
-  image: string;
 }
 
-export const UpdateUserForm = ({ name, image }: UpdateUserFormProps) => {
+export const UpdateUserForm = ({ name }: UpdateUserFormProps) => {
   const [isPending, setIsPending] = useState(false);
   const router = useRouter();
 
   async function handleSubmit(evt: React.FormEvent<HTMLFormElement>) {
     evt.preventDefault();
     const formData = new FormData(evt.target as HTMLFormElement);
-    const name = String(formData.get("name"));
-    const image = String(formData.get("image"));
+    const newName = String(formData.get("name"));
 
-    if (!name && !image) {
-      return toast.error("Name or image are required");
+    if (!newName) {
+      return toast.error("Le nom est requis");
     }
 
     await updateUser({
-      ...(name && { name }),
-      image,
+      name: newName,
       fetchOptions: {
         onRequest: () => {
           setIsPending(true);
@@ -41,8 +36,7 @@ export const UpdateUserForm = ({ name, image }: UpdateUserFormProps) => {
           toast.error(ctx.error.message);
         },
         onSuccess: () => {
-          toast.success("Profile updated");
-          (evt.target as HTMLFormElement).reset();
+          toast.success("Profil mis à jour avec succès !");
           router.refresh();
         },
       },
@@ -50,18 +44,39 @@ export const UpdateUserForm = ({ name, image }: UpdateUserFormProps) => {
   }
 
   return (
-    <form className="max-w-sm w-full space-y-4" onSubmit={handleSubmit}>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="name">Name</Label>
-        <Input id="name" name="name" defaultValue={name} />
+    <form className="w-full space-y-5" onSubmit={handleSubmit}>
+      {/* Name Field */}
+      <div className="space-y-2">
+        <label
+          htmlFor="name"
+          className="block text-sm font-medium text-zinc-300"
+        >
+          Pseudonyme
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <User className="h-5 w-5 text-zinc-500" />
+          </div>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            defaultValue={name}
+            required
+            className="block w-full pl-10 pr-3 py-2.5 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#5096ff] focus:border-transparent transition-all"
+            placeholder="Votre pseudonyme"
+          />
+        </div>
       </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="image">Image</Label>
-        <Input type="url" id="image" name="image" defaultValue={image} />
-      </div>
-      <Button type="submit" disabled={isPending}>
-        Update
-      </Button>
+
+      {/* Submit Button */}
+      <button
+        type="submit"
+        disabled={isPending}
+        className="w-full px-4 py-2.5 bg-[#5096ff] hover:bg-[#5096ff]/90 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#5096ff] focus:ring-offset-2 focus:ring-offset-zinc-900"
+      >
+        {isPending ? "Mise à jour..." : "Mettre à jour"}
+      </button>
     </form>
   );
 };

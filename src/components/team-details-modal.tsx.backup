@@ -1,0 +1,506 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { X, TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { getTeamLogo } from "@/lib/nba-logos";
+
+interface TeamStats {
+  wins: number;
+  losses: number;
+  winPct: number;
+  conferenceRank?: number;
+  divisionRank?: number;
+  homeRecord?: string;
+  awayRecord?: string;
+  conferenceRecord?: string;
+  divisionRecord?: string;
+  last10Record?: string;
+  currentStreak?: string;
+  pointsPerGame?: number;
+  pointsAllowedPerGame?: number;
+  pointDifferential?: number;
+  reboundsPerGame?: number;
+  assistsPerGame?: number;
+  stealsPerGame?: number;
+  blocksPerGame?: number;
+  turnoversPerGame?: number;
+  fieldGoalPct?: number;
+  threePointPct?: number;
+  freeThrowPct?: number;
+}
+
+interface PlayerSeasonStats {
+  gamesPlayed: number;
+  pointsPerGame: number;
+  reboundsPerGame: number;
+  assistsPerGame: number;
+  stealsPerGame?: number;
+  blocksPerGame?: number;
+  turnoversPerGame?: number;
+  fieldGoalPct?: number;
+  threePointPct?: number;
+  freeThrowPct?: number;
+  totalPoints?: number;
+  totalRebounds?: number;
+  totalAssists?: number;
+  doubleDoubles?: number;
+  tripleDoubles?: number;
+}
+
+interface Player {
+  id: string;
+  fullName: string;
+  position?: string;
+  jerseyNumber?: string;
+  height?: string;
+  weight?: string;
+  country?: string;
+  headshot?: string;
+  injuryStatus?: string;
+  injuryNote?: string;
+  seasonStats: PlayerSeasonStats[];
+}
+
+interface TeamDetails {
+  id: string;
+  name: string;
+  city: string;
+  abbreviation: string;
+  logoUrl: string;
+  conference: string;
+  division: string;
+  primaryColor?: string;
+  secondaryColor?: string;
+  seasonStats: TeamStats[];
+  players: Player[];
+}
+
+interface TeamDetailsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  teamId: string;
+}
+
+export function TeamDetailsModal({
+  isOpen,
+  onClose,
+  teamId,
+}: TeamDetailsModalProps) {
+  const router = useRouter();
+  const [team, setTeam] = useState<TeamDetails | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && teamId) {
+      fetchTeamDetails();
+    }
+  }, [isOpen, teamId]);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen]);
+
+  const fetchTeamDetails = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/teams/${teamId}/details`);
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Team data received:", data);
+        setTeam(data.team);
+      } else {
+        console.error("API error:", res.status, await res.text());
+      }
+    } catch (error) {
+      console.error("Error fetching team details:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const stats = team?.seasonStats?.[0];
+
+  // Sort players: actifs par points (desc), puis blessés par nom (asc)
+  const sortedPlayers = [...(team?.players || [])].sort((a, b) => {
+    const aInjured = a.injuryStatus && a.injuryStatus !== "HEALTHY";
+    const bInjured = b.injuryStatus && b.injuryStatus !== "HEALTHY";
+
+    // Si un seul est blessé, mettre le blessé en dernier
+    if (aInjured && !bInjured) return 1;
+    if (!aInjured && bInjured) return -1;
+
+    // Si les deux sont blessés, trier par nom
+    if (aInjured && bInjured) {
+      return a.fullName.localeCompare(b.fullName);
+    }
+
+    // Si les deux sont actifs, trier par points
+    const aPoints = a.seasonStats?.[0]?.pointsPerGame || 0;
+    const bPoints = b.seasonStats?.[0]?.pointsPerGame || 0;
+    return bPoints - aPoints;
+  });
+
+  const injuredPlayers = sortedPlayers.filter((p) => p.injuryStatus && p.injuryStatus !== "HEALTHY");
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        {team && (
+          <div
+            className="relative p-6 border-b border-zinc-800"
+            style={{
+              background: team.primaryColor
+                ? `linear-gradient(135deg, ${team.primaryColor}30 0%, transparent 100%)`
+                : undefined,
+            }}
+          >
+            {/* Colored accent bar */}
+            {team.primaryColor && (
+              <div
+                className="absolute top-0 left-0 right-0 h-1"
+                style={{ backgroundColor: team.primaryColor }}
+              />
+            )}
+
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-4">
+                <img
+                  src={getTeamLogo(team.abbreviation)}
+                  alt={team.abbreviation}
+                  className="w-20 h-20 object-contain"
+                />
+                <div>
+                  <h2
+                    className="text-3xl font-bold mb-1 text-white"
+                    style={{
+                      textShadow: team.primaryColor
+                        ? `0 0 20px ${team.primaryColor}80, 0 2px 8px rgba(0,0,0,0.8)`
+                        : '0 2px 8px rgba(0,0,0,0.8)'
+                    }}
+                  >
+                    {team.city} {team.name}
+                  </h2>
+                  <div className="flex items-center gap-4 text-sm text-zinc-400">
+                    <span>{team.conference === "EAST" ? "Conférence Est" : "Conférence Ouest"}</span>
+                    <span>•</span>
+                    <span>Division {team.division}</span>
+                    {stats && (
+                      <>
+                        <span>•</span>
+                        <span className="font-semibold text-white">
+                          {stats.wins}-{stats.losses}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-zinc-800 rounded-lg transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <p className="text-zinc-400">Chargement...</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Team Stats */}
+              {stats && (
+                <>
+                  {/* Record & Rankings */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                      <p className="text-xs text-zinc-500 mb-2">Record Saison</p>
+                      <p className="text-3xl font-bold">
+                        {stats.wins}-{stats.losses}
+                      </p>
+                      <p className="text-sm text-zinc-400 mt-1">
+                        {(stats.winPct * 100).toFixed(1)}% WIN
+                      </p>
+                    </div>
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                      <p className="text-xs text-zinc-500 mb-2">Classement Conf.</p>
+                      <p className="text-3xl font-bold">
+                        #{stats.conferenceRank || "-"}
+                      </p>
+                      <p className="text-sm text-zinc-400 mt-1">
+                        {team.conference === "EAST" ? "Est" : "Ouest"}
+                      </p>
+                    </div>
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+                      <p className="text-xs text-zinc-500 mb-2">Série Actuelle</p>
+                      <p className="text-3xl font-bold flex items-center gap-2">
+                        {stats.currentStreak || "-"}
+                        {stats.currentStreak?.startsWith("W") ? (
+                          <TrendingUp className="h-6 w-6 text-green-500" />
+                        ) : stats.currentStreak?.startsWith("L") ? (
+                          <TrendingDown className="h-6 w-6 text-red-500" />
+                        ) : null}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Splits */}
+                  <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                      <Activity className="h-5 w-5" />
+                      Records par Situation
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1">Domicile</p>
+                        <p className="text-xl font-bold">{stats.homeRecord || "0-0"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1">Extérieur</p>
+                        <p className="text-xl font-bold">{stats.awayRecord || "0-0"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1">Conférence</p>
+                        <p className="text-xl font-bold">{stats.conferenceRecord || "0-0"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-zinc-500 mb-1">10 Derniers</p>
+                        <p className="text-xl font-bold">{stats.last10Record || "0-0"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Offensive & Defensive Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Offensive */}
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+                      <h3 className="text-lg font-bold mb-4 text-green-500">Attaque</h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zinc-400">Points/Match</span>
+                          <span className="font-semibold">{stats.pointsPerGame?.toFixed(1) || "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zinc-400">Assists/Match</span>
+                          <span className="font-semibold">{stats.assistsPerGame?.toFixed(1) || "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zinc-400">FG%</span>
+                          <span className="font-semibold">{stats.fieldGoalPct ? (stats.fieldGoalPct * 100).toFixed(1) + "%" : "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zinc-400">3P%</span>
+                          <span className="font-semibold">{stats.threePointPct ? (stats.threePointPct * 100).toFixed(1) + "%" : "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zinc-400">FT%</span>
+                          <span className="font-semibold">{stats.freeThrowPct ? (stats.freeThrowPct * 100).toFixed(1) + "%" : "-"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Defensive */}
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+                      <h3 className="text-lg font-bold mb-4 text-red-500">Défense</h3>
+                      <div className="space-y-3">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zinc-400">Points Encaissés/Match</span>
+                          <span className="font-semibold">{stats.pointsAllowedPerGame?.toFixed(1) || "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zinc-400">Différentiel</span>
+                          <span className={`font-semibold ${(stats.pointDifferential || 0) > 0 ? "text-green-500" : "text-red-500"}`}>
+                            {stats.pointDifferential ? (stats.pointDifferential > 0 ? "+" : "") + stats.pointDifferential.toFixed(1) : "-"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zinc-400">Rebonds/Match</span>
+                          <span className="font-semibold">{stats.reboundsPerGame?.toFixed(1) || "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zinc-400">Steals/Match</span>
+                          <span className="font-semibold">{stats.stealsPerGame?.toFixed(1) || "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-zinc-400">Blocks/Match</span>
+                          <span className="font-semibold">{stats.blocksPerGame?.toFixed(1) || "-"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Roster */}
+              {team && (
+                <div>
+                  <h3 className="text-lg font-bold mb-3 flex items-center justify-between">
+                    <span>Effectif ({sortedPlayers.length} joueurs)</span>
+                    {injuredPlayers.length > 0 && (
+                      <span className="text-sm text-red-400 font-normal">
+                        {injuredPlayers.length} blessé{injuredPlayers.length > 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </h3>
+                  <div className="overflow-x-auto bg-zinc-900 border border-zinc-800 rounded-lg">
+                    <table className="w-full text-sm">
+                      <thead className="border-b border-zinc-800">
+                        <tr className="text-left text-zinc-500">
+                          <th className="p-3 font-medium w-16"></th>
+                          <th className="p-3 font-medium">#</th>
+                          <th className="p-3 font-medium">Joueur</th>
+                          <th className="p-3 font-medium">POS</th>
+                          <th className="p-3 font-medium text-center">GP</th>
+                          <th className="p-3 font-medium text-center">PTS</th>
+                          <th className="p-3 font-medium text-center">REB</th>
+                          <th className="p-3 font-medium text-center">AST</th>
+                          <th className="p-3 font-medium text-center">STL</th>
+                          <th className="p-3 font-medium text-center">BLK</th>
+                          <th className="p-3 font-medium text-center">DD</th>
+                          <th className="p-3 font-medium text-center">TD</th>
+                          <th className="p-3 font-medium text-center">FG%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedPlayers.map((player, index) => {
+                          const stats = player.seasonStats?.[0];
+                          const isInjured = player.injuryStatus && player.injuryStatus !== "HEALTHY";
+                          const prevPlayer = index > 0 ? sortedPlayers[index - 1] : null;
+                          const prevInjured = prevPlayer ? (prevPlayer.injuryStatus && prevPlayer.injuryStatus !== "HEALTHY") : false;
+                          const showSeparator = isInjured && !prevInjured;
+
+                          const initials = player.fullName
+                            .split(" ")
+                            .map(n => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase();
+
+                          return (
+                            <>
+                              {showSeparator && (
+                                <tr key={`separator-${player.id}`}>
+                                  <td colSpan={13} className="p-0">
+                                    <div className="flex items-center gap-3 px-4 py-2 bg-red-950/20 border-y border-red-900/30">
+                                      <Activity className="h-4 w-4 text-red-400" />
+                                      <span className="text-sm font-semibold text-red-400">Joueurs blessés</span>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                              <tr
+                                key={player.id}
+                                onClick={() => router.push(`/joueurs/${player.id}`)}
+                                className={`border-b border-zinc-800/50 hover:bg-zinc-800/50 transition cursor-pointer ${
+                                  isInjured ? "opacity-50" : ""
+                                }`}
+                              >
+                            </>
+                          )
+                        }
+                      ).map((element, i) => (
+                        sortedPlayers.map((player, index) => {
+                          if (i === index) {
+                            const stats = player.seasonStats?.[0];
+                            const isInjured = player.injuryStatus && player.injuryStatus !== "HEALTHY";
+                            const prevPlayer = index > 0 ? sortedPlayers[index - 1] : null;
+                            const prevInjured = prevPlayer ? (prevPlayer.injuryStatus && prevPlayer.injuryStatus !== "HEALTHY") : false;
+                            const showSeparator = isInjured && !prevInjured;
+
+                            const initials = player.fullName
+                              .split(" ")
+                              .map(n => n[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase();
+
+                            return (
+                              <>
+                                {showSeparator && (
+                                  <tr key={`separator-${player.id}`}>
+                                    <td colSpan={13} className="p-0">
+                                      <div className="flex items-center gap-3 px-4 py-2 bg-red-950/20 border-y border-red-900/30">
+                                        <Activity className="h-4 w-4 text-red-400" />
+                                        <span className="text-sm font-semibold text-red-400">Joueurs blessés</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                                <tr
+                                  key={player.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(`/joueurs/${player.id}`);
+                                  }}
+                                  className={`border-b border-zinc-800/50 hover:bg-zinc-800/50 transition cursor-pointer ${
+                                    isInjured ? "opacity-50" : ""
+                                  }`}
+                                >
+                              <td className="p-3">
+                                {player.headshot ? (
+                                  <img
+                                    src={player.headshot}
+                                    alt={player.fullName}
+                                    className="w-10 h-10 rounded-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-semibold text-zinc-300">
+                                    {initials}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-3 text-zinc-400">{player.jerseyNumber || "-"}</td>
+                              <td className="p-3">
+                                <div className="font-medium">{player.fullName}</div>
+                                {isInjured && (
+                                  <span className="text-xs text-red-400">{player.injuryStatus}</span>
+                                )}
+                              </td>
+                              <td className="p-3 text-zinc-400">{player.position || "-"}</td>
+                              <td className="p-3 text-center">{stats?.gamesPlayed || 0}</td>
+                              <td className="p-3 text-center font-semibold">{stats?.pointsPerGame?.toFixed(1) || "-"}</td>
+                              <td className="p-3 text-center">{stats?.reboundsPerGame?.toFixed(1) || "-"}</td>
+                              <td className="p-3 text-center">{stats?.assistsPerGame?.toFixed(1) || "-"}</td>
+                              <td className="p-3 text-center">{stats?.stealsPerGame?.toFixed(1) || "-"}</td>
+                              <td className="p-3 text-center">{stats?.blocksPerGame?.toFixed(1) || "-"}</td>
+                              <td className="p-3 text-center text-yellow-500 font-semibold">{stats?.doubleDoubles || 0}</td>
+                              <td className="p-3 text-center text-purple-500 font-semibold">{stats?.tripleDoubles || 0}</td>
+                              <td className="p-3 text-center">{stats?.fieldGoalPct ? (stats.fieldGoalPct * 100).toFixed(1) : "-"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

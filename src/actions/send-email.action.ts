@@ -2,14 +2,6 @@
 
 import transporter from "@/lib/nodemailer";
 
-const styles = {
-  container:
-    "max-width:500px;margin:20px auto;padding:20px;border:1px solid #DDD;",
-  heading: "font-size:24px;color:#333;",
-  paragraph: "font-size:16px",
-  link: "display:inline-block;margin-top:15px;padding:10px 15px;background:#007BFF;color:#fff;text-decoration:none;border-radius:5px;",
-};
-
 export async function sendEmailAction({
   to,
   subject,
@@ -22,19 +14,103 @@ export async function sendEmailAction({
     link: string;
   };
 }) {
-  const mailOptions = {
-    from: process.env.NODEMAILER_USER,
-    to,
-    subject: `BetterAuthBasic - ${subject}`,
-    html: `
-        <div style="${styles.container}">
-            <h1 style="${styles.heading}">${subject}</h1>
+  const emailTemplate = `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${subject}</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #09090b;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #09090b; padding: 40px 20px;">
+        <tr>
+          <td align="center">
+            <!-- Main Container -->
+            <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #18181b; border-radius: 16px; overflow: hidden; border: 1px solid #27272a;">
 
-            <p style="${styles.paragraph}">${meta.description}</p>
-            
-            <a href="${meta.link}" style="${styles.link}">Click here to continue</a>
-        </div>
-        `,
+              <!-- Header with Gradient -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #ff5050 0%, #5096ff 50%, #dcff50 100%); padding: 40px 20px; text-align: center;">
+                  <h1 style="margin: 0; font-size: 32px; font-weight: bold; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+                    NBA Pronos
+                  </h1>
+                </td>
+              </tr>
+
+              <!-- Content -->
+              <tr>
+                <td style="padding: 40px 30px;">
+                  <h2 style="margin: 0 0 20px 0; font-size: 24px; font-weight: 600; color: #ffffff;">
+                    ${subject}
+                  </h2>
+
+                  <p style="margin: 0 0 30px 0; font-size: 16px; line-height: 1.6; color: #a1a1aa;">
+                    ${meta.description}
+                  </p>
+
+                  <!-- Button -->
+                  <table cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                    <tr>
+                      <td style="border-radius: 8px; background-color: #5096ff;">
+                        <a href="${meta.link}" style="display: inline-block; padding: 14px 28px; font-size: 16px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 8px;">
+                          Continuer →
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <p style="margin: 30px 0 0 0; font-size: 14px; color: #71717a;">
+                    Si vous n'avez pas demandé cet email, vous pouvez l'ignorer en toute sécurité.
+                  </p>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 30px; background-color: #0a0a0a; border-top: 1px solid #27272a; text-align: center;">
+                  <p style="margin: 0; font-size: 14px; color: #71717a;">
+                    © ${new Date().getFullYear()} NBA Pronos. Tous droits réservés.
+                  </p>
+                  <p style="margin: 10px 0 0 0; font-size: 12px; color: #52525b;">
+                    Pronostiquez les matchs NBA et grimpez dans le classement
+                  </p>
+                </td>
+              </tr>
+
+            </table>
+
+            <!-- Alternative Link (for email clients that don't support buttons) -->
+            <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; margin-top: 20px;">
+              <tr>
+                <td style="text-align: center; padding: 20px;">
+                  <p style="margin: 0; font-size: 12px; color: #71717a;">
+                    Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :
+                  </p>
+                  <p style="margin: 10px 0 0 0; font-size: 12px; word-break: break-all;">
+                    <a href="${meta.link}" style="color: #5096ff; text-decoration: none;">
+                      ${meta.link}
+                    </a>
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  const mailOptions = {
+    from: {
+      name: "NBA Pronos",
+      address: process.env.NODEMAILER_USER || "",
+    },
+    to,
+    subject: `NBA Pronos - ${subject}`,
+    html: emailTemplate,
   };
 
   try {

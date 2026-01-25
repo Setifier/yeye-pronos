@@ -2,13 +2,11 @@
 
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export const SignOutButton = () => {
   const [isPending, setIsPending] = useState(false);
-  const router = useRouter();
 
   async function handleClick() {
     await signOut({
@@ -23,8 +21,10 @@ export const SignOutButton = () => {
           toast.error(ctx.error.message);
         },
         onSuccess: () => {
-          toast.success("Signed out successfully. See you soon!");
-          router.push("/auth/login");
+          toast.success("Déconnexion réussie. À bientôt !");
+          // Utiliser window.location pour forcer le rechargement complet
+          // et mettre à jour la navbar
+          window.location.href = "/";
         },
       },
     });
@@ -37,7 +37,7 @@ export const SignOutButton = () => {
       variant="destructive"
       disabled={isPending}
     >
-      Sign Out
+      Déconnexion
     </Button>
   );
 };

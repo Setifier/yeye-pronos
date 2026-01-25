@@ -1,14 +1,27 @@
-import { GetStartedButton } from "@/components/get-started-button";
+import { getSafeSession } from "@/lib/auth-helpers";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import LandingPage from "@/components/landing-page";
 
-export default function Home() {
-  return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="flex flex-col items-center justify-center gap-8">
-        <h1 className="text-4xl font-bold text-center">
-          Welcome to Better Auth <br /> with Next.js & Prisma Starter
-        </h1>
-        <GetStartedButton />
-      </div>
-    </div>
-  );
+export default async function Home() {
+  // Récupérer la session de manière sécurisée (gère les cookies orphelins)
+  const session = await getSafeSession();
+
+  // Connecté → Vérifier l'onboarding et rediriger
+  if (session?.user) {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { hasCompletedOnboarding: true },
+    });
+
+    // Rediriger vers onboarding si pas complété, sinon dashboard
+    if (!user?.hasCompletedOnboarding) {
+      redirect("/onboarding");
+    } else {
+      redirect("/dashboard");
+    }
+  }
+
+  // Non connecté → Landing page
+  return <LandingPage />;
 }

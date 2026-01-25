@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { signUpEmailAction } from "@/actions/sign-up-email.action";
+import { Mail, Lock, ShieldCheck } from "lucide-react";
 
 export const RegisterForm = () => {
   const [isPending, setIsPending] = useState(false);
@@ -18,6 +16,18 @@ export const RegisterForm = () => {
     setIsPending(true);
 
     const formData = new FormData(evt.target as HTMLFormElement);
+    const password = formData.get("password") as string;
+    const confirmPassword = formData.get("confirmPassword") as string;
+
+    // Vérifier que les mots de passe correspondent
+    if (password !== confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
+      setIsPending(false);
+      return;
+    }
+
+    // Supprimer confirmPassword du formData avant de l'envoyer
+    formData.delete("confirmPassword");
 
     const { error } = await signUpEmailAction(formData);
 
@@ -26,32 +36,96 @@ export const RegisterForm = () => {
       setIsPending(false);
     } else {
       toast.success(
-        "Registered successfully. Please check your email for the verification link."
+        "Inscription réussie ! Veuillez vérifier votre email pour le lien de vérification."
       );
       router.push("/auth/register/success");
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-sm w-full space-y-4">
+    <form onSubmit={handleSubmit} className="w-full space-y-5">
+      {/* Email Field */}
       <div className="space-y-2">
-        <Label htmlFor="name">Name</Label>
-        <Input id="name" name="name" />
+        <label
+          htmlFor="register-email"
+          className="block text-sm font-medium text-zinc-300"
+        >
+          Email
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Mail className="h-5 w-5 text-zinc-500" />
+          </div>
+          <input
+            type="email"
+            id="register-email"
+            name="email"
+            required
+            className="block w-full pl-10 pr-3 py-2.5 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#5096ff] focus:border-transparent transition-all"
+            placeholder="votre.email@exemple.fr"
+          />
+        </div>
       </div>
 
+      {/* Password Field */}
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input type="email" id="email" name="email" />
+        <label
+          htmlFor="password"
+          className="block text-sm font-medium text-zinc-300"
+        >
+          Mot de passe
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Lock className="h-5 w-5 text-zinc-500" />
+          </div>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            minLength={8}
+            className="block w-full pl-10 pr-3 py-2.5 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#5096ff] focus:border-transparent transition-all"
+            placeholder="••••••••"
+          />
+        </div>
       </div>
 
+      {/* Confirm Password Field */}
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <Input type="password" id="password" name="password" />
+        <label
+          htmlFor="confirmPassword"
+          className="block text-sm font-medium text-zinc-300"
+        >
+          Confirmer le mot de passe
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <ShieldCheck className="h-5 w-5 text-zinc-500" />
+          </div>
+          <input
+            type="password"
+            id="confirmPassword"
+            name="confirmPassword"
+            required
+            minLength={8}
+            className="block w-full pl-10 pr-3 py-2.5 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#5096ff] focus:border-transparent transition-all"
+            placeholder="••••••••"
+          />
+        </div>
+        <p className="text-xs text-zinc-500">
+          Minimum 8 caractères
+        </p>
       </div>
 
-      <Button type="submit" className="w-full" disabled={isPending}>
-        Register
-      </Button>
+      {/* Submit Button */}
+      <button
+        type="submit"
+        disabled={isPending}
+        className="w-full px-4 py-2.5 bg-[#5096ff] hover:bg-[#5096ff]/90 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#5096ff] focus:ring-offset-2 focus:ring-offset-zinc-900"
+      >
+        {isPending ? "Inscription..." : "Créer mon compte"}
+      </button>
     </form>
   );
 };

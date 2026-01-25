@@ -1,17 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import { signInEmailAction } from "@/actions/sign-in-email.action";
 import Link from "next/link";
+import { Mail, Lock } from "lucide-react";
 
 export const LoginForm = () => {
   const [isPending, setIsPending] = useState(false);
-  const router = useRouter();
 
   async function handleSubmit(evt: React.FormEvent<HTMLFormElement>) {
     evt.preventDefault();
@@ -26,35 +22,76 @@ export const LoginForm = () => {
       toast.error(error);
       setIsPending(false);
     } else {
-      toast.success("Logged in successfully. Nice to see you back!");
-      router.push("/profile");
+      toast.success("Connexion réussie. Bon retour parmi nous !");
+      // Utiliser window.location pour forcer le rechargement et mettre à jour la navbar
+      window.location.href = "/dashboard";
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-sm w-full space-y-4">
+    <form onSubmit={handleSubmit} className="w-full space-y-5">
+      {/* Email Field */}
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input type="email" id="email" name="email" />
+        <label
+          htmlFor="login-email"
+          className="block text-sm font-medium text-zinc-300"
+        >
+          Email
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Mail className="h-5 w-5 text-zinc-500" />
+          </div>
+          <input
+            type="email"
+            id="login-email"
+            name="email"
+            required
+            className="block w-full pl-10 pr-3 py-2.5 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#5096ff] focus:border-transparent transition-all"
+            placeholder="votre.email@exemple.fr"
+          />
+        </div>
       </div>
 
+      {/* Password Field */}
       <div className="space-y-2">
-        <div className="flex justify-between items-center gap-2">
-          <Label htmlFor="password">Password</Label>
+        <div className="flex justify-between items-center">
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-zinc-300"
+          >
+            Mot de passe
+          </label>
           <Link
             href="/auth/forgot-password"
-            className="text-sm italic text-muted-foreground hover:text-foreground"
+            className="text-sm text-zinc-400 hover:text-[#5096ff] transition-colors"
           >
-            Forgot password?
+            Mot de passe oublié ?
           </Link>
         </div>
-
-        <Input type="password" id="password" name="password" />
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Lock className="h-5 w-5 text-zinc-500" />
+          </div>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            required
+            className="block w-full pl-10 pr-3 py-2.5 bg-zinc-800/50 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#5096ff] focus:border-transparent transition-all"
+            placeholder="••••••••"
+          />
+        </div>
       </div>
 
-      <Button type="submit" className="w-full" disabled={isPending}>
-        Login
-      </Button>
+      {/* Submit Button */}
+      <button
+        type="submit"
+        disabled={isPending}
+        className="w-full px-4 py-2.5 bg-[#5096ff] hover:bg-[#5096ff]/90 disabled:bg-zinc-700 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#5096ff] focus:ring-offset-2 focus:ring-offset-zinc-900"
+      >
+        {isPending ? "Connexion..." : "Se connecter"}
+      </button>
     </form>
   );
 };

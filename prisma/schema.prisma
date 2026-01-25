@@ -8,69 +8,131 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// ENUMS
+// ============================================
+
 enum UserRole {
   USER
   ADMIN
 }
 
-model Post {
-  id        String   @id @default(uuid())
-  createdAt DateTime
-  updatedAt DateTime
-
-  title       String
-  content     String
-  
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("posts")
+enum GameStatus {
+  SCHEDULED
+  LIVE
+  FINAL
+  POSTPONED
+  CANCELLED
 }
+
+enum Conference {
+  EAST
+  WEST
+}
+
+enum PredictionResult {
+  PENDING
+  WON
+  LOST
+}
+
+enum NotificationType {
+  // Social (activées par défaut)
+  FRIEND_REQUEST
+  LEAGUE_INVITATION
+  LEAGUE_STARTED
+
+  // Spoilers (désactivées par défaut)
+  GAME_FINISHED
+  PRONO_WON
+  PRONO_LOST
+  RANKING_UP
+  RANKING_DOWN
+  BADGE_UNLOCKED
+  STREAK_WARNING
+  SOMEONE_PASSED_YOU
+
+  // Rappels (activées par défaut)
+  REMINDER_NO_PRONO
+  DAILY_DIGEST
+}
+
+enum BadgeType {
+  STREAK      // Séries de victoires
+  ACCURACY    // Taux de réussite
+  VOLUME      // Nombre de pronos
+  SPECIAL     // Badges spéciaux
+  SEASONAL    // Badges de saison
+}
+
+enum BadgeCategory {
+  SEASON       // Badges accomplissement (réinitialisés chaque saison)
+  END_SEASON   // Badges distribués en fin de saison
+  CAREER       // Badges permanents (jamais réinitialisés)
+}
+
+// ============================================
+// AUTH (Better-Auth compatible)
+// ============================================
 
 model User {
   id            String    @id @default(uuid())
-  createdAt     DateTime
-  updatedAt     DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   name          String
-  email         String @unique
-  emailVerified Boolean
+  email         String    @unique
+  emailVerified Boolean   @default(false)
   image         String?
+  friendCode    String?   @unique
 
-  role          UserRole @default(USER)
+  // Onboarding fields
+  hasCompletedOnboarding Boolean   @default(false)
+  favoriteTeamId         String?
+  favoriteTeam           Team?     @relation("UserFavoriteTeam", fields: [favoriteTeamId], references: [id])
+  favoritePlayerId       String?
+  favoritePlayer         Player?   @relation("UserFavoritePlayer", fields: [favoritePlayerId], references: [id])
+
+  role          UserRole  @default(USER)
   banned        Boolean?
   banReason     String?
   banExpires    DateTime?
 
-
-  sessions      Session[]
-  accounts      Account[]
-  posts         Post[]
+  sessions               Session[]
+  accounts               Account[]
+  predictions            Prediction[]
+  notifications          Notification[]
+  notificationSettings   UserNotificationSettings?
+  badges                 UserBadge[]
+  ownedLeagues           PrivateLeague[]       @relation("LeagueOwner")
+  leagueMemberships      LeagueMember[]
+  sentFriendRequests     FriendRequest[]       @relation("FriendRequestSender")
+  receivedFriendRequests FriendRequest[]       @relation("FriendRequestReceiver")
 
   @@map("users")
 }
 
 model Session {
-  id        String   @id @default(uuid())
-  createdAt DateTime
-  updatedAt DateTime
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  expiresAt DateTime
-  token     String @unique
-  ipAddress String?
-  userAgent String?
+  expiresAt      DateTime
+  token          String   @unique
+  ipAddress      String?
+  userAgent      String?
   impersonatedBy String?
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
 
 model Account {
   id                    String    @id @default(uuid())
-  createdAt             DateTime
-  updatedAt             DateTime
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   accountId             String
   providerId            String
@@ -90,12 +152,543 @@ model Account {
 
 model Verification {
   id         String    @id @default(uuid())
-  createdAt  DateTime?
-  updatedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   identifier String
   value      String
   expiresAt  DateTime
 
   @@map("verifications")
+}
+
+// ============================================
+// NBA DATA (synced from external API)
+// ============================================
+
+model Team {
+  id            String     @id @default(uuid())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  externalId    String     @unique
+  name          String
+  city          String
+  abbreviation  String     @unique
+  conference    Conference
+  division      String
+  logoUrl       String?
+  primaryColor  String?    // Couleur principale de l'équipe (hex)
+  secondaryColor String?   // Couleur secondaire de l'équipe (hex)
+
+  homeGames     Game[]     @relation("HomeTeam")
+  awayGames     Game[]     @relation("AwayTeam")
+  players       Player[]
+  playerStats   GamePlayerStats[]
+  seasonStats   TeamSeasonStats[]
+  favoritedBy   User[]     @relation("UserFavoriteTeam")
+
+  @@map("teams")
+}
+
+model Player {
+  id            String    @id @default(uuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  externalId    String    @unique
+  firstName     String
+  lastName      String
+  fullName      String    // "LeBron James" pour recherche facile
+  position      String?
+  jerseyNumber  String?
+
+  // Physical info
+  height        String?   // "6-9" (feet-inches)
+  weight        String?   // "250" (pounds)
+  heightMetric  String?   // "2.06" (mètres)
+  weightMetric  String?   // "113" (kg)
+
+  // Background
+  college       String?   // "St. Vincent-St. Mary HS (OH)"
+  country       String?   // "USA"
+
+  // Photo
+  headshot      String?   // URL du headshot du joueur
+
+  // Infirmerie
+  isInjured     Boolean   @default(false)
+  injuryStatus  String?   // "Out", "Day-to-Day", "Questionable"
+  injuryNote    String?   // "Ankle sprain"
+  injuryReturnDate DateTime? // Date estimée de retour
+
+  teamId        String?
+  team          Team?     @relation(fields: [teamId], references: [id])
+
+  // Relations
+  gameStats              GamePlayerStats[]
+  seasonStats            PlayerSeasonStats[]
+  injuryReports          InjuryReport[]
+  predictionsAsTopScorer Prediction[]      @relation("PredictionTopScorer")
+  gamesAsTopScorer       Game[]            @relation("GameTopScorer")
+  favoritedBy            User[]            @relation("UserFavoritePlayer")
+
+  @@index([teamId])
+  @@index([fullName])
+  @@map("players")
+}
+
+model Game {
+  id            String      @id @default(uuid())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  externalId    String      @unique
+  season        String
+  seasonType    String
+  gameDate      DateTime    // Heure UTC (pour calculs et affichage précis)
+  localGameDate DateTime    // Date/heure locale de l'équipe qui reçoit (pour recherche par jour)
+  status        GameStatus  @default(SCHEDULED)
+
+  homeTeamId    String
+  homeTeam      Team        @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  homeScore     Int?
+
+  awayTeamId    String
+  awayTeam      Team        @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  awayScore     Int?
+
+  winnerId      String?
+
+  // 🆕 Bonus Points - Meilleur marqueur du match
+  topScorerId   String?
+  topScorer     Player?     @relation("GameTopScorer", fields: [topScorerId], references: [id])
+  topScorerPoints Int?      // Nombre de points du top scorer
+
+  // 🆕 Bonus Points - Catégorie d'écart
+  scoreMarginCategory String? // "OVERTIME", "MATCH_SERRE", "UN_CLASSIQUE", etc.
+  actualScoreMargin   Int?    // Écart réel de points
+
+  // 🆕 Infos prolongation
+  hasOvertime   Boolean     @default(false)
+  overtimePeriods Int?      // Nombre de prolongations
+
+  // 🆕 Infos temps réel (pour matchs LIVE)
+  currentPeriod Int?        // Quart-temps actuel (1-4, >4 = OT)
+  gameClock     String?     // Temps restant "5:30"
+
+  predictionDeadline DateTime
+
+  predictions   Prediction[]
+  playerStats   GamePlayerStats[]
+
+  @@index([gameDate])
+  @@index([localGameDate])
+  @@index([season])
+  @@index([status])
+  @@map("games")
+}
+
+// ============================================
+// USER PREDICTIONS & SCORING
+// ============================================
+
+model Prediction {
+  id              String           @id @default(uuid())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  gameId          String
+  game            Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  predictedTeamId String
+
+  result          PredictionResult @default(PENDING)
+  pointsEarned    Int              @default(0)
+
+  // 🆕 BONUS POINTS - Écart de score
+  predictedScoreMargin  String?  // Catégorie prédite : "OVERTIME", "MATCH_SERRE", etc.
+  marginBonusPoints     Int      @default(0) // 0 ou 5 pts
+
+  // 🆕 BONUS POINTS - Meilleur marqueur
+  predictedTopScorerId  String?
+  predictedTopScorer    Player?  @relation("PredictionTopScorer", fields: [predictedTopScorerId], references: [id])
+  topScorerBonusPoints  Int      @default(0) // 0 ou 5 pts
+
+  // 🆕 BONUS POINTS - Combo parfait (prono + écart + top scorer)
+  comboBonusPoints      Int      @default(0) // 0 ou 10 pts
+
+  @@unique([userId, gameId])
+  @@index([userId])
+  @@index([gameId])
+  @@map("predictions")
+}
+
+// ============================================
+// PLAYER STATS & INJURY TRACKING
+// ============================================
+
+model GamePlayerStats {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+
+  gameId      String
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  playerId    String
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id])
+
+  // Stats basiques (récupérées depuis ESPN API)
+  points      Int
+  rebounds    Int?
+  assists     Int?
+  steals      Int?
+  blocks      Int?
+  turnovers   Int?
+  minutes     String?  // Format "32:45"
+
+  // Shooting
+  fieldGoalsMade      Int?
+  fieldGoalsAttempted Int?
+  threePointersMade   Int?
+  threePointersAttempted Int?
+  freeThrowsMade      Int?
+  freeThrowsAttempted Int?
+
+  // Advanced stats
+  plusMinus           Int?     // +/- when player is on court
+
+  @@unique([gameId, playerId])
+  @@index([gameId])
+  @@index([playerId])
+  @@index([teamId])
+  @@map("game_player_stats")
+}
+
+model InjuryReport {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  playerId    String
+  player      Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  // Détails de la blessure
+  injuryType  String    // "Ankle Sprain", "Knee Soreness", etc.
+  status      String    // "Out", "Day-To-Day", "Questionable", "Probable"
+  description String?   // Description complète si disponible
+
+  // Dates
+  injuryDate  DateTime  // Date de la blessure
+  returnDate  DateTime? // Date de retour estimée/réelle
+
+  // Status
+  isActive    Boolean   @default(true) // false si le joueur est revenu
+
+  @@index([playerId])
+  @@index([isActive])
+  @@map("injury_reports")
+}
+
+model PlayerSeasonStats {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  playerId    String
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  season      String   // "2025-2026"
+
+  // Games played
+  gamesPlayed  Int
+  gamesStarted Int?
+
+  // Averages per game
+  pointsPerGame      Float
+  reboundsPerGame    Float
+  assistsPerGame     Float
+  stealsPerGame      Float?
+  blocksPerGame      Float?
+  turnoversPerGame   Float?
+  minutesPerGame     Float?
+
+  // Shooting percentages
+  fieldGoalPct       Float?
+  threePointPct      Float?
+  freeThrowPct       Float?
+
+  // Totals
+  totalPoints        Int
+  totalRebounds      Int
+  totalAssists       Int
+  totalSteals        Int?
+  totalBlocks        Int?
+  totalTurnovers     Int?
+  totalMinutes       Int?
+
+  // Advanced stats
+  plusMinus          Int?     // Season +/-
+  doubleDoubles      Int      @default(0)
+  tripleDoubles      Int      @default(0)
+
+  @@unique([playerId, season])
+  @@index([playerId])
+  @@index([season])
+  @@map("player_season_stats")
+}
+
+model TeamSeasonStats {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  season      String   // "2025-2026"
+
+  // Record
+  wins        Int
+  losses      Int
+  winPct      Float
+
+  // Conference/Division standing
+  conferenceRank Int?
+  divisionRank   Int?
+
+  // Averages per game
+  pointsPerGame         Float
+  pointsAllowedPerGame  Float
+  pointDifferential     Float
+
+  // Team shooting
+  fieldGoalPct          Float?
+  threePointPct         Float?
+  freeThrowPct          Float?
+
+  // Other averages
+  reboundsPerGame       Float?
+  assistsPerGame        Float?
+  stealsPerGame         Float?
+  blocksPerGame         Float?
+  turnoversPerGame      Float?
+
+  // Streaks
+  currentStreak         String?  // "W3", "L2", etc.
+  homeRecord            String?  // "15-5"
+  awayRecord            String?  // "12-8"
+  conferenceRecord      String?  // "20-10" (vs conference)
+  divisionRecord        String?  // "8-4" (vs division)
+  last10Record          String?  // "7-3" (last 10 games)
+
+  @@unique([teamId, season])
+  @@index([teamId])
+  @@index([season])
+  @@map("team_season_stats")
+}
+
+// ============================================
+// COMPETITION SEASONS (for leaderboard)
+// ============================================
+
+model CompetitionSeason {
+  id            String    @id @default(uuid())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  name          String
+  slug          String    @unique
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean   @default(false)
+
+  @@map("competition_seasons")
+}
+
+// ============================================
+// NOTIFICATIONS SYSTEM
+// ============================================
+
+model Notification {
+  id        String           @id @default(uuid())
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      NotificationType
+  title     String
+  message   String
+  link      String?          // URL pour action (ex: /pronos, /classement)
+
+  read      Boolean          @default(false)
+
+  // Données spécifiques selon le type (JSON flexible)
+  metadata  Json?            // { gameId, points, oldRank, newRank, badgeId, leagueId, etc. }
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([read])
+  @@map("notifications")
+}
+
+model UserNotificationSettings {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Email digest quotidien
+  dailyEmailEnabled       Boolean @default(true)
+  emailIncludeMissing     Boolean @default(true)
+  emailIncludeResults     Boolean @default(true)
+  emailIncludeRanking     Boolean @default(true)
+  emailFrequency          String  @default("DAILY") // DAILY, WEEKDAYS, WEEKLY, DISABLED
+
+  // Notifications web - Social (activées par défaut)
+  notifFriendRequest      Boolean @default(true)
+  notifLeagueInvitation   Boolean @default(true)
+  notifLeagueStarted      Boolean @default(true)
+
+  // Notifications web - Spoilers (désactivées par défaut)
+  notifGameFinished       Boolean @default(false)
+  notifPronoWon           Boolean @default(false)
+  notifPronoLost          Boolean @default(false)
+  notifRankingUp          Boolean @default(false)
+  notifRankingDown        Boolean @default(false)
+  notifBadgeUnlocked      Boolean @default(false)
+  notifStreakWarning      Boolean @default(false)
+  notifSomeonePassedYou   Boolean @default(false)
+
+  // Notifications web - Rappels (activées par défaut)
+  notifReminderNoProno    Boolean @default(true)
+
+  // Push notifications (PWA)
+  pushEnabled             Boolean @default(false)
+  pushSubscription        Json?   // PushSubscription object
+
+  @@map("user_notification_settings")
+}
+
+// ============================================
+// BADGES & ACHIEVEMENTS (structure de base)
+// ============================================
+
+model Badge {
+  id          String        @id @default(uuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  slug        String        @unique       // ex: "streak_5", "accuracy_80"
+  name        String                      // ex: "Série de 5"
+  description String                      // ex: "Gagnez 5 pronos d'affilée"
+  icon        String?                     // URL ou emoji
+  type        BadgeType
+  category    BadgeCategory               // SEASON, END_SEASON, CAREER
+
+  // Conditions pour débloquer le badge (JSON flexible)
+  criteria    Json                        // { streak: 5 } ou { accuracy: 80, minGames: 20 }
+
+  // Rareté/points/difficulté
+  rarity           String   @default("COMMON") // COMMON, RARE, EPIC, LEGENDARY
+  difficultyLevel  String?                     // Bronze, Argent, Or, Platine
+  points           Int      @default(0)        // Points bonus pour débloquer
+  reward           String?                     // Titre obtenu (ex: "Champion", "MVP")
+
+  userBadges  UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  badgeId     String
+  badge       Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  // Date de déblocage
+  unlockedAt  DateTime @default(now())
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@map("user_badges")
+}
+
+// ============================================
+// SOCIAL FEATURES (Ligues privées & Amis)
+// ============================================
+
+model PrivateLeague {
+  id          String         @id @default(uuid())
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  name        String
+  slug        String         @unique
+  description String?
+  isPrivate   Boolean        @default(true)
+  inviteCode  String?        @unique
+
+  ownerId     String
+  owner       User           @relation("LeagueOwner", fields: [ownerId], references: [id])
+
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean        @default(true)
+
+  members     LeagueMember[]
+
+  @@map("private_leagues")
+}
+
+model LeagueMember {
+  id        String        @id @default(uuid())
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  leagueId  String
+  league    PrivateLeague @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  isAdmin   Boolean       @default(false)
+  joinedAt  DateTime      @default(now())
+
+  @@unique([leagueId, userId])
+  @@index([leagueId])
+  @@index([userId])
+  @@map("league_members")
+}
+
+model FriendRequest {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  senderId   String
+  sender     User     @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  receiverId String
+  receiver   User     @relation("FriendRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  status     String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId])
+  @@map("friend_requests")
 }

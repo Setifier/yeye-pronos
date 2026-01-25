@@ -10,6 +10,7 @@ import { getValidDomains, normalizeName } from "@/lib/utils";
 import { UserRole } from "@/generated/prisma";
 import { ac, roles } from "@/lib/permissions";
 import { sendEmailAction } from "@/actions/send-email.action";
+import { generateUniqueFriendCode } from "@/lib/friend-code";
 
 const options = {
   database: prismaAdapter(prisma, {
@@ -19,10 +20,6 @@ const options = {
     google: {
       clientId: String(process.env.GOOGLE_CLIENT_ID),
       clientSecret: String(process.env.GOOGLE_CLIENT_SECRET),
-    },
-    github: {
-      clientId: String(process.env.GITHUB_CLIENT_ID),
-      clientSecret: String(process.env.GITHUB_CLIENT_SECRET),
     },
   },
   emailAndPassword: {
@@ -75,52 +72,8 @@ const options = {
           });
         }
 
-        /*
-        // On ne modifie le nom que pour les espaces en trop et la casse, mais on rejette si :
-        // - il y a un chiffre ou un symbole
-        // - plus de 3 mots
-        // - un mot fait moins de 2 lettres
-        // On retourne une erreur explicite selon le cas.
-
-        const nameRaw = ctx.body?.name ?? "";
-        // Nettoyage des espaces superflus
-        let name = nameRaw.replace(/\s+/g, " ").trim();
-
-        // Vérification : caractères non autorisés (chiffres ou symboles)
-        if (/[^a-zA-Z\s]/.test(name)) {
-          throw new APIError("BAD_REQUEST", {
-            message: "Le nom ne doit pas contenir de chiffres ou de symboles.",
-          });
-        }
-
-        // Découpage en mots
-        const words = name.split(" ").filter((w: string) => w.length > 0);
-
-        // Vérification : nombre de mots
-        if (words.length > 3) {
-          throw new APIError("BAD_REQUEST", {
-            message: "Le nom ne doit pas avoir plus de 2 espaces.",
-          });
-        }
-
-        // Vérification : le nom doit contenir au moins 2 lettres au total (tous mots confondus)
-        const totalLetters = words.reduce(
-          (acc: number, w: string) => acc + w.length,
-          0
-        );
-        if (totalLetters < 2) {
-          throw new APIError("BAD_REQUEST", {
-            message: "Le nom doit être qu'une seule lettre.",
-          });
-        }
-
-        // Mise en forme : première lettre de chaque mot en majuscule, le reste en minuscule
-        name = words
-          .map(
-            (w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
-          )
-          .join(" ");
-        */
+        // Normaliser le nom (enlever espaces superflus, etc.)
+        const name = normalizeName(ctx.body?.name ?? "");
 
         return {
           context: {
@@ -151,7 +104,8 @@ const options = {
             ...ctx,
             body: {
               ...ctx.body,
-              name: normalizeName(ctx.body.name),
+              // Normaliser le nom seulement s'il est fourni
+              ...(ctx.body?.name && { name: normalizeName(ctx.body.name) }),
             },
           },
         };
@@ -165,10 +119,18 @@ const options = {
         before: async (user) => {
           const ADMIN_EMAILS = process.env.ADMIN_EMAILS?.split(";") ?? [];
 
+          // Générer un friendCode unique
+          const friendCode = await generateUniqueFriendCode();
+
+          const userData = {
+            ...user,
+            friendCode,
+          };
+
           if (ADMIN_EMAILS.includes(user.email)) {
-            return { data: { ...user, role: UserRole.ADMIN } };
+            return { data: { ...userData, role: UserRole.ADMIN } };
           }
-          return { data: user };
+          return { data: userData };
         },
       },
     },
@@ -184,13 +146,17 @@ const options = {
   session: {
     expiresIn: 30 * 24 * 60 * 60, // 30 days
     cookieCache: {
-      enabled: true,
+      // ❌ Désactivé temporairement pour résoudre l'erreur 431
+      enabled: false,
       maxAge: 5 * 60, // 5 minutes
     },
   },
   account: {
     accountLinking: {
-      enabled: false,
+      enabled: true,
+      // Lier automatiquement les comptes avec le même email
+      // Cela permet de se connecter avec Google même si on a créé le compte avec email/password
+      trustedProviders: ["google", "github"],
     },
   },
   advanced: {
@@ -226,19 +192,23 @@ export const auth = betterAuth({
   plugins: [
     ...(options.plugins ?? []),
     customSession(async ({ user, session }) => {
+      // Fetch additional user data for onboarding status
+      const userData = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { hasCompletedOnboarding: true },
+      });
+
       return {
         session: {
           expiresAt: session.expiresAt,
           token: session.token,
-          userAgent: session.userAgent,
         },
         user: {
           id: user.id,
           name: user.name,
           email: user.email,
-          image: user.image,
-          createdAt: user.createdAt,
           role: user.role,
+          hasCompletedOnboarding: userData?.hasCompletedOnboarding ?? false,
         },
       };
     }, options),

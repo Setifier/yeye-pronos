@@ -1,32 +1,68 @@
 import { RegisterForm } from "@/components/register-form";
-import { ReturnButton } from "@/components/return-button";
 import { SignInOAuthButtons } from "@/components/sign-in-oauth-buttons";
 import Link from "next/link";
+import { ArrowLeft, UserPlus } from "lucide-react";
 
 export default function RegisterPage() {
   return (
-    <div className="px-8 py-16 container mx-auto max-w-screen-lg space-y-8">
-      <div className="space-y-8">
-        <ReturnButton href="/" label="Home" />
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        {/* Back to Home Link */}
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors mb-8"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour à l&apos;accueil
+        </Link>
 
-        <h1 className="text-3xl font-bold">Create an account</h1>
-      </div>
-      <div className="space-y-4">
-        <RegisterForm />
+        {/* Main Card */}
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-8">
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#5096ff]/10">
+              <UserPlus className="h-6 w-6 text-[#5096ff]" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Inscription</h1>
+              <p className="text-sm text-zinc-400">
+                Créez votre compte NBA Pronos
+              </p>
+            </div>
+          </div>
 
-        <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link href="/auth/login" className="hover:text-foreground">
-            Login
-          </Link>
-        </p>
+          {/* Register Form */}
+          <RegisterForm />
 
-        <hr className="max-w-sm" />
-      </div>
+          {/* Login Link */}
+          <p className="mt-6 text-center text-sm text-zinc-400">
+            Vous avez déjà un compte ?{" "}
+            <Link
+              href="/auth/login"
+              className="font-medium text-[#5096ff] hover:text-[#5096ff]/80 transition-colors"
+            >
+              Se connecter
+            </Link>
+          </p>
 
-      <div className="flex flex-col max-w-sm gap-4">
-        <SignInOAuthButtons signUp provider="google" />
-        <SignInOAuthButtons signUp provider="github" />
+          {/* OAuth Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-zinc-800"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-zinc-900/50 px-2 text-zinc-500">
+                Ou avec
+              </span>
+            </div>
+          </div>
+
+          {/* OAuth Buttons */}
+          <div className="space-y-3">
+            <SignInOAuthButtons signUp provider="google" />
+            <SignInOAuthButtons signUp provider="github" />
+          </div>
+        </div>
       </div>
     </div>
   );

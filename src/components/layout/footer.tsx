@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IS_BETA } from "@/lib/beta";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -96,6 +97,14 @@ export function Footer() {
           <p className="text-xs text-center text-zinc-500">
             © {currentYear} Yeye Pronos. Tous droits réservés.
           </p>
+          {IS_BETA && (
+            <p className="mt-3 flex items-center justify-center gap-2 text-xs text-zinc-500">
+              <span className="rounded-md bg-[#5096ff]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#5096ff]">
+                Bêta
+              </span>
+              Version de test : merci pour vos retours !
+            </p>
+          )}
         </div>
       </div>
     </footer>

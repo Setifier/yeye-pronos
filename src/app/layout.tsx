@@ -4,9 +4,11 @@ import { Toaster } from "sonner";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
+import { BetaBanner } from "@/components/layout/beta-banner";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { headers } from "next/headers";
+import { IS_BETA, BETA_BANNER_COOKIE } from "@/lib/beta";
+import { cookies, headers } from "next/headers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -52,11 +54,14 @@ export default async function RootLayout({
     };
   }
 
+  const showBetaBanner = IS_BETA && !(await cookies()).has(BETA_BANNER_COOKIE);
+
   return (
     <html lang="fr">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-white flex flex-col min-h-screen`}
       >
+        {showBetaBanner && <BetaBanner />}
         <Navbar user={userWithImage} />
         {children}
         <Footer />

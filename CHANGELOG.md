@@ -16,6 +16,10 @@
 - Les noms gardent leurs accents (« Éloïse » devenait « Loise »).
 - E-mails et messages d'erreur de connexion en français ; retour à la page demandée après connexion.
 
+### Interface
+- Bandeau « Version bêta » en haut des pages, fermable une fois pour toutes (cookie, pas de clignotement),
+  et mention bêta dans le footer. Sortie de bêta : `IS_BETA = false` dans `src/lib/beta.ts`.
+
 ### Production
 - Fonctions Vercel à Londres (`lhr1`), comme la base Neon : sans ça, ~80 ms par requête SQL et une nuit
   de 15 matchs ne tenait pas dans les 60 s du CRON.

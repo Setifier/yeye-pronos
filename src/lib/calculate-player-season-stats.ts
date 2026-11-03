@@ -1,263 +1,240 @@
 /**
  * Calcul des stats moyennes des joueurs (PlayerSeasonStats)
- * Appelé après chaque match terminé pour mettre à jour les moyennes
+ * Appelé après chaque match terminé pour mettre à jour les moyennes.
+ *
+ * Calcul groupé : une lecture pour tous les joueurs concernés, puis un remplacement
+ * en une transaction (2 requêtes) — l'ancienne version faisait 2 requêtes par joueur,
+ * soit ~50 par match, ce qui pesait lourd dans le budget de 60 s du CRON.
  */
 
-import { PrismaClient } from "@/generated/prisma";
+import type { PrismaClient } from "@/generated/prisma";
+import { getCurrentSeason } from "@/types/season";
 
-const CURRENT_SEASON = "2025-26";
+/**
+ * Filtre Prisma des matchs comptant pour les stats officielles de saison régulière.
+ * La finale de la NBA Cup ne compte pas (règle NBA) ; quarts et demies comptent.
+ */
+function regularSeasonGameFilter(season: string) {
+  return {
+    season,
+    status: "FINAL" as const,
+    seasonType: "Regular Season",
+    OR: [{ nbaCupRound: null }, { nbaCupRound: { not: "Championship" } }],
+  };
+}
 
-interface PlayerGameStats {
-  minutes: number;
-  points: number;
-  rebounds: number;
-  assists: number;
-  steals: number;
-  blocks: number;
-  turnovers: number;
-  fieldGoalsMade: number;
-  fieldGoalsAttempted: number;
-  threePointsMade: number;
-  threePointsAttempted: number;
-  freeThrowsMade: number;
-  freeThrowsAttempted: number;
+const STAT_SELECT = {
+  playerId: true,
+  minutes: true,
+  points: true,
+  rebounds: true,
+  assists: true,
+  steals: true,
+  blocks: true,
+  turnovers: true,
+  fieldGoalsMade: true,
+  fieldGoalsAttempted: true,
+  threePointersMade: true,
+  threePointersAttempted: true,
+  freeThrowsMade: true,
+  freeThrowsAttempted: true,
+  offensiveRebounds: true,
+  defensiveRebounds: true,
+  plusMinus: true,
+  personalFouls: true,
+} as const;
+
+interface StatRow {
+  playerId: string;
+  minutes: string | null;
+  points: number | null;
+  rebounds: number | null;
+  assists: number | null;
+  steals: number | null;
+  blocks: number | null;
+  turnovers: number | null;
+  fieldGoalsMade: number | null;
+  fieldGoalsAttempted: number | null;
+  threePointersMade: number | null;
+  threePointersAttempted: number | null;
+  freeThrowsMade: number | null;
+  freeThrowsAttempted: number | null;
+  offensiveRebounds: number | null;
+  defensiveRebounds: number | null;
+  plusMinus: number | null;
+  personalFouls: number | null;
 }
 
 /**
- * Recalcule les stats saison d'un joueur à partir de tous ses matchs
+ * Le joueur a-t-il joué ? Exclut les DNP (minutes null, "0:00", "-").
+ * Gère "MM:SS" (ESPN) et le décimal "32" / "32.7" (anciennes données BallDontLie).
  */
-async function calculatePlayerSeasonStats(
-  playerId: string,
-  prisma: PrismaClient
-): Promise<void> {
-  // Récupérer toutes les stats de matchs du joueur pour la saison
-  const gameStats = await prisma.gamePlayerStats.findMany({
-    where: {
-      playerId,
-      game: {
-        season: CURRENT_SEASON,
-        status: "FINAL",
-      },
-    },
-    select: {
-      minutes: true,
-      points: true,
-      rebounds: true,
-      assists: true,
-      steals: true,
-      blocks: true,
-      turnovers: true,
-      fieldGoalsMade: true,
-      fieldGoalsAttempted: true,
-      threePointersMade: true,
-      threePointersAttempted: true,
-      freeThrowsMade: true,
-      freeThrowsAttempted: true,
-    },
-  });
+function played(minutes: string | null): boolean {
+  if (!minutes || minutes === "0:00" || minutes === "-") return false;
+  const mmss = minutes.match(/^(\d+):(\d{2})$/);
+  if (mmss) return parseInt(mmss[1], 10) > 0 || parseInt(mmss[2], 10) > 0;
+  const dec = parseFloat(minutes);
+  return !isNaN(dec) && dec > 0;
+}
 
-  if (gameStats.length === 0) {
-    // Pas de stats pour ce joueur cette saison, supprimer s'il existe
-    await prisma.playerSeasonStats.deleteMany({
-      where: {
-        playerId,
-        season: CURRENT_SEASON,
-      },
-    });
-    return;
+/** "32:45" → 32.75 */
+function parseMin(s: string | null): number {
+  if (!s) return 0;
+  const [m, sec] = s.split(":").map(Number);
+  return (m || 0) + (sec || 0) / 60;
+}
+
+/** Moyennes et totaux d'un joueur à partir de ses lignes de box score (null s'il n'a pas joué). */
+function computeSeasonPayload(rows: StatRow[]) {
+  const games = rows.filter((g) => played(g.minutes));
+  if (games.length === 0) return null;
+
+  let minutes = 0, points = 0, rebounds = 0, assists = 0, steals = 0, blocks = 0, turnovers = 0;
+  let fgm = 0, fga = 0, tpm = 0, tpa = 0, ftm = 0, fta = 0, oreb = 0, dreb = 0, plusMinus = 0, fouls = 0;
+  let doubleDoubles = 0, tripleDoubles = 0;
+
+  for (const g of games) {
+    minutes   += parseMin(g.minutes);
+    points    += g.points || 0;
+    rebounds  += g.rebounds || 0;
+    assists   += g.assists || 0;
+    steals    += g.steals || 0;
+    blocks    += g.blocks || 0;
+    turnovers += g.turnovers || 0;
+    fgm       += g.fieldGoalsMade || 0;
+    fga       += g.fieldGoalsAttempted || 0;
+    tpm       += g.threePointersMade || 0;
+    tpa       += g.threePointersAttempted || 0;
+    ftm       += g.freeThrowsMade || 0;
+    fta       += g.freeThrowsAttempted || 0;
+    oreb      += g.offensiveRebounds || 0;
+    dreb      += g.defensiveRebounds || 0;
+    plusMinus += g.plusMinus || 0;
+    fouls     += g.personalFouls || 0;
+
+    const doubleDigits = [g.points, g.rebounds, g.assists, g.steals, g.blocks].filter((s) => (s || 0) >= 10).length;
+    if (doubleDigits >= 3) tripleDoubles++;
+    else if (doubleDigits >= 2) doubleDoubles++;
   }
 
-  // Calculer les totaux
-  let totalPoints = 0;
-  let totalRebounds = 0;
-  let totalAssists = 0;
-  let totalSteals = 0;
-  let totalBlocks = 0;
-  let totalTurnovers = 0;
-  let totalFGM = 0;
-  let totalFGA = 0;
-  let total3PM = 0;
-  let total3PA = 0;
-  let totalFTM = 0;
-  let totalFTA = 0;
-
-  // Compteurs pour DD/TD
-  let doubleDoubles = 0;
-  let tripleDoubles = 0;
-
-  for (const game of gameStats) {
-    // Note: minutes est un String format "32:45", on ne l'additionne pas ici
-    totalPoints += game.points || 0;
-    totalRebounds += game.rebounds || 0;
-    totalAssists += game.assists || 0;
-    totalSteals += game.steals || 0;
-    totalBlocks += game.blocks || 0;
-    totalTurnovers += game.turnovers || 0;
-    totalFGM += game.fieldGoalsMade || 0;
-    totalFGA += game.fieldGoalsAttempted || 0;
-    total3PM += game.threePointersMade || 0;
-    total3PA += game.threePointersAttempted || 0;
-    totalFTM += game.freeThrowsMade || 0;
-    totalFTA += game.freeThrowsAttempted || 0;
-
-    // Calculer DD/TD pour ce match
-    const stats = [
-      game.points || 0,
-      game.rebounds || 0,
-      game.assists || 0,
-      game.steals || 0,
-      game.blocks || 0,
-    ];
-    const doubleDigitStats = stats.filter((s) => s >= 10).length;
-
-    if (doubleDigitStats >= 3) {
-      tripleDoubles++;
-    } else if (doubleDigitStats >= 2) {
-      doubleDoubles++;
-    }
-  }
-
-  const gamesPlayed = gameStats.length;
-
-  // Calculer les moyennes par match
-  const pointsPerGame = totalPoints / gamesPlayed;
-  const reboundsPerGame = totalRebounds / gamesPlayed;
-  const assistsPerGame = totalAssists / gamesPlayed;
-  const stealsPerGame = totalSteals / gamesPlayed;
-  const blocksPerGame = totalBlocks / gamesPlayed;
-  const turnoversPerGame = totalTurnovers / gamesPlayed;
-
-  // Calculer les pourcentages
-  const fieldGoalPct = totalFGA > 0 ? totalFGM / totalFGA : 0;
-  const threePointPct = total3PA > 0 ? total3PM / total3PA : 0;
-  const freeThrowPct = totalFTA > 0 ? totalFTM / totalFTA : 0;
-
-  // Upsert dans PlayerSeasonStats
-  await prisma.playerSeasonStats.upsert({
-    where: {
-      playerId_season: {
-        playerId,
-        season: CURRENT_SEASON,
-      },
-    },
-    create: {
-      playerId,
-      season: CURRENT_SEASON,
-      gamesPlayed,
-      pointsPerGame,
-      reboundsPerGame,
-      assistsPerGame,
-      stealsPerGame,
-      blocksPerGame,
-      turnoversPerGame,
-      fieldGoalPct,
-      threePointPct,
-      freeThrowPct,
-      totalPoints: totalPoints,
-      totalRebounds: totalRebounds,
-      totalAssists: totalAssists,
-      doubleDoubles,
-      tripleDoubles,
-    },
-    update: {
-      gamesPlayed,
-      pointsPerGame,
-      reboundsPerGame,
-      assistsPerGame,
-      stealsPerGame,
-      blocksPerGame,
-      turnoversPerGame,
-      fieldGoalPct,
-      threePointPct,
-      freeThrowPct,
-      totalPoints: totalPoints,
-      totalRebounds: totalRebounds,
-      totalAssists: totalAssists,
-      doubleDoubles,
-      tripleDoubles,
-    },
-  });
+  const n = games.length;
+  return {
+    gamesPlayed:      n,
+    minutesPerGame:   minutes / n,
+    pointsPerGame:    points / n,
+    reboundsPerGame:  rebounds / n,
+    assistsPerGame:   assists / n,
+    stealsPerGame:    steals / n,
+    blocksPerGame:    blocks / n,
+    turnoversPerGame: turnovers / n,
+    fieldGoalPct:     fga > 0 ? fgm / fga : 0,
+    threePointPct:    tpa > 0 ? tpm / tpa : 0,
+    freeThrowPct:     fta > 0 ? ftm / fta : 0,
+    totalPoints:      points,
+    totalRebounds:    rebounds,
+    totalAssists:     assists,
+    totalSteals:      steals,
+    totalBlocks:      blocks,
+    totalTurnovers:   turnovers,
+    totalFGM:         fgm,
+    totalFGA:         fga,
+    total3PM:         tpm,
+    total3PA:         tpa,
+    totalFTM:         ftm,
+    totalFTA:         fta,
+    offensiveReboundsPerGame: oreb / n,
+    defensiveReboundsPerGame: dreb / n,
+    totalOffensiveRebounds:   oreb,
+    totalDefensiveRebounds:   dreb,
+    fgmPerGame:       fgm / n,
+    fgaPerGame:       fga / n,
+    threePmPerGame:   tpm / n,
+    threePaPerGame:   tpa / n,
+    plusMinus,
+    doubleDoubles,
+    tripleDoubles,
+    foulsPerGame:     fouls / n,
+    ftmPerGame:       ftm / n,
+    ftaPerGame:       fta / n,
+  };
 }
 
 /**
- * Recalcule les stats de tous les joueurs qui ont participé à un match
- * À appeler après qu'un match soit terminé et que les stats aient été récupérées
+ * Recalcule les stats saison d'un groupe de joueurs (3 requêtes quel que soit leur nombre).
+ * Un joueur sans match joué dans la saison n'a plus de ligne PlayerSeasonStats.
+ * @returns nombre de joueurs avec des moyennes
+ */
+export async function recalculatePlayersSeasonStats(
+  playerIds: string[],
+  prisma: PrismaClient,
+  season: string = getCurrentSeason()
+): Promise<number> {
+  if (playerIds.length === 0) return 0;
+
+  const rows = await prisma.gamePlayerStats.findMany({
+    where:  { playerId: { in: playerIds }, game: regularSeasonGameFilter(season) },
+    select: STAT_SELECT,
+  });
+  const byPlayer = new Map<string, StatRow[]>();
+  for (const r of rows) {
+    const list = byPlayer.get(r.playerId);
+    if (list) list.push(r);
+    else byPlayer.set(r.playerId, [r]);
+  }
+
+  const data = playerIds.flatMap((playerId) => {
+    const payload = computeSeasonPayload(byPlayer.get(playerId) ?? []);
+    return payload ? [{ playerId, season, ...payload }] : [];
+  });
+
+  await prisma.$transaction([
+    prisma.playerSeasonStats.deleteMany({ where: { season, playerId: { in: playerIds } } }),
+    prisma.playerSeasonStats.createMany({ data }),
+  ]);
+  return data.length;
+}
+
+/**
+ * Recalcule les stats de tous les joueurs qui ont participé à un match.
+ * À appeler après qu'un match soit terminé et que les stats aient été récupérées.
  */
 export async function recalculatePlayerStatsForGame(
   gameId: string,
-  prisma: PrismaClient
+  prisma: PrismaClient,
+  season: string = getCurrentSeason()
 ): Promise<number> {
-  // Récupérer tous les joueurs qui ont des stats pour ce match
-  const playerStats = await prisma.gamePlayerStats.findMany({
-    where: { gameId },
-    select: { playerId: true },
+  const players = await prisma.gamePlayerStats.findMany({
+    where:    { gameId },
+    select:   { playerId: true },
     distinct: ["playerId"],
   });
-
-  console.log(
-    `[PLAYER STATS] Recalculating stats for ${playerStats.length} players from game ${gameId}`
-  );
-
-  // Recalculer les stats de chaque joueur
-  for (const ps of playerStats) {
-    try {
-      await calculatePlayerSeasonStats(ps.playerId, prisma);
-    } catch (error) {
-      console.error(
-        `[PLAYER STATS] Error calculating stats for player ${ps.playerId}:`,
-        error
-      );
-      // Continue avec les autres joueurs même si un échoue
-    }
-  }
-
-  return playerStats.length;
+  await recalculatePlayersSeasonStats(players.map((p) => p.playerId), prisma, season);
+  return players.length;
 }
 
 /**
- * Recalcule les stats de TOUS les joueurs (à utiliser pour une initialisation complète)
+ * Recalcule les stats de TOUS les joueurs de la saison (initialisation, correction).
  */
 export async function recalculateAllPlayerStats(
-  prisma: PrismaClient
+  prisma: PrismaClient,
+  season: string = getCurrentSeason()
 ): Promise<void> {
-  console.log("[PLAYER STATS] Recalculating stats for ALL players...");
+  console.log(`[PLAYER STATS] Recalculating stats for ALL players (${season})...`);
 
-  // Récupérer tous les joueurs qui ont au moins une stat de match
-  const playersWithStats = await prisma.gamePlayerStats.findMany({
-    where: {
-      game: {
-        season: CURRENT_SEASON,
-        status: "FINAL",
-      },
-    },
-    select: { playerId: true },
+  const players = await prisma.gamePlayerStats.findMany({
+    where:    { game: regularSeasonGameFilter(season) },
+    select:   { playerId: true },
     distinct: ["playerId"],
   });
+  const ids = players.map((p) => p.playerId);
+  console.log(`[PLAYER STATS] Found ${ids.length} players with stats this season`);
 
-  console.log(
-    `[PLAYER STATS] Found ${playersWithStats.length} players with stats this season`
-  );
-
-  let completed = 0;
-  for (const ps of playersWithStats) {
-    try {
-      await calculatePlayerSeasonStats(ps.playerId, prisma);
-      completed++;
-
-      if (completed % 50 === 0) {
-        console.log(
-          `[PLAYER STATS] Progress: ${completed}/${playersWithStats.length}`
-        );
-      }
-    } catch (error) {
-      console.error(
-        `[PLAYER STATS] Error calculating stats for player ${ps.playerId}:`,
-        error
-      );
-    }
+  const CHUNK = 100;
+  let withStats = 0;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    withStats += await recalculatePlayersSeasonStats(ids.slice(i, i + CHUNK), prisma, season);
+    console.log(`[PLAYER STATS] Progress: ${Math.min(i + CHUNK, ids.length)}/${ids.length}`);
   }
 
-  console.log(
-    `[PLAYER STATS] Completed: ${completed}/${playersWithStats.length} players`
-  );
+  console.log(`[PLAYER STATS] Completed: ${withStats} players with averages`);
 }

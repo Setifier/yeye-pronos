@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Trophy, Clock } from "lucide-react";
+import { useParams } from "next/navigation";
+import { ArrowLeft, Loader2, Trophy } from "lucide-react";
 import Link from "next/link";
 
 interface Player {
@@ -56,8 +56,8 @@ interface BoxscoreData {
     id: string;
     status: string;
     gameDate: string;
-    homeTeam: any;
-    awayTeam: any;
+    homeTeam: { id: string; name: string; city: string; abbreviation: string; logoUrl: string | null };
+    awayTeam: { id: string; name: string; city: string; abbreviation: string; logoUrl: string | null };
     homeScore: number | null;
     awayScore: number | null;
     hasOvertime: boolean;
@@ -74,7 +74,6 @@ interface BoxscoreData {
 
 export default function BoxscorePage() {
   const params = useParams();
-  const router = useRouter();
   const gameId = params?.gameId as string;
 
   const [data, setData] = useState<BoxscoreData | null>(null);

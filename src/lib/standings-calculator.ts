@@ -4,6 +4,8 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { getCurrentSeason } from "@/types/season";
+import { updateStandingRanks } from "@/lib/standings-ranking";
 
 interface TeamStats {
   wins: number;
@@ -19,14 +21,18 @@ interface TeamStats {
   last10Wins: number;
   last10Losses: number;
   currentStreak: string;
+  pointsPerGame: number;
+  pointsAllowedPerGame: number;
+  pointDifferential: number;
 }
 
 /**
- * Calcule les statistiques d'une équipe pour la saison en cours
+ * Calcule les statistiques d'une équipe pour une saison donnée
  */
 async function calculateTeamStats(
   teamId: string,
-  teamInfo: { conference: string; division: string }
+  teamInfo: { conference: string; division: string },
+  season: string
 ): Promise<TeamStats> {
   const stats: TeamStats = {
     wins: 0,
@@ -42,14 +48,28 @@ async function calculateTeamStats(
     last10Wins: 0,
     last10Losses: 0,
     currentStreak: "-",
+    pointsPerGame: 0,
+    pointsAllowedPerGame: 0,
+    pointDifferential: 0,
   };
 
-  // Récupérer tous les matchs terminés de l'équipe
+  let totalPointsScored = 0;
+  let totalPointsAllowed = 0;
+
+  // Récupérer les matchs de saison régulière uniquement (standings ≠ playoffs)
+  // ⚠️ La finale de la NBA Cup ne compte PAS dans le bilan officiel (règle NBA).
+  //    Les quarts et demies, eux, comptent.
   const games = await prisma.game.findMany({
     where: {
-      OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }],
+      AND: [
+        { OR: [{ homeTeamId: teamId }, { awayTeamId: teamId }] },
+        // Prisma : un `not` sur colonne nullable exclut aussi les NULL → OR explicite
+        { OR: [{ nbaCupRound: null }, { nbaCupRound: { not: "Championship" } }] },
+      ],
       status: "FINAL",
       winnerId: { not: null },
+      seasonType: "Regular Season",
+      season, // Filter by specific season to avoid counting past seasons
     },
     include: {
       homeTeam: {
@@ -69,7 +89,7 @@ async function calculateTeamStats(
   }
 
   // Calculer les stats globales
-  let recentResults: boolean[] = []; // true = win, false = loss
+  const recentResults: boolean[] = []; // true = win, false = loss
 
   for (const game of games) {
     const isHome = game.homeTeamId === teamId;
@@ -81,6 +101,12 @@ async function calculateTeamStats(
     } else {
       stats.losses++;
     }
+
+    // Points marqués / encaissés
+    const scored  = isHome ? (game.homeScore ?? 0) : (game.awayScore ?? 0);
+    const allowed = isHome ? (game.awayScore ?? 0) : (game.homeScore ?? 0);
+    totalPointsScored  += scored;
+    totalPointsAllowed += allowed;
 
     // Domicile/Extérieur
     if (isHome) {
@@ -106,6 +132,14 @@ async function calculateTeamStats(
 
     // Stocker pour série et last 10
     recentResults.push(won);
+  }
+
+  // Moyennes de points
+  const totalGamesPlayed = games.length;
+  if (totalGamesPlayed > 0) {
+    stats.pointsPerGame        = totalPointsScored  / totalGamesPlayed;
+    stats.pointsAllowedPerGame = totalPointsAllowed / totalGamesPlayed;
+    stats.pointDifferential    = stats.pointsPerGame - stats.pointsAllowedPerGame;
   }
 
   // Calculer Last 10
@@ -136,7 +170,10 @@ async function calculateTeamStats(
  * Calcule et sauvegarde les standings pour une équipe donnée
  * @param teamId UUID de l'équipe
  */
-export async function calculateStandings(teamId: string): Promise<void> {
+export async function calculateStandings(
+  teamId: string,
+  season: string = getCurrentSeason()
+): Promise<void> {
   // Récupérer les infos de l'équipe
   const team = await prisma.team.findUnique({
     where: { id: teamId },
@@ -146,13 +183,12 @@ export async function calculateStandings(teamId: string): Promise<void> {
     throw new Error(`Team ${teamId} not found`);
   }
 
-  console.log(`[STANDINGS] Calculating for ${team.abbreviation}...`);
-
   // Calculer les stats
-  const stats = await calculateTeamStats(teamId, {
-    conference: team.conference,
-    division: team.division,
-  });
+  const stats = await calculateTeamStats(
+    teamId,
+    { conference: team.conference, division: team.division },
+    season
+  );
 
   // Formater les records
   const homeRecord = `${stats.homeWins}-${stats.homeLosses}`;
@@ -168,14 +204,11 @@ export async function calculateStandings(teamId: string): Promise<void> {
   // Sauvegarder dans la DB
   await prisma.teamSeasonStats.upsert({
     where: {
-      teamId_season: {
-        teamId: teamId,
-        season: "2025-26", // IMPORTANT: Garder cohérent avec le reste de l'app
-      },
+      teamId_season: { teamId, season },
     },
     create: {
       teamId,
-      season: "2025-26",
+      season,
       wins: stats.wins,
       losses: stats.losses,
       winPct,
@@ -185,6 +218,9 @@ export async function calculateStandings(teamId: string): Promise<void> {
       divisionRecord,
       last10Record,
       currentStreak: stats.currentStreak,
+      pointsPerGame:        stats.pointsPerGame,
+      pointsAllowedPerGame: stats.pointsAllowedPerGame,
+      pointDifferential:    stats.pointDifferential,
     },
     update: {
       wins: stats.wins,
@@ -196,6 +232,9 @@ export async function calculateStandings(teamId: string): Promise<void> {
       divisionRecord,
       last10Record,
       currentStreak: stats.currentStreak,
+      pointsPerGame:        stats.pointsPerGame,
+      pointsAllowedPerGame: stats.pointsAllowedPerGame,
+      pointDifferential:    stats.pointDifferential,
     },
   });
 
@@ -207,16 +246,19 @@ export async function calculateStandings(teamId: string): Promise<void> {
 /**
  * Recalcule les standings pour toutes les équipes
  */
-export async function recalculateAllStandings(): Promise<void> {
-  console.log("[STANDINGS] Recalculating all teams...");
+export async function recalculateAllStandings(
+  season: string = getCurrentSeason()
+): Promise<void> {
+  console.log(`[STANDINGS] Recalculating all teams for ${season}...`);
 
   const teams = await prisma.team.findMany({
     orderBy: { abbreviation: "asc" },
   });
 
   for (const team of teams) {
-    await calculateStandings(team.id);
+    await calculateStandings(team.id, season);
   }
+  await updateStandingRanks(season);
 
   console.log(`[STANDINGS] All ${teams.length} teams updated successfully`);
 }

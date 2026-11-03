@@ -11,10 +11,14 @@ export interface UserStats {
   pendingPredictions: number;
   winRate: number;
   totalPoints: number;
-  currentStreak: {
-    type: "WIN" | "LOSS" | null;
-    count: number;
-  };
+  // Bonus stats
+  marginBonusCount: number;
+  marginBonusPoints: number;
+  topScorerBonusCount: number;
+  topScorerBonusPoints: number;
+  comboBonusCount: number;
+  comboBonusPoints: number;
+  // Competitions
   competitionsParticipated: number;
   competitionsWon: number;
   competitionsWinRate: number;
@@ -41,6 +45,9 @@ export interface RecentPrediction {
   };
   result: PredictionResult;
   pointsEarned: number;
+  marginBonusPoints: number;
+  topScorerBonusPoints: number;
+  comboBonusPoints: number;
   finalScore: {
     home: number | null;
     away: number | null;
@@ -107,10 +114,29 @@ export async function getUserStats(userId: string): Promise<UserStats> {
       ? Math.round((wonPredictions / completedPredictions) * 100 * 10) / 10
       : 0;
 
-  // 3. Calculer la série en cours (streak)
-  const currentStreak = await calculateStreak(userId);
+  // 2b. Agréger les bonus
+  const [bonusSums, marginBonusCount, topScorerBonusCount, comboBonusCount] =
+    await Promise.all([
+      prisma.prediction.aggregate({
+        where: { userId },
+        _sum: {
+          marginBonusPoints: true,
+          topScorerBonusPoints: true,
+          comboBonusPoints: true,
+        },
+      }),
+      prisma.prediction.count({
+        where: { userId, marginBonusPoints: { gt: 0 } },
+      }),
+      prisma.prediction.count({
+        where: { userId, topScorerBonusPoints: { gt: 0 } },
+      }),
+      prisma.prediction.count({
+        where: { userId, comboBonusPoints: { gt: 0 } },
+      }),
+    ]);
 
-  // 4. Calculer les participations aux compétitions
+  // 3. Calculer les participations aux compétitions
   const competitions = await prisma.competitionSeason.findMany();
   let competitionsParticipated = 0;
   let competitionsWon = 0;
@@ -176,57 +202,15 @@ export async function getUserStats(userId: string): Promise<UserStats> {
     pendingPredictions,
     winRate,
     totalPoints,
-    currentStreak,
+    marginBonusCount,
+    marginBonusPoints: bonusSums._sum.marginBonusPoints || 0,
+    topScorerBonusCount,
+    topScorerBonusPoints: bonusSums._sum.topScorerBonusPoints || 0,
+    comboBonusCount,
+    comboBonusPoints: bonusSums._sum.comboBonusPoints || 0,
     competitionsParticipated,
     competitionsWon,
     competitionsWinRate,
-  };
-}
-
-/**
- * Calcule la série en cours (streak) d'un utilisateur
- */
-async function calculateStreak(
-  userId: string
-): Promise<{ type: "WIN" | "LOSS" | null; count: number }> {
-  // Récupérer les 50 derniers pronos terminés (non PENDING)
-  const predictions = await prisma.prediction.findMany({
-    where: {
-      userId,
-      result: { not: PredictionResult.PENDING },
-    },
-    include: {
-      game: true,
-    },
-    orderBy: {
-      game: {
-        gameDate: "desc",
-      },
-    },
-    take: 50,
-  });
-
-  // Si aucun prono terminé, pas de série
-  if (predictions.length === 0) {
-    return { type: null, count: 0 };
-  }
-
-  // Le premier prono détermine le type de série
-  const streakType = predictions[0].result as "WIN" | "LOSS";
-  let count = 0;
-
-  // Compter tant que le résultat est identique
-  for (const prediction of predictions) {
-    if (prediction.result === streakType) {
-      count++;
-    } else {
-      break;
-    }
-  }
-
-  return {
-    type: streakType,
-    count,
   };
 }
 
@@ -238,7 +222,10 @@ export async function getRecentPredictions(
   limit = 10
 ): Promise<RecentPrediction[]> {
   const predictions = await prisma.prediction.findMany({
-    where: { userId },
+    where: {
+      userId,
+      result: { not: PredictionResult.PENDING },
+    },
     include: {
       game: {
         include: {
@@ -283,6 +270,9 @@ export async function getRecentPredictions(
       },
       result: prediction.result,
       pointsEarned: prediction.pointsEarned,
+      marginBonusPoints: prediction.marginBonusPoints,
+      topScorerBonusPoints: prediction.topScorerBonusPoints,
+      comboBonusPoints: prediction.comboBonusPoints,
       finalScore: {
         home: prediction.game.homeScore,
         away: prediction.game.awayScore,

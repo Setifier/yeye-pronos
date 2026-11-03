@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { GameStatus } from "@/generated/prisma";
+import { predictionDeadlineFor } from "@/types/bet";
 
 // Catégories d'écart de score valides
 const VALID_SCORE_MARGINS = [
@@ -39,6 +40,18 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = session.user.id;
+
+    // Rate limiting : max 30 modifications par minute par utilisateur
+    const oneMinuteAgo = new Date(Date.now() - 60_000);
+    const recentCount = await prisma.prediction.count({
+      where: { userId, updatedAt: { gte: oneMinuteAgo } },
+    });
+    if (recentCount >= 30) {
+      return NextResponse.json(
+        { error: "Trop de requêtes. Veuillez patienter avant de réessayer." },
+        { status: 429 }
+      );
+    }
 
     // Parser le body
     const body = await request.json();
@@ -94,10 +107,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Vérifier que la deadline n'est pas passée
-    // Utiliser predictionDeadline si défini, sinon gameDate (heure de début du match)
+    // Match de playoffs "if necessary" : pas de pari tant qu'il n'est pas confirmé
+    if (game.isIfNecessary) {
+      return NextResponse.json(
+        { error: "Ce match n'est pas encore confirmé (if necessary)" },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier que la deadline n'est pas passée (règle centrale : src/types/bet.ts)
     const now = new Date();
-    const deadline = game.predictionDeadline || game.gameDate;
+    const deadline = predictionDeadlineFor(game.gameDate); // clôture au coup d'envoi
 
     if (deadline <= now) {
       return NextResponse.json(
@@ -129,6 +149,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Créer ou mettre à jour le pronostic (upsert)
+    // Bonus : clé absente du body = on garde la valeur existante ; `null` = on retire le bonus.
+    // (Avant, changer d'équipe en un clic effaçait l'écart et le top scorer déjà choisis.)
+    const hasMargin    = Object.prototype.hasOwnProperty.call(body, "predictedScoreMargin");
+    const hasTopScorer = Object.prototype.hasOwnProperty.call(body, "predictedTopScorerId");
+
     const prediction = await prisma.prediction.upsert({
       where: {
         userId_gameId: {
@@ -145,8 +170,8 @@ export async function POST(request: NextRequest) {
       },
       update: {
         predictedTeamId,
-        predictedScoreMargin: predictedScoreMargin || null,
-        predictedTopScorerId: predictedTopScorerId || null,
+        ...(hasMargin ? { predictedScoreMargin: predictedScoreMargin || null } : {}),
+        ...(hasTopScorer ? { predictedTopScorerId: predictedTopScorerId || null } : {}),
         updatedAt: new Date(),
       },
       include: {
@@ -234,7 +259,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Récupérer le pronostic avec les bonus
+    // Récupérer le pronostic avec les bonus et les infos réelles du match
     const prediction = await prisma.prediction.findUnique({
       where: {
         userId_gameId: {
@@ -247,6 +272,13 @@ export async function GET(request: NextRequest) {
           include: {
             homeTeam: true,
             awayTeam: true,
+            topScorer: {
+              select: {
+                id: true,
+                fullName: true,
+                headshot: true,
+              },
+            },
           },
         },
         predictedTopScorer: {
@@ -289,6 +321,10 @@ export async function GET(request: NextRequest) {
         marginBonusPoints: prediction.marginBonusPoints,
         topScorerBonusPoints: prediction.topScorerBonusPoints,
         comboBonusPoints: prediction.comboBonusPoints,
+        // Infos réelles du match (pour afficher les résultats)
+        actualScoreMargin: prediction.game.scoreMarginCategory,
+        actualTopScorer: prediction.game.topScorer,
+        actualTopScorerPoints: prediction.game.topScorerPoints,
         createdAt: prediction.createdAt,
         updatedAt: prediction.updatedAt,
       },
@@ -362,7 +398,7 @@ export async function DELETE(request: NextRequest) {
 
     // Vérifier que la deadline n'est pas passée
     const now = new Date();
-    const deadline = game.predictionDeadline || game.gameDate;
+    const deadline = predictionDeadlineFor(game.gameDate); // clôture au coup d'envoi
 
     if (deadline <= now) {
       return NextResponse.json(

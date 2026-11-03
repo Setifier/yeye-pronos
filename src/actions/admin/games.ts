@@ -2,7 +2,6 @@
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { bdl } from "@/lib/balldontlie";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { GameStatus } from "@/generated/prisma";
@@ -23,29 +22,23 @@ async function requireAdmin() {
 }
 
 /**
- * Mapper le status d'un match depuis l'API BallDontLie vers notre enum GameStatus
+ * Mapper le status ESPN vers notre enum GameStatus
  */
-function mapGameStatus(status: string): GameStatus {
-  const normalized = status.toLowerCase();
-
-  if (normalized.includes("final")) return GameStatus.FINAL;
-  if (normalized.includes("progress") || normalized.includes("live")) {
-    return GameStatus.LIVE;
-  }
-  if (normalized.includes("postponed")) return GameStatus.POSTPONED;
-  if (normalized.includes("cancelled")) return GameStatus.CANCELLED;
-
+function mapEspnStatus(statusType: string, statusState: string): GameStatus {
+  if (statusType === "STATUS_FINAL") return GameStatus.FINAL;
+  if (statusType === "STATUS_IN_PROGRESS") return GameStatus.LIVE;
+  if (statusType === "STATUS_POSTPONED" || statusState === "post" && statusType.includes("POSTPONED")) return GameStatus.POSTPONED;
+  if (statusType === "STATUS_CANCELED" || statusType === "STATUS_CANCELLED") return GameStatus.CANCELLED;
   return GameStatus.SCHEDULED;
 }
 
 /**
- * Rafraîchir manuellement les scores d'un match
+ * Rafraîchir manuellement les scores d'un match via ESPN API
  */
 export async function refreshGameScoresAction({ gameId }: { gameId: string }) {
   try {
     await requireAdmin();
 
-    // Récupérer le match en DB
     const dbGame = await prisma.game.findUnique({
       where: { id: gameId },
       include: {
@@ -58,30 +51,41 @@ export async function refreshGameScoresAction({ gameId }: { gameId: string }) {
       return { success: false, error: "Match introuvable" };
     }
 
-    // Récupérer les infos depuis l'API
-    const apiGame = await bdl.nba.getGame(parseInt(dbGame.externalId));
+    const res = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=${dbGame.externalId}`,
+      { cache: "no-store" }
+    );
 
-    if (!apiGame.data) {
-      return { success: false, error: "Match introuvable dans l'API" };
+    if (!res.ok) {
+      return { success: false, error: `ESPN API error: ${res.status}` };
     }
 
-    // Mapper le nouveau status et scores
-    const newStatus = mapGameStatus(apiGame.data.status);
-    const newHomeScore = apiGame.data.home_team_score;
-    const newAwayScore = apiGame.data.visitor_team_score;
+    const data = await res.json();
+    const competition = data?.header?.competitions?.[0];
 
-    // Calculer le winnerId si le match est terminé
+    if (!competition) {
+      return { success: false, error: "Match introuvable dans l'API ESPN" };
+    }
+
+    const statusType = competition.status?.type?.name ?? "";
+    const statusState = competition.status?.type?.state ?? "";
+    const newStatus = mapEspnStatus(statusType, statusState);
+
+    const homeCompetitor = competition.competitors?.find(
+      (c: { homeAway: string }) => c.homeAway === "home"
+    );
+    const awayCompetitor = competition.competitors?.find(
+      (c: { homeAway: string }) => c.homeAway === "away"
+    );
+
+    const newHomeScore = homeCompetitor?.score ? parseInt(homeCompetitor.score) : null;
+    const newAwayScore = awayCompetitor?.score ? parseInt(awayCompetitor.score) : null;
+
     let winnerId: string | null = null;
-    if (newStatus === GameStatus.FINAL) {
-      if (newHomeScore !== null && newAwayScore !== null) {
-        winnerId =
-          newHomeScore > newAwayScore
-            ? dbGame.homeTeamId
-            : dbGame.awayTeamId;
-      }
+    if (newStatus === GameStatus.FINAL && newHomeScore !== null && newAwayScore !== null) {
+      winnerId = newHomeScore > newAwayScore ? dbGame.homeTeamId : dbGame.awayTeamId;
     }
 
-    // Mettre à jour le match
     await prisma.game.update({
       where: { id: gameId },
       data: {

@@ -1,5 +1,5 @@
-import { ReturnButton } from "@/components/return-button";
-import { ForgotPasswordForm } from "@/components/forgot-password-form";
+import { ReturnButton } from "@/components/auth/return-button";
+import { ForgotPasswordForm } from "@/components/auth/forgot-password-form";
 
 export default function ForgotPasswordPage() {
   return (

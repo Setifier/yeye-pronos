@@ -1,24 +1,9 @@
 {
+  "regions": ["lhr1"],
   "crons": [
     {
-      "path": "/api/cron/refresh-daily-games",
-      "schedule": "0 7 * * *",
-      "comment": "Tous les jours à 8h Paris (7h UTC) - Détection des matchs du jour"
-    },
-    {
-      "path": "/api/cron/update-live-scores",
-      "schedule": "* * * * *",
-      "comment": "Toutes les minutes - Mise à jour scores live + standings + pronos"
-    },
-    {
-      "path": "/api/cron/update-injuries",
-      "schedule": "*/15 * * * *",
-      "comment": "Toutes les 15 minutes - Mise à jour infirmerie NBA"
-    },
-    {
-      "path": "/api/cron/daily-digest",
-      "schedule": "0 8 * * 1",
-      "comment": "Lundis à 9h Paris (8h UTC) - Récapitulatif hebdomadaire par email"
+      "path": "/api/cron/morning-update",
+      "schedule": "0 8 * * *"
     }
   ]
 }

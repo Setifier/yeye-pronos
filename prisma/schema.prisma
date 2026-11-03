@@ -34,42 +34,9 @@ enum PredictionResult {
   PENDING
   WON
   LOST
+  CANCELLED
 }
 
-enum NotificationType {
-  // Social (activées par défaut)
-  FRIEND_REQUEST
-  LEAGUE_INVITATION
-  LEAGUE_STARTED
-
-  // Spoilers (désactivées par défaut)
-  GAME_FINISHED
-  PRONO_WON
-  PRONO_LOST
-  RANKING_UP
-  RANKING_DOWN
-  BADGE_UNLOCKED
-  STREAK_WARNING
-  SOMEONE_PASSED_YOU
-
-  // Rappels (activées par défaut)
-  REMINDER_NO_PRONO
-  DAILY_DIGEST
-}
-
-enum BadgeType {
-  STREAK      // Séries de victoires
-  ACCURACY    // Taux de réussite
-  VOLUME      // Nombre de pronos
-  SPECIAL     // Badges spéciaux
-  SEASONAL    // Badges de saison
-}
-
-enum BadgeCategory {
-  SEASON       // Badges accomplissement (réinitialisés chaque saison)
-  END_SEASON   // Badges distribués en fin de saison
-  CAREER       // Badges permanents (jamais réinitialisés)
-}
 
 // ============================================
 // AUTH (Better-Auth compatible)
@@ -101,9 +68,7 @@ model User {
   sessions               Session[]
   accounts               Account[]
   predictions            Prediction[]
-  notifications          Notification[]
-  notificationSettings   UserNotificationSettings?
-  badges                 UserBadge[]
+  specialPredictions     SpecialPrediction[]
   ownedLeagues           PrivateLeague[]       @relation("LeagueOwner")
   leagueMemberships      LeagueMember[]
   sentFriendRequests     FriendRequest[]       @relation("FriendRequestSender")
@@ -187,6 +152,8 @@ model Team {
   playerStats   GamePlayerStats[]
   seasonStats   TeamSeasonStats[]
   favoritedBy   User[]     @relation("UserFavoriteTeam")
+  seriesAsTeam1 PlayoffSeries[] @relation("SeriesTeam1")
+  seriesAsTeam2 PlayoffSeries[] @relation("SeriesTeam2")
 
   @@map("teams")
 }
@@ -215,6 +182,9 @@ model Player {
 
   // Photo
   headshot      String?   // URL du headshot du joueur
+
+  // Contrat
+  contractType  String?   // "standard", "two-way", "10-day"
 
   // Infirmerie
   isInjured     Boolean   @default(false)
@@ -277,6 +247,16 @@ model Game {
   currentPeriod Int?        // Quart-temps actuel (1-4, >4 = OT)
   gameClock     String?     // Temps restant "5:30"
 
+  // 🆕 Playoffs
+  isIfNecessary Boolean     @default(false) // Game 5/6/7 conditionnel
+  seriesId      String?
+  series        PlayoffSeries? @relation(fields: [seriesId], references: [id])
+  gameNumber    Int?              // Game 1, 2, 3... au sein de la série
+
+  // 🆕 NBA Cup (In-Season Tournament)
+  nbaCupRound   String?     // "GroupPlay" | "Quarterfinal" | "Semifinal" | "Championship"
+  nbaCupGroup   String?     // "East-A" | "East-B" | "East-C" | "West-A" | "West-B" | "West-C"
+
   predictionDeadline DateTime
 
   predictions   Prediction[]
@@ -286,6 +266,8 @@ model Game {
   @@index([localGameDate])
   @@index([season])
   @@index([status])
+  @@index([seriesId])
+  @@index([nbaCupRound])
   @@map("games")
 }
 
@@ -361,8 +343,13 @@ model GamePlayerStats {
   freeThrowsMade      Int?
   freeThrowsAttempted Int?
 
+  // Rebonds offensifs / défensifs
+  offensiveRebounds   Int?
+  defensiveRebounds   Int?
+
   // Advanced stats
   plusMinus           Int?     // +/- when player is on court
+  personalFouls       Int?     // Fautes personnelles
 
   @@unique([gameId, playerId])
   @@index([gameId])
@@ -433,10 +420,35 @@ model PlayerSeasonStats {
   totalTurnovers     Int?
   totalMinutes       Int?
 
+  // Shooting totals (calculated from GamePlayerStats)
+  totalFGM           Int?    // Field goals made (2pt + 3pt)
+  totalFGA           Int?    // Field goals attempted (2pt + 3pt)
+  total3PM           Int?    // 3-pointers made
+  total3PA           Int?    // 3-pointers attempted
+  totalFTM           Int?    // Free throws made
+  totalFTA           Int?    // Free throws attempted
+
+  // Rebonds offensifs / défensifs
+  offensiveReboundsPerGame Float?
+  defensiveReboundsPerGame Float?
+  totalOffensiveRebounds   Int?
+  totalDefensiveRebounds   Int?
+
+  // Per-game shooting counts (for leaders sorting)
+  fgmPerGame         Float?   // Tirs réussis / match
+  fgaPerGame         Float?   // Tirs tentés / match
+  threePmPerGame     Float?   // 3 pts réussis / match
+  threePaPerGame     Float?   // 3 pts tentés / match
+
   // Advanced stats
-  plusMinus          Int?     // Season +/-
+  plusMinus          Int?     // Season +/- (cumul)
   doubleDoubles      Int      @default(0)
   tripleDoubles      Int      @default(0)
+
+  // Fautes et LF par match
+  foulsPerGame       Float?   // Fautes personnelles / match
+  ftmPerGame         Float?   // LF réussis / match
+  ftaPerGame         Float?   // LF tentés / match
 
   @@unique([playerId, season])
   @@index([playerId])
@@ -495,6 +507,92 @@ model TeamSeasonStats {
 }
 
 // ============================================
+// PLAYOFF SERIES TRACKING
+// ============================================
+
+model PlayoffSeries {
+  id          String    @id @default(uuid())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  season      String
+  // Unique key: "{season}-{abbr1}-{abbr2}" with abbrevs sorted alphabetically
+  // e.g. "2025-26-BOS-NYK"
+  seriesKey   String    @unique
+
+  round       Int?      // 1=First Round, 2=Conf Semis, 3=Conf Finals, 4=Finals
+  conference  String?   // "East", "West", "Finals"
+
+  team1Id     String
+  team1       Team      @relation("SeriesTeam1", fields: [team1Id], references: [id])
+  team2Id     String
+  team2       Team      @relation("SeriesTeam2", fields: [team2Id], references: [id])
+
+  team1Wins   Int       @default(0)
+  team2Wins   Int       @default(0)
+
+  // Actual playoff seeds (post Play-In). Set by fix-playoff-seeds script.
+  team1Seed   Int?
+  team2Seed   Int?
+
+  winnerId    String?   // Set when series is complete
+  status      String    @default("ACTIVE") // "ACTIVE" | "COMPLETED"
+
+  games       Game[]
+
+  @@index([season])
+  @@index([status])
+  @@map("playoff_series")
+}
+
+// ============================================
+// SPECIAL PREDICTIONS (hors matchs individuels)
+// ============================================
+
+// Types: "PRESEASON_NBA_CUP_CHAMPION" | "PRESEASON_MVP_SEASON" | "PRESEASON_NBA_STANDINGS"
+//        | "PRESEASON_BRACKET"
+//        | "POSTSEASON_PLAYIN" | "POSTSEASON_PLAYOFFS_R1" | "POSTSEASON_PLAYOFFS_R2"
+//        | "POSTSEASON_PLAYOFFS_CF" | "POSTSEASON_PLAYOFFS_FINALS"
+model SpecialPrediction {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  season       String   // "2025-26"
+  type         String   // voir types ci-dessus
+
+  // Payload flexible (teamId, playerId, bracket JSON, etc.)
+  data         Json
+
+  // Statut du pari
+  status       String   @default("OPEN")  // "OPEN" | "LOCKED" | "GRADED"
+  pointsEarned Int      @default(0)
+  breakdown    Json?    // Détail du calcul des points
+
+  @@unique([userId, type, season])
+  @@index([userId])
+  @@index([type, season])
+  @@map("special_predictions")
+}
+
+// Cotes et barèmes par saison, par type, par entité (équipe ou joueur)
+model SpecialPredictionConfig {
+  id       String @id @default(uuid())
+  season   String
+  type     String  // "NBA_CUP_CHAMPION" | "MVP_SEASON" | "NBA_CHAMPION"
+  entityId String  // teamId ou playerId
+  points   Int     // Points si correct
+  rank     Int?    // Classement de l'entité (pour tri/affichage)
+
+  @@unique([season, type, entityId])
+  @@index([season, type])
+  @@map("special_prediction_configs")
+}
+
+// ============================================
 // COMPETITION SEASONS (for leaderboard)
 // ============================================
 
@@ -512,121 +610,6 @@ model CompetitionSeason {
   @@map("competition_seasons")
 }
 
-// ============================================
-// NOTIFICATIONS SYSTEM
-// ============================================
-
-model Notification {
-  id        String           @id @default(uuid())
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
-
-  userId    String
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  type      NotificationType
-  title     String
-  message   String
-  link      String?          // URL pour action (ex: /pronos, /classement)
-
-  read      Boolean          @default(false)
-
-  // Données spécifiques selon le type (JSON flexible)
-  metadata  Json?            // { gameId, points, oldRank, newRank, badgeId, leagueId, etc. }
-
-  @@index([userId])
-  @@index([createdAt])
-  @@index([read])
-  @@map("notifications")
-}
-
-model UserNotificationSettings {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Email digest quotidien
-  dailyEmailEnabled       Boolean @default(true)
-  emailIncludeMissing     Boolean @default(true)
-  emailIncludeResults     Boolean @default(true)
-  emailIncludeRanking     Boolean @default(true)
-  emailFrequency          String  @default("DAILY") // DAILY, WEEKDAYS, WEEKLY, DISABLED
-
-  // Notifications web - Social (activées par défaut)
-  notifFriendRequest      Boolean @default(true)
-  notifLeagueInvitation   Boolean @default(true)
-  notifLeagueStarted      Boolean @default(true)
-
-  // Notifications web - Spoilers (désactivées par défaut)
-  notifGameFinished       Boolean @default(false)
-  notifPronoWon           Boolean @default(false)
-  notifPronoLost          Boolean @default(false)
-  notifRankingUp          Boolean @default(false)
-  notifRankingDown        Boolean @default(false)
-  notifBadgeUnlocked      Boolean @default(false)
-  notifStreakWarning      Boolean @default(false)
-  notifSomeonePassedYou   Boolean @default(false)
-
-  // Notifications web - Rappels (activées par défaut)
-  notifReminderNoProno    Boolean @default(true)
-
-  // Push notifications (PWA)
-  pushEnabled             Boolean @default(false)
-  pushSubscription        Json?   // PushSubscription object
-
-  @@map("user_notification_settings")
-}
-
-// ============================================
-// BADGES & ACHIEVEMENTS (structure de base)
-// ============================================
-
-model Badge {
-  id          String        @id @default(uuid())
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-
-  slug        String        @unique       // ex: "streak_5", "accuracy_80"
-  name        String                      // ex: "Série de 5"
-  description String                      // ex: "Gagnez 5 pronos d'affilée"
-  icon        String?                     // URL ou emoji
-  type        BadgeType
-  category    BadgeCategory               // SEASON, END_SEASON, CAREER
-
-  // Conditions pour débloquer le badge (JSON flexible)
-  criteria    Json                        // { streak: 5 } ou { accuracy: 80, minGames: 20 }
-
-  // Rareté/points/difficulté
-  rarity           String   @default("COMMON") // COMMON, RARE, EPIC, LEGENDARY
-  difficultyLevel  String?                     // Bronze, Argent, Or, Platine
-  points           Int      @default(0)        // Points bonus pour débloquer
-  reward           String?                     // Titre obtenu (ex: "Champion", "MVP")
-
-  userBadges  UserBadge[]
-
-  @@map("badges")
-}
-
-model UserBadge {
-  id          String   @id @default(uuid())
-  createdAt   DateTime @default(now())
-
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  badgeId     String
-  badge       Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
-
-  // Date de déblocage
-  unlockedAt  DateTime @default(now())
-
-  @@unique([userId, badgeId])
-  @@index([userId])
-  @@map("user_badges")
-}
 
 // ============================================
 // SOCIAL FEATURES (Ligues privées & Amis)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calculateTopScorerOdds } from "@/types/bonus";
+import { getReferencePpgMap } from "@/lib/player-odds";
 
 /**
  * GET /api/games/[gameId]/players
@@ -40,14 +41,10 @@ export async function GET(
       );
     }
 
-    // Déterminer la saison actuelle (format: "2025-26")
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth();
-    const seasonYear = currentMonth >= 9 ? currentYear : currentYear - 1;
-    const nextYearShort = (seasonYear + 1).toString().slice(-2);
-    const currentSeason = `${seasonYear}-${nextYearShort}`;
+    // Saison du match (et non la date du jour : un match d'archive garde sa saison)
+    const currentSeason = game.season;
 
-    // Récupérer tous les joueurs des deux équipes avec leurs stats
+    // Récupérer tous les joueurs des deux équipes
     const players = await prisma.player.findMany({
       where: {
         teamId: {
@@ -62,20 +59,20 @@ export async function GET(
             abbreviation: true,
           },
         },
-        seasonStats: {
-          where: { season: currentSeason },
-          take: 1,
-        },
       },
       orderBy: {
         fullName: "asc",
       },
     });
 
+    // Moyenne de référence (saison en cours, complétée par la saison précédente
+    // tant que le joueur a moins de 10 matchs) — même calcul que l'attribution des points
+    const ppgMap = await getReferencePpgMap(prisma, players.map((p) => p.id), currentSeason);
+
     // Formater les joueurs avec leur cote
     const playersWithOdds = players.map((player) => {
-      const seasonStats = player.seasonStats[0];
-      const pointsPerGame = seasonStats?.pointsPerGame ?? 0;
+      const ref = ppgMap.get(player.id);
+      const pointsPerGame = ref?.ppg ?? 0;
       const odds = calculateTopScorerOdds(pointsPerGame);
 
       return {
@@ -91,7 +88,9 @@ export async function GET(
         team: player.team,
         // Stats
         pointsPerGame: Math.round(pointsPerGame * 10) / 10, // Arrondi à 1 décimale
-        gamesPlayed: seasonStats?.gamesPlayed ?? 0,
+        gamesPlayed: ref?.currentGames ?? 0,
+        // "previous" / "blended" = moyenne complétée par la saison précédente (début de saison)
+        ppgSource: ref?.source ?? "none",
         // Cote pour le prono
         odds,
       };

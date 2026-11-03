@@ -1,170 +1,161 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { GameCard } from "@/components/game-card";
-import { DateNavigation } from "@/components/date-navigation";
-import { NoSpoilToggle } from "@/components/no-spoil-toggle";
-import { Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, Trophy, Zap, CalendarX2, Eye, EyeOff } from "lucide-react";
+import { DateNavigation } from "@/components/matchs/date-navigation";
+import { GameBetCard } from "@/components/bets/game-bet-card";
+import { useBetGames } from "@/components/bets/use-bet-games";
+import { useNow, useNoSpoil } from "@/components/bets/hooks";
+import { missingBets } from "@/types/bet";
+import type { BetGame } from "@/types/bet";
+import {
+  formatNight,
+  getCurrentNightDate,
+  localDateToNightDate,
+  nightDateToLocalDate,
+} from "@/lib/game-night";
 
-interface Team {
-  id: number;
-  name: string;
-  full_name: string;
-  abbreviation: string;
-  city: string;
-  conference: string;
-  division: string;
+interface DayStats {
+  total: number;
+  won: number;
+  lost: number;
+  noPrediction: number;
+  pending: number;
+  totalPoints: number;
+  winRate: number;
+  isAfterRegistration: boolean;
 }
 
-interface Game {
-  id: number;
-  date: string;
-  status: string;
-  home_team: Team;
-  visitor_team: Team;
-  home_team_score?: number;
-  visitor_team_score?: number;
-  time?: string;
-}
-
-export default function Home() {
-  const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
-  });
-  const [games, setGames] = useState<Game[]>([]);
-  const [loading, setLoading] = useState(false);
+export default function MatchsPage() {
+  // Par défaut : la nuit NBA en cours (date US Eastern), pas la date de Paris
+  const [selectedDate, setSelectedDate] = useState<Date>(() => nightDateToLocalDate(getCurrentNightDate()));
+  const [noSpoil, setNoSpoil] = useNoSpoil();
+  const now = useNow(30_000);
+  const bets = useBetGames(noSpoil);
+  const { setGames } = bets;
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [noSpoilEnabled, setNoSpoilEnabled] = useState(true);
+  const [dayStats, setDayStats] = useState<DayStats | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  // Charger la préférence No Spoil depuis localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("noSpoilEnabled");
-    if (saved !== null) {
-      setNoSpoilEnabled(saved === "true");
-    }
-  }, []);
-
-  // Sauvegarder la préférence No Spoil
-  const handleNoSpoilToggle = (enabled: boolean) => {
-    setNoSpoilEnabled(enabled);
-    localStorage.setItem("noSpoilEnabled", String(enabled));
-  };
+  const nightDate = localDateToNightDate(selectedDate);
+  const night = formatNight(nightDate, new Date(now));
 
   useEffect(() => {
-    const fetchGames = async () => {
-      setLoading(true);
-      setError(null);
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetch(`/api/bets?date=${nightDate}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d: { games: BetGame[] }) => { if (!cancelled) setGames(d.games ?? []); })
+      .catch(() => { if (!cancelled) { setGames([]); setError("Impossible de charger les matchs."); } })
+      .finally(() => { if (!cancelled) setLoading(false); });
 
-      try {
-        // Formater la date en YYYY-MM-DD SANS conversion UTC
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
-        const day = String(selectedDate.getDate()).padStart(2, "0");
-        const dateString = `${year}-${month}-${day}`;
+    fetch(`/api/pronos/day-stats?date=${nightDate}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (!cancelled) setDayStats(d?.stats ?? null); })
+      .catch(() => { if (!cancelled) setDayStats(null); });
 
-        const response = await fetch(`/api/games?date=${dateString}`);
+    return () => { cancelled = true; };
+  }, [nightDate, setGames, reloadKey]);
 
-        if (!response.ok) {
-          throw new Error("Erreur lors du chargement des matchs");
-        }
-
-        const data = await response.json();
-        setGames(data.games || []);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Une erreur est survenue"
-        );
-        setGames([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGames();
-  }, [selectedDate]);
+  const games = bets.games;
+  const missing = useMemo(
+    () => missingBets(games, now).sort((a, b) => a.predictionDeadline.localeCompare(b.predictionDeadline)),
+    [games, now]
+  );
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950">
-      {/* Hero Section */}
-      <div className="bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          {/* Logo + NBA */}
-          <div className="flex flex-col items-center gap-3 mb-4">
-            <img
-              src="/logo.png"
-              alt="Yeye Pronos"
-              className="h-16 md:h-20 w-auto"
-            />
-            <h1 className="text-3xl md:text-4xl font-bold">
-              <span className="bg-gradient-to-r from-[#ff5050] via-[#5096ff] to-[#dcff50] bg-clip-text text-transparent">
-                Matchs NBA
-              </span>
-            </h1>
+    <div className="flex min-h-screen flex-col bg-zinc-950">
+      {/* En-tête */}
+      <div className="border-b border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-6 sm:px-6 lg:px-8">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-white">Matchs</h1>
+            <p className="text-sm text-zinc-500">Pronos ouverts jusqu&apos;au coup d&apos;envoi · heures de Paris</p>
           </div>
-          <p className="text-center text-zinc-400 text-lg">
-            Pronostiquez les résultats des matchs NBA et grimpez dans le
-            classement
-          </p>
+          <button
+            onClick={() => setNoSpoil(!noSpoil)}
+            className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${
+              noSpoil ? "border-[#ff5050]/30 bg-[#ff5050]/10 text-[#ff5050]" : "border-zinc-700 bg-zinc-900 text-zinc-300"
+            }`}
+          >
+            {noSpoil ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            <span className="hidden sm:inline">{noSpoil ? "No Spoil" : "Scores visibles"}</span>
+          </button>
         </div>
       </div>
 
-      {/* Date Navigation */}
-      <div className="bg-zinc-950 border-b border-zinc-800 sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto">
-          <DateNavigation
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-          />
+      {/* Navigation par date */}
+      <div className="sticky top-16 z-20 border-b border-zinc-800 bg-zinc-950">
+        <div className="mx-auto max-w-6xl">
+          <DateNavigation selectedDate={selectedDate} onDateChange={setSelectedDate} />
         </div>
       </div>
 
-      {/* No Spoil Toggle */}
-      <div className="bg-zinc-950 border-b border-zinc-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-end">
-          <NoSpoilToggle
-            enabled={noSpoilEnabled}
-            onToggle={handleNoSpoilToggle}
-          />
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-[#5096ff]" />
+      {/* Bandeau de la nuit */}
+      <div className="border-b border-zinc-800 bg-zinc-950">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <div>
+            <p className="text-sm font-semibold text-white">
+              {night.relative && <span className="mr-2 text-[#5096ff]">{night.relative}</span>}
+              {night.night}
+            </p>
+            {!noSpoil && dayStats && dayStats.total > 0 && dayStats.isAfterRegistration && (
+              <p className="mt-0.5 flex items-center gap-2 text-xs text-zinc-400">
+                <Trophy className="h-3.5 w-3.5 text-[#5096ff]" />
+                <span className="text-green-400">{dayStats.won} réussi{dayStats.won > 1 ? "s" : ""}</span>
+                <span className="text-zinc-400">{dayStats.lost} raté{dayStats.lost > 1 ? "s" : ""}</span>
+                {dayStats.noPrediction > 0 && <span className="text-zinc-500">({dayStats.noPrediction} sans prono)</span>}
+                <span className="font-semibold text-[#dcff50]">+{dayStats.totalPoints} pts</span>
+              </p>
+            )}
           </div>
-        ) : error ? (
-          <div className="text-center py-20">
-            <p className="text-red-400 mb-4">{error}</p>
+          {missing.length > 0 && (
             <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors"
+              onClick={() => bets.openSheet(missing, 0)}
+              className="flex items-center gap-2 rounded-xl bg-[#ff5050] px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#ff5050]/20 hover:bg-[#ff5050]/90"
             >
-              Réessayer
+              <Zap className="h-4 w-4" />
+              {missing.length === 1 ? "Parier sur le match restant" : `Parier sur les ${missing.length} matchs restants`}
             </button>
+          )}
+        </div>
+      </div>
+
+      {/* Matchs */}
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        {loading ? (
+          <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#5096ff]" /></div>
+        ) : error ? (
+          <div className="py-20 text-center">
+            <p className="mb-4 text-red-400">{error}</p>
+            <button onClick={() => setReloadKey((k) => k + 1)} className="rounded-lg bg-zinc-800 px-4 py-2 text-white hover:bg-zinc-700">Réessayer</button>
           </div>
         ) : games.length === 0 ? (
-          <div className="text-center py-20">
-            <p className="text-zinc-400 text-lg">
-              Aucun match prévu pour cette date
-            </p>
+          <div className="flex flex-col items-center gap-3 py-20 text-center">
+            <CalendarX2 className="h-10 w-10 text-zinc-700" />
+            <p className="text-zinc-400">Aucun match cette nuit-là</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {games.map((game) => (
-              <GameCard
-                key={game.id}
-                game={game}
-                showScores={!noSpoilEnabled}
-                noSpoilEnabled={noSpoilEnabled}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {games.map((g) => (
+              <GameBetCard
+                key={g.id}
+                game={g}
+                now={now}
+                noSpoil={noSpoil}
+                saving={bets.savingId === g.id}
+                onQuickPick={bets.quickPick}
+                onOpen={bets.openGame}
+                onShowBoxscore={bets.showBoxscore}
               />
             ))}
           </div>
         )}
       </main>
+
+      {bets.overlays}
     </div>
   );
 }

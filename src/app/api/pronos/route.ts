@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PredictionResult } from "@/generated/prisma";
+import { getCurrentSeason } from "@/types/season";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,24 +21,44 @@ export async function GET(request: NextRequest) {
     // Paramètres de requête
     const { searchParams } = new URL(request.url);
     const filter = searchParams.get("filter") as PredictionResult | null; // PENDING, WON, LOST
+    // Saison : en cours par défaut, "all" pour toutes les saisons
+    const seasonParam = searchParams.get("season");
+    const season = seasonParam === "all" ? null : seasonParam ?? getCurrentSeason();
+    // statsOnly : seulement les statistiques (évite de renvoyer tout l'historique)
+    const statsOnly = searchParams.get("statsOnly") === "1" || searchParams.get("statsOnly") === "true";
 
     // Construire la condition de filtre
-    const whereCondition: any = {
+    const whereCondition: Record<string, unknown> = {
       userId: session.user.id,
+      ...(season ? { game: { season } } : {}),
     };
 
-    if (filter && ["PENDING", "WON", "LOST"].includes(filter)) {
+    if (filter && ["PENDING", "WON", "LOST", "CANCELLED"].includes(filter)) {
       whereCondition.result = filter;
     }
 
-    // Récupérer les pronos avec tous les détails
-    const predictions = await prisma.prediction.findMany({
+    // Récupérer les pronos avec tous les détails (incluant bonus)
+    const predictions = statsOnly ? [] : await prisma.prediction.findMany({
       where: whereCondition,
       include: {
         game: {
           include: {
             homeTeam: true,
             awayTeam: true,
+            topScorer: {
+              select: {
+                id: true,
+                fullName: true,
+                headshot: true,
+              },
+            },
+          },
+        },
+        predictedTopScorer: {
+          select: {
+            id: true,
+            fullName: true,
+            headshot: true,
           },
         },
       },
@@ -46,29 +67,27 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Calculer les statistiques
-    const stats = await prisma.prediction.groupBy({
-      by: ["result"],
-      where: {
-        userId: session.user.id,
-      },
-      _count: {
-        id: true,
-      },
-      _sum: {
+    // Calculer les statistiques détaillées (même périmètre de saison)
+    const allPredictions = await prisma.prediction.findMany({
+      where: { userId: session.user.id, ...(season ? { game: { season } } : {}) },
+      select: {
+        result: true,
         pointsEarned: true,
+        marginBonusPoints: true,
+        topScorerBonusPoints: true,
+        comboBonusPoints: true,
       },
     });
 
-    // Formater les stats
-    const totalPredictions = predictions.length;
-    const wonPredictions = stats.find((s) => s.result === "WON")?._count.id || 0;
-    const lostPredictions = stats.find((s) => s.result === "LOST")?._count.id || 0;
-    const pendingPredictions = stats.find((s) => s.result === "PENDING")?._count.id || 0;
-    const totalPoints = stats.reduce((acc, s) => acc + (s._sum.pointsEarned || 0), 0);
-    const winRate = totalPredictions > 0
+    const wonPredictions = allPredictions.filter((p) => p.result === "WON").length;
+    const lostPredictions = allPredictions.filter((p) => p.result === "LOST").length;
+    const totalPoints = allPredictions.reduce((acc, p) => acc + p.pointsEarned, 0);
+    const winRate = (wonPredictions + lostPredictions) > 0
       ? ((wonPredictions / (wonPredictions + lostPredictions)) * 100).toFixed(1)
       : "0.0";
+    const bonEcart = allPredictions.filter((p) => (p.marginBonusPoints ?? 0) > 0).length;
+    const topScorer = allPredictions.filter((p) => (p.topScorerBonusPoints ?? 0) > 0).length;
+    const comboUltime = allPredictions.filter((p) => (p.comboBonusPoints ?? 0) > 0).length;
 
     // Formater les pronos pour le frontend
     const formattedPredictions = predictions.map((pred) => {
@@ -138,17 +157,27 @@ export async function GET(request: NextRequest) {
         result: pred.result,
         pointsEarned: pred.pointsEarned,
         createdAt: pred.createdAt,
+        // Bonus details
+        predictedScoreMargin: pred.predictedScoreMargin,
+        actualScoreMargin: pred.game.scoreMarginCategory,
+        marginBonusPoints: pred.marginBonusPoints,
+        predictedTopScorer: pred.predictedTopScorer,
+        actualTopScorer: pred.game.topScorer,
+        actualTopScorerPoints: pred.game.topScorerPoints,
+        topScorerBonusPoints: pred.topScorerBonusPoints,
+        comboBonusPoints: pred.comboBonusPoints,
       };
     });
 
     return NextResponse.json({
       predictions: formattedPredictions,
       stats: {
-        total: totalPredictions,
         won: wonPredictions,
         lost: lostPredictions,
-        pending: pendingPredictions,
         winRate: parseFloat(winRate),
+        bonEcart,
+        topScorer,
+        comboUltime,
         totalPoints,
       },
     });

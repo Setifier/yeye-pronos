@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
@@ -26,7 +26,7 @@ export async function POST(
     }
 
     const userId = session.user.id;
-    const requestId = params.id;
+    const { id: requestId } = await params;
 
     // 1. Vérifier que la demande existe
     const friendRequest = await prisma.friendRequest.findUnique({

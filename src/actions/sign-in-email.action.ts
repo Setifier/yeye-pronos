@@ -4,13 +4,14 @@ import { auth, ErrorCode } from "@/lib/auth";
 import { headers } from "next/headers";
 import { APIError } from "better-auth/api";
 import { redirect } from "next/navigation";
+import { translateAuthError } from "@/lib/auth-errors";
 
 export async function signInEmailAction(formData: FormData) {
-  const email = String(formData.get("email"));
-  if (!email) return { error: "Please enter your email" };
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) return { error: "Indique ton adresse e-mail" };
 
-  const password = String(formData.get("password"));
-  if (!password) return { error: "Please enter your password" };
+  const password = String(formData.get("password") ?? "");
+  if (!password) return { error: "Indique ton mot de passe" };
 
   try {
     await auth.api.signInEmail({
@@ -25,14 +26,9 @@ export async function signInEmailAction(formData: FormData) {
   } catch (err) {
     if (err instanceof APIError) {
       const errCode = err.body ? (err.body.code as ErrorCode) : "UNKNOWN";
-
-      switch (errCode) {
-        case "EMAIL_NOT_VERIFIED":
-          redirect("/auth/verify?error=email_not_verified");
-        default:
-          return { error: err.message };
-      }
+      if (errCode === "EMAIL_NOT_VERIFIED") redirect("/auth/verify?error=email_not_verified");
+      return { error: translateAuthError(errCode, err.message) };
     }
-    return { error: "Internal Server Error" };
+    return { error: "Erreur du serveur, réessaie dans un instant." };
   }
 }

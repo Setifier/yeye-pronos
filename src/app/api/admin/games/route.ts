@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50");
 
     // Construire les conditions de filtrage
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (status && ["LIVE", "FINAL", "SCHEDULED"].includes(status)) {
       where.status = status;

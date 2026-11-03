@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, Filter, Users, Activity, ChevronLeft, ChevronRight } from "lucide-react";
-import { StatsNavbar } from "@/components/stats-navbar";
+import { StatsNavbar } from "@/components/layout/stats-navbar";
+import { positionLabel } from "@/lib/position";
+import { getCurrentSeason, getSeasonLabel } from "@/types/season";
 
 interface Player {
   id: string;
@@ -133,7 +135,7 @@ export default function JoueursPage() {
         {/* Header */}
         <div className="mb-8">
         <h1 className="text-4xl font-bold mb-2">Joueurs NBA</h1>
-        <p className="text-zinc-400">Saison 2025-2026</p>
+        <p className="text-zinc-400">Saison {getSeasonLabel(getCurrentSeason())}</p>
       </div>
 
       {/* Stats rapides */}
@@ -210,7 +212,7 @@ export default function JoueursPage() {
               <option value="all">All positions</option>
               {uniquePositions.map((position) => (
                 <option key={position} value={position}>
-                  {position}
+                  {positionLabel(position)}
                 </option>
               ))}
             </select>
@@ -346,7 +348,7 @@ export default function JoueursPage() {
                       <p className="font-semibold truncate">{player.fullName}</p>
                       <p className="text-xs text-zinc-500 lg:hidden mt-1">
                         {player.team ? player.team.abbreviation : "FA"}
-                        {player.position && ` • ${player.position}`}
+                        {player.position && ` • ${positionLabel(player.position)}`}
                         {player.jerseyNumber && ` • #${player.jerseyNumber}`}
                       </p>
                     </div>
@@ -372,8 +374,8 @@ export default function JoueursPage() {
 
                   {/* Position */}
                   <div className="hidden lg:flex items-center justify-center">
-                    <span className="text-sm font-semibold text-blue-400">
-                      {player.position || "-"}
+                    <span className="text-sm text-zinc-300">
+                      {player.position ? positionLabel(player.position) : "-"}
                     </span>
                   </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, FileText, Percent, Award, Flame, Trophy, Crown } from "lucide-react";
+import { CheckCircle, FileText, Percent, Award, Trophy, Crown, Target, Crosshair, Zap } from "lucide-react";
 import type { UserStats } from "@/lib/dashboard-queries";
 
 interface StatsCardsProps {
@@ -52,7 +52,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
         <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">
           Points
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <StatCard
             icon={Award}
             label="Total Points"
@@ -62,32 +62,31 @@ export function StatsCards({ stats }: StatsCardsProps) {
             iconColor="text-[#dcff50]"
           />
           <StatCard
-            icon={Flame}
-            label="Série en cours"
-            value={
-              stats.currentStreak.count > 0
-                ? `${stats.currentStreak.count} ${stats.currentStreak.type === "WIN" ? "✓" : "✗"}`
-                : "0"
-            }
-            gradient={
-              stats.currentStreak.type === "WIN"
-                ? "from-orange-500 to-orange-500/70"
-                : stats.currentStreak.type === "LOSS"
-                ? "from-zinc-500 to-zinc-500/70"
-                : "from-zinc-400 to-zinc-400/70"
-            }
-            bgGradient={
-              stats.currentStreak.type === "WIN"
-                ? "from-orange-500/10 to-orange-500/5"
-                : stats.currentStreak.type === "LOSS"
-                ? "from-zinc-500/10 to-zinc-500/5"
-                : "from-zinc-400/10 to-zinc-400/5"
-            }
-            iconColor={
-              stats.currentStreak.type === "WIN"
-                ? "text-orange-500"
-                : "text-zinc-400"
-            }
+            icon={Target}
+            label="Bons Écarts"
+            value={`${stats.marginBonusCount}x`}
+            subtitle={`+${stats.marginBonusPoints} pts`}
+            gradient="from-orange-500 to-orange-500/70"
+            bgGradient="from-orange-500/10 to-orange-500/5"
+            iconColor="text-orange-500"
+          />
+          <StatCard
+            icon={Crosshair}
+            label="Top Scorers"
+            value={`${stats.topScorerBonusCount}x`}
+            subtitle={`+${stats.topScorerBonusPoints} pts`}
+            gradient="from-cyan-500 to-cyan-500/70"
+            bgGradient="from-cyan-500/10 to-cyan-500/5"
+            iconColor="text-cyan-500"
+          />
+          <StatCard
+            icon={Zap}
+            label="Combos Ultimes"
+            value={`${stats.comboBonusCount}x`}
+            subtitle={`+${stats.comboBonusPoints} pts`}
+            gradient="from-purple-500 to-purple-500/70"
+            bgGradient="from-purple-500/10 to-purple-500/5"
+            iconColor="text-purple-500"
           />
         </div>
       </div>
@@ -132,6 +131,7 @@ interface StatCardProps {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string | number;
+  subtitle?: string;
   gradient: string;
   bgGradient: string;
   iconColor: string;
@@ -141,6 +141,7 @@ function StatCard({
   icon: Icon,
   label,
   value,
+  subtitle,
   gradient,
   bgGradient,
   iconColor,
@@ -165,6 +166,13 @@ function StatCard({
         {value}
       </div>
 
+      {/* Subtitle (bonus points) */}
+      {subtitle && (
+        <div className={`text-sm font-semibold ${iconColor} opacity-80`}>
+          {subtitle}
+        </div>
+      )}
+
       {/* Label */}
       <div className="text-sm text-zinc-400">{label}</div>
 
@@ -180,8 +188,8 @@ function StatsCardsSkeleton() {
       {[1, 2, 3].map((section) => (
         <div key={section}>
           <div className="mb-3 h-4 w-24 rounded bg-zinc-800 animate-pulse" />
-          <div className={`grid grid-cols-1 md:grid-cols-${section === 2 ? 2 : 3} gap-4`}>
-            {[...Array(section === 2 ? 2 : 3)].map((_, index) => (
+          <div className={`grid grid-cols-1 ${section === 2 ? "md:grid-cols-4" : "md:grid-cols-3"} gap-4`}>
+            {[...Array(section === 2 ? 4 : 3)].map((_, index) => (
               <div
                 key={index}
                 className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 animate-pulse"

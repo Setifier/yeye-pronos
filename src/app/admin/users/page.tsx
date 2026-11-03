@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DataTable, Column, PaginationData } from "@/components/admin/data-table";
-import { UserBadge } from "@/components/admin/user-badge";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,6 @@ interface User {
   emailVerified: boolean;
   createdAt: Date;
   predictions: number;
-  badges: number;
 }
 
 interface UsersResponse {
@@ -73,11 +72,6 @@ export default function UsersPage() {
     isOpen: boolean;
     user: User | null;
   }>({ isOpen: false, user: null });
-  const [roleModal, setRoleModal] = useState<{
-    isOpen: boolean;
-    user: User | null;
-  }>({ isOpen: false, user: null });
-
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -217,7 +211,15 @@ export default function UsersPage() {
     {
       key: "role",
       label: "Rôle",
-      render: (user) => <UserBadge role={user.role} size="sm" />,
+      render: (user) => (
+        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+          user.role === "ADMIN"
+            ? "bg-yellow-500/20 text-yellow-400"
+            : "bg-zinc-700/50 text-zinc-400"
+        }`}>
+          {user.role}
+        </span>
+      ),
     },
     {
       key: "emailVerified",
@@ -234,13 +236,6 @@ export default function UsersPage() {
       label: "Pronos",
       render: (user) => (
         <span className="text-white font-medium">{user.predictions}</span>
-      ),
-    },
-    {
-      key: "badges",
-      label: "Badges",
-      render: (user) => (
-        <span className="text-white font-medium">{user.badges}</span>
       ),
     },
     {
@@ -431,7 +426,7 @@ export default function UsersPage() {
               Bannir {banModal.user.name}
             </h3>
             <p className="text-zinc-400 mb-4">
-              Cette action empêchera l'utilisateur d'accéder à l'application.
+              Cette action empêchera l&apos;utilisateur d&apos;accéder à l&apos;application.
             </p>
 
             <div className="mb-4">
@@ -484,7 +479,7 @@ export default function UsersPage() {
             </h3>
             <p className="text-zinc-400 mb-4">
               Cette action est <span className="text-red-400 font-semibold">irréversible</span>.
-              Toutes les données de l'utilisateur (pronos, badges, etc.) seront définitivement supprimées.
+              Toutes les données de l&apos;utilisateur (pronos, etc.) seront définitivement supprimées.
             </p>
 
             <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4">

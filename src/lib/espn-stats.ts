@@ -121,6 +121,21 @@ interface ParsedPlayerStats {
 }
 
 /**
+ * Vérifie qu'un champ minutes représente un temps joué réel.
+ * Gère les deux formats : "MM:SS" (ESPN) et décimal "32"/"32.7" (BallDontLie)
+ * Rejette : null, "0:00", "0", "-", "DNP"
+ */
+function isValidMinutes(minutes: string | null | undefined): boolean {
+  if (!minutes || minutes === "0:00" || minutes === "-" || minutes === "DNP" || minutes === "0") return false;
+  // Format MM:SS
+  const mmss = minutes.match(/^(\d+):(\d{2})$/);
+  if (mmss) return parseInt(mmss[1], 10) > 0 || parseInt(mmss[2], 10) > 0;
+  // Format décimal
+  const dec = parseFloat(minutes);
+  return !isNaN(dec) && dec > 0;
+}
+
+/**
  * Parser une valeur de stat (peut être un nombre ou "X-Y" pour les tirs)
  */
 function parseStat(value: string): number | null {
@@ -243,21 +258,9 @@ export async function fetchGameBoxscore(
 // ============================================
 
 /**
- * Trouver un joueur dans la DB par son ESPN ID
- */
-async function findPlayerByEspnId(espnPlayerId: string): Promise<string | null> {
-  const player = await prisma.player.findUnique({
-    where: { externalId: espnPlayerId },
-    select: { id: true },
-  });
-
-  return player?.id ?? null;
-}
-
-/**
  * Trouver une équipe dans la DB par son ESPN ID
  */
-async function findTeamByEspnId(espnTeamId: string): Promise<string | null> {
+export async function findTeamByEspnId(espnTeamId: string): Promise<string | null> {
   const team = await prisma.team.findUnique({
     where: { externalId: espnTeamId },
     select: { id: true },
@@ -303,59 +306,30 @@ async function createMissingPlayer(
 // SAUVEGARDE DES STATS
 // ============================================
 
-/**
- * Sauvegarder les stats d'un joueur dans GamePlayerStats
- */
-async function savePlayerStats(
-  gameId: string,
-  playerId: string,
-  teamId: string,
-  stats: ParsedPlayerStats
-): Promise<void> {
-  // Upsert (créer ou mettre à jour)
-  await prisma.gamePlayerStats.upsert({
-    where: {
-      gameId_playerId: {
-        gameId,
-        playerId,
-      },
-    },
-    create: {
-      gameId,
-      playerId,
-      teamId,
-      points: stats.points,
-      rebounds: stats.rebounds,
-      assists: stats.assists,
-      steals: stats.steals,
-      blocks: stats.blocks,
-      turnovers: stats.turnovers,
-      minutes: stats.minutes,
-      fieldGoalsMade: stats.fieldGoalsMade,
-      fieldGoalsAttempted: stats.fieldGoalsAttempted,
-      threePointersMade: stats.threePointersMade,
-      threePointersAttempted: stats.threePointersAttempted,
-      freeThrowsMade: stats.freeThrowsMade,
-      freeThrowsAttempted: stats.freeThrowsAttempted,
-      plusMinus: stats.plusMinus,
-    },
-    update: {
-      points: stats.points,
-      rebounds: stats.rebounds,
-      assists: stats.assists,
-      steals: stats.steals,
-      blocks: stats.blocks,
-      turnovers: stats.turnovers,
-      minutes: stats.minutes,
-      fieldGoalsMade: stats.fieldGoalsMade,
-      fieldGoalsAttempted: stats.fieldGoalsAttempted,
-      threePointersMade: stats.threePointersMade,
-      threePointersAttempted: stats.threePointersAttempted,
-      freeThrowsMade: stats.freeThrowsMade,
-      freeThrowsAttempted: stats.freeThrowsAttempted,
-      plusMinus: stats.plusMinus,
-    },
-  });
+/** Ligne GamePlayerStats d'un joueur pour un match. */
+function toStatsRow(gameId: string, playerId: string, teamId: string, stats: ParsedPlayerStats) {
+  return {
+    gameId,
+    playerId,
+    teamId,
+    points: stats.points,
+    rebounds: stats.rebounds,
+    assists: stats.assists,
+    steals: stats.steals,
+    blocks: stats.blocks,
+    turnovers: stats.turnovers,
+    minutes: stats.minutes,
+    fieldGoalsMade: stats.fieldGoalsMade,
+    fieldGoalsAttempted: stats.fieldGoalsAttempted,
+    threePointersMade: stats.threePointersMade,
+    threePointersAttempted: stats.threePointersAttempted,
+    freeThrowsMade: stats.freeThrowsMade,
+    freeThrowsAttempted: stats.freeThrowsAttempted,
+    offensiveRebounds: stats.offensiveRebounds,
+    defensiveRebounds: stats.defensiveRebounds,
+    plusMinus: stats.plusMinus,
+    personalFouls: stats.fouls,
+  };
 }
 
 // ============================================
@@ -414,6 +388,9 @@ export async function fetchAndSaveGameStats(
   let topScorer: TopScorerResult | null = null;
   let highestPoints = -1;
 
+  // Lignes à enregistrer (joueurs ayant joué), collectées avant toute écriture
+  const lines: Array<{ teamId: string; stats: ParsedPlayerStats }> = [];
+
   // 2. Parcourir les 2 équipes
   for (const teamStats of teamsStats) {
     const teamEspnId = teamStats.team.id;
@@ -458,33 +435,54 @@ export async function fetchAndSaveGameStats(
       // Parser les stats
       const parsedStats = parsePlayerStats(athleteData, statsConfig.keys, teamEspnId);
 
-      // Trouver le joueur dans notre DB
-      let playerId = await findPlayerByEspnId(parsedStats.espnPlayerId);
-
-      // Si joueur pas trouvé, le créer (2-way contract ou nouveau)
-      if (!playerId) {
-        playerId = await createMissingPlayer(
-          parsedStats.espnPlayerId,
-          parsedStats.playerName,
-          teamId
-        );
+      // Ignorer les joueurs DNP (Did Not Play)
+      // ESPN peut envoyer : null, "0:00", "-", "DNP", ou une valeur non MM:SS
+      if (!isValidMinutes(parsedStats.minutes)) {
+        continue;
       }
 
-      // Sauvegarder les stats
-      await savePlayerStats(gameId, playerId, teamId, parsedStats);
-
-      // Vérifier si c'est le top scorer
-      if (parsedStats.points > highestPoints) {
-        highestPoints = parsedStats.points;
-        topScorer = {
-          playerId,
-          espnPlayerId: parsedStats.espnPlayerId,
-          playerName: parsedStats.playerName,
-          points: parsedStats.points,
-        };
-      }
+      lines.push({ teamId, stats: parsedStats });
     }
   }
+
+  if (lines.length === 0) {
+    console.warn(`[ESPN Stats] No played minutes in boxscore for game ${espnGameId}`);
+    return null;
+  }
+
+  // 4. Joueurs connus en une requête ; création des manquants (rare : two-way, nouvelle signature)
+  const known = await prisma.player.findMany({
+    where:  { externalId: { in: lines.map((l) => l.stats.espnPlayerId) } },
+    select: { id: true, externalId: true },
+  });
+  const playerIdByEspnId = new Map(known.map((p) => [p.externalId, p.id]));
+  for (const { teamId, stats } of lines) {
+    if (!playerIdByEspnId.has(stats.espnPlayerId)) {
+      playerIdByEspnId.set(stats.espnPlayerId, await createMissingPlayer(stats.espnPlayerId, stats.playerName, teamId));
+    }
+  }
+
+  // 5. Box score du match remplacé d'un bloc (idempotent, 2 requêtes) + meilleur marqueur
+  const rows = new Map<string, ReturnType<typeof toStatsRow>>(); // une ligne par joueur
+  for (const { teamId, stats } of lines) {
+    const playerId = playerIdByEspnId.get(stats.espnPlayerId)!;
+    rows.set(playerId, toStatsRow(gameId, playerId, teamId, stats));
+
+    if (stats.points > highestPoints) {
+      highestPoints = stats.points;
+      topScorer = {
+        playerId,
+        espnPlayerId: stats.espnPlayerId,
+        playerName: stats.playerName,
+        points: stats.points,
+      };
+    }
+  }
+
+  await prisma.$transaction([
+    prisma.gamePlayerStats.deleteMany({ where: { gameId } }),
+    prisma.gamePlayerStats.createMany({ data: [...rows.values()] }),
+  ]);
 
   if (topScorer) {
     console.log(`[ESPN Stats] ✅ Top scorer: ${topScorer.playerName} with ${topScorer.points} points`);

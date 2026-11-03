@@ -83,7 +83,7 @@ export async function PATCH(request: NextRequest) {
     const { name, favoriteTeamId, favoritePlayerId } = body;
 
     // Build update data object
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     // Validate and add name if provided
     if (name !== undefined) {

@@ -18,7 +18,7 @@ const ESPN_HEADSHOT_BASE_URL = "https://a.espncdn.com/i/headshots/nba/players/fu
 async function imageExists(url: string): Promise<boolean> {
   try {
     const response = await fetch(url, { method: "HEAD" });
-    return response.ok && response.headers.get("content-type")?.startsWith("image/");
+    return response.ok && (response.headers.get("content-type")?.startsWith("image/") ?? false);
   } catch {
     return false;
   }

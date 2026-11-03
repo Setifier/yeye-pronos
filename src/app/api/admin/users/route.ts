@@ -14,7 +14,7 @@ import { prisma } from "@/lib/prisma";
  *
  * Retourne la liste paginée des utilisateurs avec:
  * - Infos de base (id, name, email, role, banned, createdAt)
- * - Compteurs (pronos, badges)
+ * - Compteurs (pronos)
  * - Métadonnées de pagination
  *
  * Protégé: ADMIN uniquement
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Construire les conditions de filtrage
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     // Filtre de recherche (nom ou email)
     if (search) {
@@ -82,7 +82,6 @@ export async function GET(request: NextRequest) {
           _count: {
             select: {
               predictions: true,
-              badges: true,
             },
           },
         },
@@ -107,7 +106,6 @@ export async function GET(request: NextRequest) {
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
       predictions: user._count.predictions,
-      badges: user._count.badges,
     }));
 
     return NextResponse.json({

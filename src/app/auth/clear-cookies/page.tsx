@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { Trash2, CheckCircle, AlertCircle } from "lucide-react";
-import { useRouter } from "next/navigation";
 
 export default function ClearCookiesPage() {
   const [isClearing, setIsClearing] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
-  const router = useRouter();
 
   const clearAllCookies = async () => {
     setIsClearing(true);
@@ -33,7 +31,7 @@ export default function ClearCookiesPage() {
       } else {
         setStatus("error");
       }
-    } catch (error) {
+    } catch {
       // Si l'API échoue, essayer de supprimer les cookies côté client uniquement
       document.cookie.split(";").forEach((c) => {
         document.cookie = c
@@ -178,18 +176,18 @@ export default function ClearCookiesPage() {
               <p className="font-medium text-zinc-300">Méthode Chrome/Edge :</p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
                 <li>Appuyez sur F12 pour ouvrir les DevTools</li>
-                <li>Allez dans l'onglet "Application"</li>
-                <li>Dans le menu de gauche, cliquez sur "Cookies"</li>
-                <li>Sélectionnez "http://localhost:3000"</li>
-                <li>Cliquez sur "Clear all cookies" (icône ⛔)</li>
+                <li>Allez dans l&apos;onglet &quot;Application&quot;</li>
+                <li>Dans le menu de gauche, cliquez sur &quot;Cookies&quot;</li>
+                <li>Sélectionnez &quot;http://localhost:3000&quot;</li>
+                <li>Cliquez sur &quot;Clear all cookies&quot; (icône ⛔)</li>
                 <li>Fermez les DevTools et rechargez la page</li>
               </ol>
               <p className="font-medium text-zinc-300 mt-4">Méthode Firefox :</p>
               <ol className="list-decimal list-inside space-y-1 ml-2">
                 <li>Appuyez sur F12 pour ouvrir les DevTools</li>
-                <li>Allez dans l'onglet "Stockage"</li>
-                <li>Cliquez sur "Cookies" puis "http://localhost:3000"</li>
-                <li>Faites clic-droit et sélectionnez "Tout supprimer"</li>
+                <li>Allez dans l&apos;onglet &quot;Stockage&quot;</li>
+                <li>Cliquez sur &quot;Cookies&quot; puis &quot;http://localhost:3000&quot;</li>
+                <li>Faites clic-droit et sélectionnez &quot;Tout supprimer&quot;</li>
                 <li>Fermez les DevTools et rechargez la page</li>
               </ol>
             </div>

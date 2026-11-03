@@ -1,4 +1,4 @@
-import { ReturnButton } from "@/components/return-button";
+import { ReturnButton } from "@/components/auth/return-button";
 
 interface LoginErrorPageProps {
   searchParams: Promise<{

@@ -1,6 +1,6 @@
-import { LoginForm } from "@/components/login-form";
-import MagicLinkLoginForm from "@/components/magic-link-login-form";
-import { SignInOAuthButtons } from "@/components/sign-in-oauth-buttons";
+import { LoginForm } from "@/components/auth/login-form";
+import MagicLinkLoginForm from "@/components/auth/magic-link-login-form";
+import { SignInOAuthButtons } from "@/components/auth/sign-in-oauth-buttons";
 import Link from "next/link";
 import { ArrowLeft, LogIn } from "lucide-react";
 

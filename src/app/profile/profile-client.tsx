@@ -2,50 +2,11 @@
 
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { RecentPredictionsList } from "@/components/dashboard/recent-predictions-list";
-import { UserBadgesDisplay } from "@/components/user-badges-display";
 import type { UserStats, RecentPrediction } from "@/lib/dashboard-queries";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { User, Trophy, Heart, Settings } from "lucide-react";
 import Link from "next/link";
-
-interface Badge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  rarity: "COMMON" | "RARE" | "EPIC" | "LEGENDARY";
-  reward: string | null;
-  isUnlocked: boolean;
-  unlockedAt?: Date;
-}
-
-interface BadgeStats {
-  total: number;
-  unlocked: number;
-  percentage: number;
-  byRarity: {
-    COMMON: { total: number; unlocked: number };
-    RARE: { total: number; unlocked: number };
-    EPIC: { total: number; unlocked: number };
-    LEGENDARY: { total: number; unlocked: number };
-  };
-}
-
-interface UserBadge {
-  id: string;
-  userId: string;
-  badgeId: string;
-  unlockedAt: Date;
-  badge: {
-    id: string;
-    name: string;
-    description: string;
-    icon: string | null;
-    rarity: string;
-    reward: string | null;
-  };
-}
 
 interface PublicProfile {
   user: {
@@ -74,7 +35,6 @@ interface PublicProfile {
   };
   stats: UserStats;
   recentPredictions: RecentPrediction[];
-  badges: UserBadge[];
   rank: number;
 }
 
@@ -83,44 +43,16 @@ interface ProfileClientProps {
   isOwnProfile?: boolean;
 }
 
-export function ProfileClient({ profile, isOwnProfile = false }: ProfileClientProps) {
-  // Transform UserBadge[] to Badge[] format expected by UserBadgesDisplay
-  const transformedBadges: Badge[] = profile.badges.map((userBadge) => ({
-    id: userBadge.badge.id,
-    name: userBadge.badge.name,
-    description: userBadge.badge.description,
-    icon: userBadge.badge.icon || "🏆",
-    rarity: userBadge.badge.rarity as "COMMON" | "RARE" | "EPIC" | "LEGENDARY",
-    reward: userBadge.badge.reward,
-    isUnlocked: true,
-    unlockedAt: userBadge.unlockedAt,
-  }));
+function getCurrentSeason(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const startYear = month >= 9 ? year : year - 1;
+  return `${startYear}-${String(startYear + 1).slice(2)}`;
+}
 
-  // Calculate badge stats
-  const badgeStats: BadgeStats = {
-    total: transformedBadges.length,
-    unlocked: transformedBadges.length,
-    percentage: 100,
-    byRarity: {
-      COMMON: {
-        total: transformedBadges.filter((b) => b.rarity === "COMMON").length,
-        unlocked: transformedBadges.filter((b) => b.rarity === "COMMON").length,
-      },
-      RARE: {
-        total: transformedBadges.filter((b) => b.rarity === "RARE").length,
-        unlocked: transformedBadges.filter((b) => b.rarity === "RARE").length,
-      },
-      EPIC: {
-        total: transformedBadges.filter((b) => b.rarity === "EPIC").length,
-        unlocked: transformedBadges.filter((b) => b.rarity === "EPIC").length,
-      },
-      LEGENDARY: {
-        total: transformedBadges.filter((b) => b.rarity === "LEGENDARY").length,
-        unlocked: transformedBadges.filter((b) => b.rarity === "LEGENDARY")
-          .length,
-      },
-    },
-  };
+export function ProfileClient({ profile, isOwnProfile = false }: ProfileClientProps) {
+  const currentSeason = getCurrentSeason();
 
   // Format member since date
   const memberSince = formatDistanceToNow(new Date(profile.user.createdAt), {
@@ -128,13 +60,8 @@ export function ProfileClient({ profile, isOwnProfile = false }: ProfileClientPr
     locale: fr,
   });
 
-  // Filter out upcoming predictions (keep only past predictions)
-  const pastPredictions = isOwnProfile
-    ? profile.recentPredictions.filter((pred) => {
-        const gameDate = new Date(pred.game.date);
-        return gameDate < new Date();
-      })
-    : profile.recentPredictions;
+  // Les pronos récents arrivent déjà filtrés (sans PENDING) depuis l'API
+  const pastPredictions = profile.recentPredictions;
 
   return (
     <div className="space-y-8 py-8 px-4 max-w-7xl mx-auto">
@@ -274,6 +201,13 @@ export function ProfileClient({ profile, isOwnProfile = false }: ProfileClientPr
         </div>
       </div>
 
+      {/* Saison */}
+      <div>
+        <span className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-full text-base text-zinc-300 font-semibold">
+          Saison {currentSeason}
+        </span>
+      </div>
+
       {/* Stats */}
       <div>
         <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
@@ -298,33 +232,7 @@ export function ProfileClient({ profile, isOwnProfile = false }: ProfileClientPr
         </div>
       )}
 
-      {/* Badges */}
-      {transformedBadges.length > 0 && (
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-yellow-900/30 to-zinc-800 rounded-lg">
-              <Trophy className="h-6 w-6 text-yellow-500" />
-            </div>
-            Badges Débloqués
-          </h2>
-          <UserBadgesDisplay
-            badges={transformedBadges}
-            stats={badgeStats}
-            variant="compact"
-            maxDisplay={6}
-          />
-        </div>
-      )}
-
-      {/* Empty state for no badges */}
-      {transformedBadges.length === 0 && (
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-12 text-center">
-          <Trophy className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
-          <p className="text-zinc-400 text-lg">
-            Aucun badge débloqué pour le moment
-          </p>
-        </div>
-      )}
+      {/* TODO: Badges - Coming soon */}
     </div>
   );
 }

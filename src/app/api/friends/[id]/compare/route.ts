@@ -14,7 +14,7 @@ import { getUserStats } from "@/lib/dashboard-queries";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
@@ -30,7 +30,7 @@ export async function GET(
     }
 
     const userId = session.user.id;
-    const friendId = params.id;
+    const { id: friendId } = await params;
 
     // 1. Vérifier qu'on est amis (FriendRequest avec status ACCEPTED)
     const areFriends = await prisma.friendRequest.findFirst({

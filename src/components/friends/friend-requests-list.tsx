@@ -62,7 +62,7 @@ export function FriendRequestsList({
       <div className="flex flex-col items-center justify-center py-12 px-4 bg-zinc-900 border border-zinc-800 rounded-xl">
         <Inbox className="w-12 h-12 text-zinc-600 mb-4" />
         <p className="text-zinc-400 text-center">
-          Aucune demande d'ami en attente
+          Aucune demande d&apos;ami en attente
         </p>
       </div>
     );

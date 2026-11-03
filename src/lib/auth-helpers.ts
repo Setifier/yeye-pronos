@@ -22,6 +22,7 @@ export async function getSafeSession() {
   const hasCookie = !!getSessionCookie({
     headers: headersList,
     get: (name: string) => headersList.get(name),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any);
 
   if (hasCookie && !session) {

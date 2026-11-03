@@ -15,7 +15,7 @@ interface Team {
   name: string;
   city: string;
   abbreviation: string;
-  logoUrl: string;
+  logoUrl: string | null;
   conference: string;
 }
 
@@ -45,11 +45,8 @@ interface OnboardingData {
  *
  * Gère la navigation entre les étapes et la soumission finale
  */
-export function OnboardingClient({
-  userId,
-  initialName,
-  teams,
-}: OnboardingClientProps) {
+export function OnboardingClient(props: OnboardingClientProps) {
+  const { userId, teams } = props;
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -100,7 +97,7 @@ export function OnboardingClient({
       // Success! Redirect to dashboard
       router.push("/dashboard");
       router.refresh();
-    } catch (err) {
+    } catch {
       setError("Une erreur est survenue. Veuillez réessayer.");
       setIsSubmitting(false);
     }
@@ -131,7 +128,7 @@ export function OnboardingClient({
       // Success! Redirect to dashboard
       router.push("/dashboard");
       router.refresh();
-    } catch (err) {
+    } catch {
       setError("Une erreur est survenue. Veuillez réessayer.");
       setIsSubmitting(false);
     }
@@ -245,7 +242,7 @@ export function OnboardingClient({
             {/* Content */}
             <div className="p-6">
               <p className="text-zinc-300 mb-4">
-                Vous pouvez passer cette étape et commencer à utiliser l'application immédiatement.
+                Vous pouvez passer cette étape et commencer à utiliser l&apos;application immédiatement.
               </p>
               <p className="text-zinc-400 text-sm mb-4">
                 Un profil par défaut sera créé pour vous avec :

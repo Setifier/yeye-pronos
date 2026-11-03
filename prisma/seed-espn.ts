@@ -1,283 +1,86 @@
 /**
- * Seed NBA avec ESPN API (VRAIES HEURES des matchs)
+ * Import du calendrier NBA depuis ESPN (création + mise à jour des matchs)
  *
- * ESPN fournit les heures exactes des matchs (contrairement à BallDontLie)
- * Format de date ESPN : ISO 8601 avec timezone (ex: 2025-12-22T00:30:00Z)
+ * Même logique que le CRON (src/lib/game-sync.ts) :
+ *   - présaison et matchs d'exhibition ignorés
+ *   - matchs NBA Cup "TBD" ignorés (créés automatiquement quand les équipes sont connues)
+ *   - tour NBA Cup tagué depuis les notes ESPN
+ *   - séries playoffs créées automatiquement
+ *   - idempotent : relançable sans doublon
  *
- * Usage:
- *   npm run db:seed-espn
+ * Usage :
+ *   npm run db:seed-espn                                  → saison en cours (1er oct → 30 juin)
+ *   npm run db:seed-espn -- --season=2026-27
+ *   npm run db:seed-espn -- --from=2026-12-01 --to=2026-12-31
  *
- * Ce script :
- * 1. Charge les équipes existantes depuis la DB
- * 2. Seed les matchs de la saison 2025-26 depuis ESPN avec les VRAIES heures
+ * Ensuite : npm run db:run-update  (traite les matchs déjà terminés : stats, pronos, classement)
  */
 
 import { prisma } from "../src/lib/prisma";
-import { getGamesByDate, parseESPNGame } from "../src/lib/espn";
-import { getTeamTimezone } from "../src/lib/nba-timezones";
+import { syncSchedule } from "../src/lib/game-sync";
+import { getCurrentSeason, getSeasonBounds } from "../src/types/season";
 
-/**
- * Convertir une date UTC en date locale d'une timezone donnée
- */
-function convertToLocalDate(utcDate: Date, timezone: string): Date {
-  // Formater la date en heure locale de la timezone
-  const localString = utcDate.toLocaleString("en-US", {
-    timeZone: timezone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  });
+async function main() {
+  const args    = process.argv.slice(2);
+  const arg     = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.split("=")[1];
+  const season  = arg("season") ?? getCurrentSeason();
+  const bounds  = getSeasonBounds(season);
+  const from    = arg("from") ?? bounds.start;
+  const to      = arg("to") ?? bounds.end;
 
-  // Parser le string local pour créer une Date "naive" (sans timezone)
-  // Format: "MM/DD/YYYY, HH:mm:ss"
-  const [datePart, timePart] = localString.split(", ");
-  const [month, day, year] = datePart.split("/");
-  const [hour, minute, second] = timePart.split(":");
+  console.log("═".repeat(60));
+  console.log(`🏀  IMPORT CALENDRIER ESPN — ${season}`);
+  console.log(`📅  ${from} → ${to}`);
+  console.log("═".repeat(60));
 
-  // Créer une date en UTC qui représente l'heure locale
-  // C'est une "fake" date UTC qui a les mêmes chiffres que l'heure locale
-  return new Date(Date.UTC(
-    parseInt(year),
-    parseInt(month) - 1,
-    parseInt(day),
-    parseInt(hour),
-    parseInt(minute),
-    parseInt(second)
-  ));
-}
+  const teams = await prisma.team.count();
+  if (teams !== 30) {
+    console.error(`❌ ${teams} équipes en DB (30 attendues). Corriger les équipes avant d'importer.`);
+    process.exit(1);
+  }
 
-// Mapping des abréviations ESPN → NBA officiel
-const ESPN_TO_NBA_ABBREVIATIONS: Record<string, string> = {
-  WSH: "WAS", // Washington
-  NY: "NYK",  // New York
-  SA: "SAS",  // San Antonio
-  NO: "NOP",  // New Orleans
-  GS: "GSW",  // Golden State
-  UTAH: "UTA", // Utah
-};
-
-/**
- * Convertir l'abréviation ESPN en abréviation NBA officielle
- */
-function normalizeAbbreviation(espnAbbr: string): string {
-  return ESPN_TO_NBA_ABBREVIATIONS[espnAbbr] || espnAbbr;
-}
-
-// Mapping des statuts
-function mapGameStatus(
-  status: string
-): "SCHEDULED" | "LIVE" | "FINAL" | "POSTPONED" | "CANCELLED" {
-  const normalized = status.toUpperCase();
-
-  if (normalized.includes("FINAL")) return "FINAL";
-  if (
-    normalized.includes("PROGRESS") ||
-    normalized.includes("LIVE") ||
-    normalized.includes("HALFTIME")
-  )
-    return "LIVE";
-  if (normalized.includes("POSTPONED") || normalized.includes("PPD"))
-    return "POSTPONED";
-  if (normalized.includes("CANCELLED") || normalized.includes("CANCELED"))
-    return "CANCELLED";
-
-  return "SCHEDULED";
-}
-
-/**
- * Charger les équipes existantes depuis la DB
- */
-async function loadExistingTeams() {
-  console.log("🏀 Chargement des équipes existantes...");
-
-  const teams = await prisma.team.findMany({
-    select: {
-      id: true,
-      abbreviation: true,
-      name: true,
-      city: true,
+  let lastMonth = "";
+  const result = await syncSchedule(prisma, from, to, {
+    delayMs: 250,
+    onDate: (date, r) => {
+      const month = date.slice(0, 7);
+      if (month !== lastMonth) {
+        lastMonth = month;
+        process.stdout.write(`\n${month} `);
+      }
+      process.stdout.write(r.errors.length ? "✗" : r.espnGames === 0 ? "·" : "●");
     },
   });
 
-  console.log(`✅ ${teams.length} équipes trouvées en DB`);
-
-  // Créer la map par abbreviation pour matcher avec ESPN
-  const teamsByAbbr = new Map<string, string>(); // abbreviation -> UUID
-
-  for (const team of teams) {
-    teamsByAbbr.set(team.abbreviation, team.id);
-    console.log(`  ✅ ${team.city} ${team.name} (${team.abbreviation})`);
+  console.log("\n\n" + "─".repeat(60));
+  console.log(`📅  ${result.dates} dates · ${result.espnGames} événements ESPN`);
+  console.log(`✅  ${result.created} match(s) créé(s) · ${result.updated} mis à jour`);
+  console.log(`⏭️   ${result.skipped.preseason} présaison · ${result.skipped.unknownTeam} TBD / hors NBA ignorés`);
+  if (result.errors.length > 0) {
+    console.log(`⚠️   ${result.errors.length} erreur(s) :`);
+    for (const e of result.errors.slice(0, 20)) console.log(`     ${e}`);
   }
 
-  console.log("");
-  return teamsByAbbr;
-}
-
-/**
- * Générer les dates pour la saison NBA 2025-26
- * Début : 21 octobre 2025
- * Fin : 12 avril 2026 (saison régulière)
- */
-function generateSeasonDates(): string[] {
-  const dates: string[] = [];
-  const startDate = new Date("2025-10-21");
-  const endDate = new Date("2026-04-12");
-
-  let currentDate = new Date(startDate);
-
-  while (currentDate <= endDate) {
-    // Format YYYYMMDD pour ESPN
-    const year = currentDate.getFullYear();
-    const month = String(currentDate.getMonth() + 1).padStart(2, "0");
-    const day = String(currentDate.getDate()).padStart(2, "0");
-    dates.push(`${year}${month}${day}`);
-
-    // Jour suivant
-    currentDate.setDate(currentDate.getDate() + 1);
+  // Contrôle rapide : nombre de matchs de saison régulière par équipe
+  const games = await prisma.game.findMany({
+    where:  { season, seasonType: "Regular Season" },
+    select: { homeTeam: { select: { abbreviation: true } }, awayTeam: { select: { abbreviation: true } } },
+  });
+  const perTeam = new Map<string, number>();
+  for (const g of games) {
+    perTeam.set(g.homeTeam.abbreviation, (perTeam.get(g.homeTeam.abbreviation) ?? 0) + 1);
+    perTeam.set(g.awayTeam.abbreviation, (perTeam.get(g.awayTeam.abbreviation) ?? 0) + 1);
   }
-
-  return dates;
-}
-
-/**
- * Seed les matchs depuis ESPN avec les VRAIES heures
- */
-async function seedGames(teamsByAbbr: Map<string, string>) {
-  console.log("🏀 Seed des matchs NBA depuis ESPN...");
-
-  const dates = generateSeasonDates();
-  console.log(`📅 ${dates.length} dates à traiter (saison 2025-26)`);
-
-  let totalGames = 0;
-  let processedDates = 0;
-
-  for (const date of dates) {
-    try {
-      console.log(`\n📅 ${date}...`);
-
-      const response = await getGamesByDate(date);
-      const games = response.events;
-
-      if (games.length === 0) {
-        console.log(`  ℹ️  Pas de matchs`);
-        processedDates++;
-        continue;
-      }
-
-      console.log(`  📥 ${games.length} matchs trouvés`);
-
-      for (const espnGame of games) {
-        const parsed = parseESPNGame(espnGame);
-
-        // Normaliser les abréviations ESPN → NBA officiel
-        const homeAbbr = normalizeAbbreviation(parsed.homeTeam.abbreviation);
-        const awayAbbr = normalizeAbbreviation(parsed.awayTeam.abbreviation);
-
-        // Matcher les équipes par abbreviation
-        const homeTeamId = teamsByAbbr.get(homeAbbr);
-        const awayTeamId = teamsByAbbr.get(awayAbbr);
-
-        if (!homeTeamId || !awayTeamId) {
-          console.warn(
-            `  ⚠️  Équipe introuvable : ${parsed.awayTeam.abbreviation} (${awayAbbr}) @ ${parsed.homeTeam.abbreviation} (${homeAbbr})`
-          );
-          continue;
-        }
-
-        // Calculer la date locale (timezone de l'équipe qui reçoit)
-        const homeTeamTimezone = getTeamTimezone(homeAbbr);
-        const localGameDate = convertToLocalDate(parsed.date, homeTeamTimezone);
-
-        // La deadline est 30 minutes avant le match
-        const predictionDeadline = new Date(
-          parsed.date.getTime() - 30 * 60 * 1000
-        );
-
-        // Calculer le winner si le match est terminé
-        let winnerId: string | null = null;
-        if (
-          parsed.status === "FINAL" &&
-          parsed.homeScore !== null &&
-          parsed.awayScore !== null
-        ) {
-          winnerId = parsed.homeScore > parsed.awayScore ? homeTeamId : awayTeamId;
-        }
-
-        await prisma.game.upsert({
-          where: { externalId: parsed.externalId },
-          update: {
-            gameDate: parsed.date,
-            localGameDate,
-            status: parsed.status,
-            homeScore: parsed.homeScore,
-            awayScore: parsed.awayScore,
-            winnerId,
-            predictionDeadline,
-            updatedAt: new Date(),
-          },
-          create: {
-            externalId: parsed.externalId,
-            season: "2025-26",
-            seasonType: "Regular Season",
-            gameDate: parsed.date,
-            localGameDate,
-            status: parsed.status,
-            homeTeamId,
-            awayTeamId,
-            homeScore: parsed.homeScore,
-            awayScore: parsed.awayScore,
-            winnerId,
-            predictionDeadline,
-          },
-        });
-
-        totalGames++;
-        console.log(
-          `    ✅ ${awayAbbr} @ ${homeAbbr} - ${parsed.date.toISOString()}`
-        );
-      }
-
-      processedDates++;
-
-      // Petit délai pour ne pas surcharger l'API ESPN (même si elle est gratuite)
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    } catch (error) {
-      console.error(`  ❌ Erreur pour ${date}:`, error);
-      // Continuer avec la prochaine date
-    }
-  }
-
+  const counts = [...perTeam.values()];
   console.log(
-    `\n✅ ${totalGames} matchs créés/mis à jour sur ${processedDates} dates`
+    `\n📊  Saison régulière en DB : ${games.length} matchs · ${perTeam.size} équipes · ` +
+    `${counts.length ? Math.min(...counts) : 0}–${counts.length ? Math.max(...counts) : 0} matchs par équipe`
   );
-}
-
-/**
- * Main
- */
-async function main() {
-  console.log("🚀 Seed NBA avec ESPN (VRAIES HEURES)\n");
-
-  // 1. Charger les équipes existantes depuis la DB (pas besoin de les recréer)
-  const teamsByAbbr = await loadExistingTeams();
-
-  // 2. Seed des matchs depuis ESPN avec les vraies heures
-  await seedGames(teamsByAbbr);
-
-  console.log("\n✨ Seed terminé avec succès !");
-  console.log("Les matchs ont maintenant leurs VRAIES heures locales américaines !");
+  console.log("    (80 par équipe avant décembre ; 82 une fois les matchs post-NBA Cup ajoutés)");
+  console.log("═".repeat(60));
 }
 
 main()
-  .then(() => {
-    console.log("\n✅ Processus terminé");
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error("\n❌ Erreur fatale:", error);
-    process.exit(1);
-  });
+  .then(() => process.exit(0))
+  .catch((err) => { console.error("❌ Erreur fatale :", err); process.exit(1); })
+  .finally(() => prisma.$disconnect());

@@ -19,12 +19,12 @@ const breadcrumbLabels: Record<string, string> = {
   "/admin/dashboard": "Dashboard",
   "/admin/users": "Utilisateurs",
   "/admin/games": "Matchs",
-  "/admin/badges": "Badges",
   "/admin/notifications": "Notifications",
   "/admin/settings": "Paramètres",
 };
 
-export function AdminHeader({ user }: AdminHeaderProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function AdminHeader(props: AdminHeaderProps) {
   const pathname = usePathname();
 
   // Générer le breadcrumb depuis le pathname

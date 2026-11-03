@@ -1,146 +1,85 @@
-# Next.js Better Auth Starter
+# Yeye Pronos — NBA Predictions Platform
 
-A complete authentication starter template built with **Next.js 15**, **Better Auth**, **Prisma ORM**, **PostgreSQL**, and **Nodemailer**. This template provides all the essential authentication features you need to get started quickly with your next project.
+A full-stack web app where users predict NBA games and season outcomes, compete on leaderboards,
+and track their performance against friends. Built with Next.js 15, TypeScript and PostgreSQL.
 
-## 🚀 Features
+All NBA data (schedule, scores, box scores, rosters, injuries) comes from ESPN's public API
+and is synced into the database by a daily cron job. App routes only read from the database.
 
-### 🔐 Authentication Methods
+## What it does
 
-- **Email & Password** - Traditional signup/login with email verification
-- **Magic Link** - Passwordless authentication via email
-- **OAuth** - Social login with Google and GitHub
-- **Admin Panel** - User management with role-based access
+- **Game predictions**: pick the winner, the margin category and the top scorer before tip-off
+  (picks stay open until tip-off).
+- **Season predictions**: NBA Cup champion, MVP, full standings, Play-In + Playoffs bracket,
+  then round-by-round postseason picks.
+- **Stats**: standings with tiebreakers, league leaders, player and team pages, injury report,
+  NBA Cup groups and knockout bracket, playoff bracket.
+- **Social**: friends via unique codes, head-to-head comparison, private leagues, global leaderboard.
 
-### 📧 Email Features
+## Scoring (game predictions)
 
-- **Email Verification** - Verify email addresses on signup
-- **Password Reset** - Secure password reset flow
-- **Magic Link Login** - One-click login via email
+| Component | Points | How |
+|---|---|---|
+| Correct team | 10 | Pick the winner |
+| Margin | 10 | Correct team + correct margin category (OT, 1-5, 6-10, 11-15, 16-20, 21+) |
+| Top scorer | 0–40 | 40 minus the player's reference scoring average — riskier picks earn more. Independent of the winner pick |
+| Combo | 20 | All three right |
 
-### 👤 User Management
+Early in the season the reference average blends in last season's numbers until the player
+has 10 games, so stars don't get the maximum odds in October.
 
-- **User Profiles** - Update name, email, and password
-- **Role-based Access** - User and Admin roles with permissions
-- **Account Linking** - Link multiple OAuth accounts
-- **Session Management** - Secure session handling with cookies
+## Tech stack
 
-### 🛡️ Security Features
+| Layer | Tech |
+|---|---|
+| Framework | Next.js 15 (App Router, Turbopack in dev) |
+| Language | TypeScript (strict) |
+| Database | PostgreSQL (Neon) + Prisma 6 |
+| Auth | Better Auth (email/password, magic link, Google OAuth) |
+| Styling | Tailwind CSS 4 + Radix UI |
+| Data source | ESPN public API |
+| Images / Email | Cloudinary / Nodemailer |
+| Hosting | Vercel (one daily cron) |
 
-- **Password Hashing** - Argon2 encryption for passwords
-- **CSRF Protection** - Built-in CSRF protection
-- **Secure Cookies** - HTTP-only, secure cookies
-- **Email Validation** - Domain-based email validation
-- **Name Validation** - Custom name validation rules
+## Data pipeline
 
-### 🎨 UI Components
-
-- **Responsive Design** - Mobile-first responsive design
-- **Modern UI** - Built with Tailwind CSS and Radix UI
-- **Toast Notifications** - User feedback with Sonner
-- **Loading States** - Proper loading indicators
-- **Form Validation** - Client-side and server-side validation
-
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js (App Router)
-- **Language**: TypeScript
-- **Authentication**: Better Auth
-- **Database**: PostgreSQL (Neon)
-- **ORM**: Prisma
-- **Styling**: Tailwind CSS + Shadcn/ui
-- **Email**: Nodemailer
-
-## 📦 Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- PostgreSQL database
-- SMTP email service (Gmail, SendGrid, etc.)
-
-### Installation
-
-**Environment Setup**
-   Create a `.env.local` file in the root directory:
-
-```env
-# Database
-DATABASE_URL="postgresql://username:password@localhost:5432/your_db_name"
-
-# Better Auth
-BETTER_AUTH_SECRET="your-secret-key-here"
-NEXT_PUBLIC_API_URL="http://localhost:3000"
-
-# OAuth Providers
-GOOGLE_CLIENT_ID="your-google-client-id"
-GOOGLE_CLIENT_SECRET="your-google-client-secret"
-GITHUB_CLIENT_ID="your-github-client-id"
-GITHUB_CLIENT_SECRET="your-github-client-secret"
-
-# Email (Nodemailer)
-NODEMAILER_HOST="smtp.gmail.com"
-NODEMAILER_PORT="587"
-NODEMAILER_USER="your-email@gmail.com"
-NODEMAILER_PASS="your-app-password"
-
-# Admin Emails (semicolon separated)
-ADMIN_EMAILS="admin@example.com;admin2@example.com"
+```
+ESPN ──► src/lib/game-sync.ts        schedule, scores, playoff series, NBA Cup rounds
+     ──► src/lib/game-processing.ts  box scores, prediction grading, player averages, standings
+     ──► src/lib/roster-sync.ts      30 rosters (trades, signings, free agents) + injuries
+            │
+            ├── Vercel cron  /api/cron/morning-update  (daily, 08:00 UTC = 9 am Paris)
+            └── manual scripts  npm run db:run-update / db:seed-espn / db:verify-season …
 ```
 
-**Database Setup**
+`npm run db:verify-season` checks the whole season against ESPN (30 teams, roster sizes and
+team assignments, schedule and tip-off times, standings, player stats, NBA Cup, injuries).
+
+## Getting started
 
 ```bash
-# Generate Prisma client
-npx prisma generate
-
-# Push database schema
+npm install
+cp .env.example .env        # database, auth, OAuth, SMTP, Cloudinary, CRON_SECRET
 npx prisma db push
-```
-
-**Run the development server**
-
-```bash
+npm run db:update-rosters
+npm run db:seed-espn
+npm run db:run-update -- --days=10
 npm run dev
 ```
 
+## Documentation (French)
 
-## 📁 Project Structure
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — data model, routes, pages, scoring
+- [docs/DONNEES-NBA.md](docs/DONNEES-NBA.md) — ESPN endpoints, import rules, known pitfalls
+- [docs/SCRIPTS.md](docs/SCRIPTS.md) — cron jobs and maintenance scripts
+- [docs/NOUVELLE-SAISON.md](docs/NOUVELLE-SAISON.md) — new-season checklist and 2026-27 calendar
+- [docs/INSTALLATION.md](docs/INSTALLATION.md) — setup and troubleshooting
+- [docs/AUTHENTIFICATION.md](docs/AUTHENTIFICATION.md) — Better Auth configuration
 
-```
-src/
-├── app/                    # Next.js app router
-│   ├── auth/              # Authentication pages
-│   ├── admin/             # Admin dashboard
-│   ├── profile/           # User profile
-│   └── api/auth/          # Better Auth API routes
-├── components/            # Reusable components
-│   ├── ui/               # UI components (shadcn/ui)
-│   ├── *-form.tsx        # Authentication forms
-│   └── *.tsx             # Other components
-├── actions/               # Server actions
-├── lib/                   # Utility functions
-│   ├── auth.ts           # Better Auth configuration
-│   ├── auth-client.ts    # Client-side auth
-│   └── prisma.ts         # Prisma client
-└── middleware.ts          # Route protection
-```
+## Acknowledgements
 
-## 🤝 Contributing
+The auth system was initially bootstrapped from a [Better Auth tutorial by GiraffeReactor](https://www.youtube.com/@GiraffeReactor). Everything else was built from scratch.
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+## License
 
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🙏 Thanks & Acknowledgements
-
-- [Better Auth](https://www.better-auth.com/) - Amazing authentication library
-- [Next.js](https://nextjs.org/) - The React framework
-- [Prisma](https://prisma.io/) - Next-generation ORM
-- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
-- [Radix UI](https://radix-ui.com/) - Low-level UI primitives
-
-##
-
-- Special thanks to Khurram Ali ([GiraffeReactor](https://www.youtube.com/@GiraffeReactor)) for his amazing tutorial that helped build this project. His detailed walkthrough and guidance were invaluable.
+MIT

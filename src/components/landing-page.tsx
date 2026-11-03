@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Trophy, TrendingUp, Users, Zap, ArrowRight } from "lucide-react";
+import { getCurrentSeason } from "@/types/season";
 
 export default function LandingPage() {
 
@@ -21,7 +22,7 @@ export default function LandingPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
               </span>
-              <span className="text-sm text-zinc-300">Saison NBA 2025-26 en cours</span>
+              <span className="text-sm text-zinc-300">Saison NBA {getCurrentSeason()} en cours</span>
             </div>
 
             {/* Title */}

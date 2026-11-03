@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentSeason } from "@/types/season";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    const season = getCurrentSeason();
     const teams = await prisma.team.findMany({
       select: {
         id: true,
@@ -14,7 +18,7 @@ export async function GET() {
         primaryColor: true,
         secondaryColor: true,
         seasonStats: {
-          where: { season: "2025-26" },
+          where: { season },
           select: {
             wins: true,
             losses: true,

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Activity, AlertCircle, Clock, ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { getTeamLogo } from "@/lib/nba-logos";
+import { getCurrentSeason, getSeasonLabel } from "@/types/season";
 
 interface InjuredPlayer {
   id: string;
@@ -134,7 +135,7 @@ export default function InfirmeriePage() {
           <Activity className="h-10 w-10 text-red-400" />
           Infirmerie NBA
         </h1>
-        <p className="text-zinc-400">Suivi des blessures - Saison 2025-2026</p>
+        <p className="text-zinc-400">Suivi des blessures - Saison {getSeasonLabel(getCurrentSeason())}</p>
       </div>
 
       {/* Stats */}

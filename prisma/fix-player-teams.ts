@@ -1,220 +1,180 @@
 /**
- * Script pour corriger l'assignation des équipes aux joueurs
+ * Correction d'urgence des équipes joueurs
  *
- * Problème : Les joueurs sont corrects mais assignés aux mauvaises équipes
- * Solution : Utiliser l'abbreviation retournée par ESPN API au lieu du mapping hardcodé
+ * Problème : seed-players.ts utilise des IDs ESPN 1-30 pour matcher les équipes
+ * en DB, mais les externalId en DB viennent de BallDontLie (numérotation différente).
+ * Résultat : ESPN team 3 (New Orleans) → matched à BallDontLie team 3 (Brooklyn) → mauvaise équipe.
  *
- * Usage: npx tsx prisma/fix-player-teams.ts
+ * Solution : on prend l'ABRÉVIATION directement dans la réponse du roster ESPN,
+ * on la normalise (même table que espn-stats.ts), et on cherche l'équipe en DB par abbr.
+ * L'abréviation est l'identifiant stable et non ambigu entre toutes les APIs.
+ *
+ * Ce script NE touche PAS aux agents libres — il corrige uniquement les teamId.
+ *
+ * Usage : npm run db:fix-player-teams
  */
 
-import { PrismaClient } from "@/generated/prisma";
+import { prisma } from "../src/lib/prisma";
 
-const prisma = new PrismaClient();
+// Même map que espn-stats.ts
+const ESPN_ABBR_TO_DB: Record<string, string> = {
+  UTAH: "UTA",
+  GS:   "GSW",
+  SA:   "SAS",
+  NY:   "NYK",
+  NO:   "NOP",
+  WSH:  "WAS",
+};
 
-// On va tester tous les IDs ESPN de 1 à 30
-const ESPN_TEAM_IDS = Array.from({ length: 30 }, (_, i) => i + 1);
+function normalizeAbbr(espnAbbr: string): string {
+  return ESPN_ABBR_TO_DB[espnAbbr.toUpperCase()] ?? espnAbbr.toUpperCase();
+}
 
-interface ESPNPlayer {
-  id: string;
-  uid: string;
+function normalizePosition(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const p = raw.toUpperCase().trim();
+  if (p === "PG" || p === "SG") return "G";
+  if (p === "SF" || p === "PF") return "F";
+  if (p === "G" || p === "F" || p === "C") return p;
+  return raw;
+}
+
+interface ESPNAthlete {
+  id:          string;
   displayName: string;
-  firstName?: string;
-  lastName?: string;
-  jersey?: string;
-  position?: {
-    abbreviation?: string;
-  };
+  firstName?:  string;
+  lastName?:   string;
+  jersey?:     string;
+  position?:   { abbreviation?: string };
 }
 
 interface ESPNRosterResponse {
-  team: {
-    id: string;
-    abbreviation: string; // ← C'EST ÇA QU'ON UTILISE !
-    displayName: string;
-  };
-  roster?: {
-    entries?: Array<{
-      playerId: string;
-      athlete: ESPNPlayer;
-    }>;
-  };
-  athletes?: ESPNPlayer[];
+  team?:     { id: string; abbreviation: string; displayName: string };
+  athletes?: ESPNAthlete[];
+  roster?:   { entries?: Array<{ athlete: ESPNAthlete }> };
 }
 
-// Mapping des abbreviations ESPN vers les abbreviations DB
-const ESPN_TO_DB_ABBR: { [espnAbbr: string]: string } = {
-  "NO": "NOP",   // New Orleans Pelicans
-  "GS": "GSW",   // Golden State Warriors
-  "NY": "NYK",   // New York Knicks
-  "SA": "SAS",   // San Antonio Spurs
-  "UTAH": "UTA", // Utah Jazz
-  "WSH": "WAS",  // Washington Wizards
-};
-
-/**
- * Récupère le roster ET l'abbreviation de l'équipe depuis ESPN API
- */
-async function fetchTeamRosterWithAbbr(espnTeamId: number): Promise<{
-  abbreviation: string;
-  teamName: string;
-  players: ESPNPlayer[];
-} | null> {
+async function fetchRoster(
+  espnTeamId: number
+): Promise<{ abbr: string | null; athletes: ESPNAthlete[] }> {
   try {
-    const url = `http://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${espnTeamId}/roster`;
+    const res = await fetch(
+      `http://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${espnTeamId}/roster`
+    );
+    if (!res.ok) return { abbr: null, athletes: [] };
 
-    const response = await fetch(url);
+    const data = (await res.json()) as ESPNRosterResponse;
 
-    if (!response.ok) {
-      console.error(`   ❌ ESPN API error: ${response.status}`);
-      return null;
+    // Abréviation directement dans la réponse — source de vérité
+    const rawAbbr = data.team?.abbreviation ?? null;
+    const abbr    = rawAbbr ? normalizeAbbr(rawAbbr) : null;
+
+    let athletes: ESPNAthlete[] = [];
+    if (Array.isArray(data.athletes) && data.athletes.length > 0) {
+      athletes = data.athletes;
+    } else if (data.roster?.entries && data.roster.entries.length > 0) {
+      athletes = data.roster.entries.map((e) => e.athlete);
     }
 
-    const data: ESPNRosterResponse = await response.json();
-
-    // Récupérer l'abbreviation de l'équipe
-    let abbreviation = data.team.abbreviation;
-    const teamName = data.team.displayName;
-
-    // Convertir l'abbreviation ESPN vers celle de la DB si nécessaire
-    if (ESPN_TO_DB_ABBR[abbreviation]) {
-      abbreviation = ESPN_TO_DB_ABBR[abbreviation];
-    }
-
-    // Essayer différents formats de réponse ESPN
-    let players: ESPNPlayer[] = [];
-
-    if (data.roster?.entries) {
-      players = data.roster.entries.map((entry) => entry.athlete);
-    } else if (data.athletes) {
-      players = data.athletes;
-    }
-
-    return {
-      abbreviation,
-      teamName,
-      players,
-    };
-  } catch (error) {
-    console.error(`   ❌ Error fetching roster for ESPN ID ${espnTeamId}:`, error);
-    return null;
+    return { abbr, athletes };
+  } catch {
+    return { abbr: null, athletes: [] };
   }
-}
-
-/**
- * Normalise le nom complet d'un joueur
- */
-function normalizeFullName(firstName: string, lastName: string): string {
-  const first = firstName.trim();
-  const last = lastName.trim();
-  return `${first} ${last}`;
 }
 
 async function main() {
-  console.log("🔧 Correction de l'assignation des équipes aux joueurs\n");
-  console.log("⚠️  Les joueurs sont corrects, mais assignés aux mauvaises équipes");
-  console.log("✅ On va utiliser les abbreviations ESPN pour matcher correctement\n");
+  console.log("═".repeat(60));
+  console.log("🔧  CORRECTION DES ÉQUIPES JOUEURS");
+  console.log("   (matching par abréviation, sans cleanup)");
+  console.log("═".repeat(60));
 
-  // Récupérer toutes les équipes de la DB
-  const teams = await prisma.team.findMany();
-  console.log(`✅ ${teams.length} équipes trouvées en DB\n`);
+  // Index DB teams par abréviation — source stable
+  const dbTeams    = await prisma.team.findMany({ select: { id: true, abbreviation: true, name: true } });
+  const teamByAbbr = new Map(dbTeams.map((t) => [t.abbreviation, t]));
+  console.log(`\n📋 ${dbTeams.length} équipes en DB\n`);
 
   let totalUpdated = 0;
-  let totalErrors = 0;
+  let totalCreated = 0;
+  let teamsOk      = 0;
+  let teamsSkipped = 0;
 
-  // Pour chaque ID ESPN (1-30)
-  for (const espnId of ESPN_TEAM_IDS) {
-    console.log(`\n🏀 ESPN Team ID: ${espnId}`);
+  // ESPN utilise des IDs entre 1 et ~32 pour les franchises NBA
+  for (let espnId = 1; espnId <= 35; espnId++) {
+    const { abbr, athletes } = await fetchRoster(espnId);
 
-    // Fetch roster avec abbreviation
-    const rosterData = await fetchTeamRosterWithAbbr(espnId);
-
-    if (!rosterData) {
-      console.log(`   ⚠️  Pas de données pour ESPN ID ${espnId}`);
+    if (!abbr || athletes.length === 0) {
+      // ESPN ID inexistant ou équipe vide → normal pour certains IDs
       continue;
     }
 
-    const { abbreviation, teamName, players } = rosterData;
-
-    console.log(`   ✅ ${teamName} (${abbreviation})`);
-    console.log(`   📝 ${players.length} joueurs trouvés`);
-
-    // Trouver l'équipe correspondante en DB par ABBREVIATION
-    const team = teams.find((t) => t.abbreviation === abbreviation);
-
-    if (!team) {
-      console.log(`   ❌ Équipe non trouvée en DB : ${abbreviation}`);
+    const dbTeam = teamByAbbr.get(abbr);
+    if (!dbTeam) {
+      console.warn(`⚠️  "${abbr}" (ESPN ID ${espnId}) introuvable en DB — skip`);
+      teamsSkipped++;
+      await new Promise((r) => setTimeout(r, 300));
       continue;
     }
 
-    // Mettre à jour chaque joueur
-    for (const player of players) {
+    console.log(`✅  ${dbTeam.abbreviation} — ${dbTeam.name} (ESPN ID ${espnId}, ${athletes.length} joueurs)`);
+    teamsOk++;
+
+    for (const a of athletes) {
+      const firstName    = (a.firstName || a.displayName.split(" ")[0]  || "Unknown").trim();
+      const lastName     = (a.lastName  || a.displayName.split(" ").slice(1).join(" ") || "Unknown").trim();
+      const fullName     = `${firstName} ${lastName}`;
+      const position     = normalizePosition(a.position?.abbreviation);
+      const jerseyNumber = a.jersey ?? null;
+      const headshot     = `https://a.espncdn.com/i/headshots/nba/players/full/${a.id}.png`;
+
       try {
-        const firstName = player.firstName || player.displayName.split(" ")[0] || "Unknown";
-        const lastName = player.lastName || player.displayName.split(" ").slice(1).join(" ") || "Unknown";
-        const fullName = normalizeFullName(firstName, lastName);
-        const position = player.position?.abbreviation || null;
-        const jerseyNumber = player.jersey || null;
-
-        // Trouver le joueur existant par externalId
         const existing = await prisma.player.findUnique({
-          where: { externalId: player.id },
+          where:  { externalId: a.id },
+          select: { id: true },
         });
 
         if (existing) {
-          // Update avec la BONNE équipe
           await prisma.player.update({
-            where: { externalId: player.id },
-            data: {
-              firstName,
-              lastName,
-              fullName,
-              position,
-              jerseyNumber,
-              teamId: team.id, // ← CORRECTION ICI !
-            },
+            where: { id: existing.id },
+            data:  { firstName, lastName, fullName, position, jerseyNumber, teamId: dbTeam.id, headshot },
           });
           totalUpdated++;
-          console.log(`      ✅ Updated: ${fullName} → ${abbreviation}`);
         } else {
-          console.log(`      ⚠️  Joueur non trouvé en DB : ${fullName} (${player.id})`);
+          await prisma.player.create({
+            data: { externalId: a.id, firstName, lastName, fullName, position, jerseyNumber, teamId: dbTeam.id, headshot },
+          });
+          totalCreated++;
+          console.log(`   ➕ Nouveau : ${fullName}`);
         }
-      } catch (error) {
-        console.error(`      ❌ Error updating ${player.displayName}:`, error);
-        totalErrors++;
+      } catch (err) {
+        console.error(`   ❌ ${fullName} (${a.id}):`, err);
       }
     }
 
-    // Pause pour éviter rate limiting
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((r) => setTimeout(r, 500));
   }
 
-  console.log("\n" + "=".repeat(60));
-  console.log(`📊 Résumé :`);
-  console.log(`   ✅ Joueurs mis à jour : ${totalUpdated}`);
-  console.log(`   ❌ Erreurs : ${totalErrors}`);
-  console.log("=".repeat(60) + "\n");
+  console.log("\n" + "─".repeat(60));
+  console.log(`📊  ${teamsOk} équipes corrigées · ${teamsSkipped} ignorées`);
+  console.log(`    ${totalUpdated} joueurs mis à jour · ${totalCreated} créés`);
 
-  // Vérification finale
-  const playersByTeam = await prisma.player.groupBy({
-    by: ["teamId"],
-    _count: true,
+  // Vérification rapide
+  const sample = await prisma.player.findMany({
+    where:   { teamId: { not: null } },
+    include: { team: { select: { abbreviation: true } } },
+    take:    10,
+    orderBy: { fullName: "asc" },
   });
-
-  console.log(`📊 Répartition des joueurs par équipe :`);
-  for (const group of playersByTeam) {
-    const team = teams.find((t) => t.id === group.teamId);
-    if (team) {
-      console.log(`   ${team.abbreviation.padEnd(4)} : ${group._count} joueurs`);
-    }
+  console.log("\n🔍 Vérification (10 joueurs) :");
+  for (const p of sample) {
+    console.log(`   ${p.fullName.padEnd(25)} → ${p.team?.abbreviation ?? "?"}`);
   }
-  console.log("");
+
+  console.log("\n" + "═".repeat(60));
+  console.log("✅  Correction terminée. Vérifie les effectifs dans l'app.");
+  console.log("═".repeat(60));
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .then(() => process.exit(0))
+  .catch((err) => { console.error("❌ Erreur fatale:", err); process.exit(1); })
+  .finally(() => prisma.$disconnect());

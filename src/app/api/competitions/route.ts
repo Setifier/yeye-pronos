@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 /**
  * GET /api/competitions
  * Récupère toutes les compétitions (actives et passées)
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const competitions = await prisma.competitionSeason.findMany({
       orderBy: [

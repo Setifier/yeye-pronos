@@ -1,10 +1,11 @@
 import { requireAuth } from "@/lib/auth-helpers";
 import { ProfileClient } from "./profile-client";
 import { cookies } from "next/headers";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 async function getUserProfile(userId: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = getAppBaseUrl();
     const cookieStore = await cookies();
     const cookieHeader = cookieStore
       .getAll()

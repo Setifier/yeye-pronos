@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Search, ChevronLeft, X } from "lucide-react";
 
@@ -179,7 +179,7 @@ export function PlayerSelectionStep({
         {showDropdown && results.length === 0 && !isSearching && (
           <div className="absolute z-10 w-full mt-2 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl p-4">
             <p className="text-zinc-400 text-center">
-              Aucun joueur trouvé pour "{searchQuery}"
+              Aucun joueur trouvé pour &quot;{searchQuery}&quot;
             </p>
           </div>
         )}

@@ -1,5 +1,5 @@
-import { RegisterForm } from "@/components/register-form";
-import { SignInOAuthButtons } from "@/components/sign-in-oauth-buttons";
+import { RegisterForm } from "@/components/auth/register-form";
+import { SignInOAuthButtons } from "@/components/auth/sign-in-oauth-buttons";
 import Link from "next/link";
 import { ArrowLeft, UserPlus } from "lucide-react";
 

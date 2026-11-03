@@ -25,7 +25,7 @@ export const {
   useSession,
   admin,
   sendVerificationEmail,
-  forgetPassword,
+  requestPasswordReset, // better-auth ≥ 1.4 (ex-forgetPassword)
   resetPassword,
   updateUser,
 } = authClient;

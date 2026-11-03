@@ -2,49 +2,11 @@
 
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { RecentPredictionsList } from "@/components/dashboard/recent-predictions-list";
-import { UserBadgesDisplay } from "@/components/user-badges-display";
 import type { UserStats, RecentPrediction } from "@/lib/dashboard-queries";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { User, Trophy, Heart } from "lucide-react";
-
-interface Badge {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  rarity: "COMMON" | "RARE" | "EPIC" | "LEGENDARY";
-  reward: string | null;
-  isUnlocked: boolean;
-  unlockedAt?: Date;
-}
-
-interface BadgeStats {
-  total: number;
-  unlocked: number;
-  percentage: number;
-  byRarity: {
-    COMMON: { total: number; unlocked: number };
-    RARE: { total: number; unlocked: number };
-    EPIC: { total: number; unlocked: number };
-    LEGENDARY: { total: number; unlocked: number };
-  };
-}
-
-interface UserBadge {
-  id: string;
-  userId: string;
-  badgeId: string;
-  unlockedAt: Date;
-  badge: {
-    id: string;
-    name: string;
-    description: string;
-    icon: string | null;
-    rarity: string;
-    reward: string | null;
-  };
-}
+import { positionLabel } from "@/lib/position";
 
 interface PublicProfile {
   user: {
@@ -73,7 +35,6 @@ interface PublicProfile {
   };
   stats: UserStats;
   recentPredictions: RecentPrediction[];
-  badges: UserBadge[];
   rank: number;
 }
 
@@ -82,44 +43,6 @@ interface JoueurProfileClientProps {
 }
 
 export function JoueurProfileClient({ profile }: JoueurProfileClientProps) {
-  // Transform UserBadge[] to Badge[] format expected by UserBadgesDisplay
-  const transformedBadges: Badge[] = profile.badges.map((userBadge) => ({
-    id: userBadge.badge.id,
-    name: userBadge.badge.name,
-    description: userBadge.badge.description,
-    icon: userBadge.badge.icon || "🏆",
-    rarity: userBadge.badge.rarity as "COMMON" | "RARE" | "EPIC" | "LEGENDARY",
-    reward: userBadge.badge.reward,
-    isUnlocked: true,
-    unlockedAt: userBadge.unlockedAt,
-  }));
-
-  // Calculate badge stats
-  const badgeStats: BadgeStats = {
-    total: transformedBadges.length,
-    unlocked: transformedBadges.length, // All badges in profile are unlocked
-    percentage: 100, // For public profile, we only show unlocked badges
-    byRarity: {
-      COMMON: {
-        total: transformedBadges.filter((b) => b.rarity === "COMMON").length,
-        unlocked: transformedBadges.filter((b) => b.rarity === "COMMON").length,
-      },
-      RARE: {
-        total: transformedBadges.filter((b) => b.rarity === "RARE").length,
-        unlocked: transformedBadges.filter((b) => b.rarity === "RARE").length,
-      },
-      EPIC: {
-        total: transformedBadges.filter((b) => b.rarity === "EPIC").length,
-        unlocked: transformedBadges.filter((b) => b.rarity === "EPIC").length,
-      },
-      LEGENDARY: {
-        total: transformedBadges.filter((b) => b.rarity === "LEGENDARY").length,
-        unlocked: transformedBadges.filter((b) => b.rarity === "LEGENDARY")
-          .length,
-      },
-    },
-  };
-
   // Format member since date
   const memberSince = formatDistanceToNow(new Date(profile.user.createdAt), {
     addSuffix: true,
@@ -229,7 +152,7 @@ export function JoueurProfileClient({ profile }: JoueurProfileClientProps) {
                   </p>
                   <p className="text-xs text-zinc-500">
                     {profile.user.favoritePlayer.position && (
-                      <>{profile.user.favoritePlayer.position} • </>
+                      <>{positionLabel(profile.user.favoritePlayer.position)} • </>
                     )}
                     {profile.user.favoritePlayer.team?.abbreviation}
                     {profile.user.favoritePlayer.jerseyNumber && (
@@ -277,33 +200,7 @@ export function JoueurProfileClient({ profile }: JoueurProfileClientProps) {
         </div>
       )}
 
-      {/* Badges */}
-      {transformedBadges.length > 0 && (
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-yellow-900/30 to-zinc-800 rounded-lg">
-              <Trophy className="h-6 w-6 text-yellow-500" />
-            </div>
-            Badges Débloqués
-          </h2>
-          <UserBadgesDisplay
-            badges={transformedBadges}
-            stats={badgeStats}
-            variant="compact"
-            maxDisplay={6}
-          />
-        </div>
-      )}
-
-      {/* Empty state for no badges */}
-      {transformedBadges.length === 0 && (
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-12 text-center">
-          <Trophy className="w-16 h-16 text-zinc-700 mx-auto mb-4" />
-          <p className="text-zinc-400 text-lg">
-            Aucun badge débloqué pour le moment
-          </p>
-        </div>
-      )}
+      {/* TODO: Badges - Coming soon */}
     </div>
   );
 }

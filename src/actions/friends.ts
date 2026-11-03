@@ -4,7 +4,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { notifyFriendRequest } from "@/lib/notification-service";
 
 /**
  * Vérifier que l'utilisateur est authentifié
@@ -77,24 +76,13 @@ export async function sendFriendRequestAction({
     }
 
     // 4. Créer la demande
-    const friendRequest = await prisma.friendRequest.create({
+    await prisma.friendRequest.create({
       data: {
         senderId: userId,
         receiverId: targetUserId,
         status: "PENDING",
       },
     });
-
-    // 5. Notifier le destinataire
-    try {
-      await notifyFriendRequest({
-        userId: targetUserId,
-        senderName: user.name,
-        requestId: friendRequest.id,
-      });
-    } catch (notifError) {
-      console.error("[sendFriendRequestAction] Notification error:", notifError);
-    }
 
     revalidatePath("/amis");
     return { success: true };

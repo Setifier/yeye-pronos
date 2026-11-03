@@ -8,11 +8,11 @@
 
 export enum ScoreMarginCategory {
   OVERTIME = "OVERTIME",
-  MATCH_SERRE = "MATCH_SERRE",
-  UN_CLASSIQUE = "UN_CLASSIQUE",
-  MATCH_EASY = "MATCH_EASY",
-  TROP_FORT = "TROP_FORT",
-  BLOW_OUT = "BLOW_OUT",
+  SERRE = "SERRE",
+  CLASSIQUE = "CLASSIQUE",
+  FACILE = "FACILE",
+  LARGE = "LARGE",
+  BLOWOUT = "BLOWOUT",
 }
 
 // ============================================
@@ -21,29 +21,29 @@ export enum ScoreMarginCategory {
 
 export const SCORE_MARGIN_LABELS: Record<ScoreMarginCategory, string> = {
   [ScoreMarginCategory.OVERTIME]: "Après prolongation",
-  [ScoreMarginCategory.MATCH_SERRE]: "Match serré (+1 à +5)",
-  [ScoreMarginCategory.UN_CLASSIQUE]: "Un classique (+6 à +10)",
-  [ScoreMarginCategory.MATCH_EASY]: "Match easy (+11 à +15)",
-  [ScoreMarginCategory.TROP_FORT]: "Trop fort pour l'autre (+16 à +20)",
-  [ScoreMarginCategory.BLOW_OUT]: "Blow out (+21+)",
+  [ScoreMarginCategory.SERRE]: "Match serré (1-5 pts)",
+  [ScoreMarginCategory.CLASSIQUE]: "Un classique (6-10 pts)",
+  [ScoreMarginCategory.FACILE]: "Match easy (11-15 pts)",
+  [ScoreMarginCategory.LARGE]: "Large victoire (16-20 pts)",
+  [ScoreMarginCategory.BLOWOUT]: "Blow out (21+ pts)",
 };
 
 export const SCORE_MARGIN_DESCRIPTIONS: Record<ScoreMarginCategory, string> = {
   [ScoreMarginCategory.OVERTIME]: "Match décidé en prolongation",
-  [ScoreMarginCategory.MATCH_SERRE]: "Victoire serrée de 1 à 5 points",
-  [ScoreMarginCategory.UN_CLASSIQUE]: "Victoire classique de 6 à 10 points",
-  [ScoreMarginCategory.MATCH_EASY]: "Victoire confortable de 11 à 15 points",
-  [ScoreMarginCategory.TROP_FORT]: "Large victoire de 16 à 20 points",
-  [ScoreMarginCategory.BLOW_OUT]: "Domination totale, 21 points ou plus",
+  [ScoreMarginCategory.SERRE]: "Victoire serrée de 1 à 5 points",
+  [ScoreMarginCategory.CLASSIQUE]: "Victoire classique de 6 à 10 points",
+  [ScoreMarginCategory.FACILE]: "Victoire confortable de 11 à 15 points",
+  [ScoreMarginCategory.LARGE]: "Large victoire de 16 à 20 points",
+  [ScoreMarginCategory.BLOWOUT]: "Domination totale, 21 points ou plus",
 };
 
 export const SCORE_MARGIN_ICONS: Record<ScoreMarginCategory, string> = {
   [ScoreMarginCategory.OVERTIME]: "⏱️",
-  [ScoreMarginCategory.MATCH_SERRE]: "🔥",
-  [ScoreMarginCategory.UN_CLASSIQUE]: "⚖️",
-  [ScoreMarginCategory.MATCH_EASY]: "💪",
-  [ScoreMarginCategory.TROP_FORT]: "🚀",
-  [ScoreMarginCategory.BLOW_OUT]: "💥",
+  [ScoreMarginCategory.SERRE]: "🔥",
+  [ScoreMarginCategory.CLASSIQUE]: "⚖️",
+  [ScoreMarginCategory.FACILE]: "💪",
+  [ScoreMarginCategory.LARGE]: "🚀",
+  [ScoreMarginCategory.BLOWOUT]: "💥",
 };
 
 // ============================================
@@ -79,11 +79,11 @@ export function getScoreMarginCategory(
 
   const margin = Math.abs(homeScore - awayScore);
 
-  if (margin >= 1 && margin <= 5) return ScoreMarginCategory.MATCH_SERRE;
-  if (margin >= 6 && margin <= 10) return ScoreMarginCategory.UN_CLASSIQUE;
-  if (margin >= 11 && margin <= 15) return ScoreMarginCategory.MATCH_EASY;
-  if (margin >= 16 && margin <= 20) return ScoreMarginCategory.TROP_FORT;
-  return ScoreMarginCategory.BLOW_OUT; // 21+
+  if (margin >= 1 && margin <= 5) return ScoreMarginCategory.SERRE;
+  if (margin >= 6 && margin <= 10) return ScoreMarginCategory.CLASSIQUE;
+  if (margin >= 11 && margin <= 15) return ScoreMarginCategory.FACILE;
+  if (margin >= 16 && margin <= 20) return ScoreMarginCategory.LARGE;
+  return ScoreMarginCategory.BLOWOUT; // 21+
 }
 
 /**

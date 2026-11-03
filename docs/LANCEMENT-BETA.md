@@ -1,0 +1,55 @@
+# Lancement de la bêta (2-3 testeurs)
+
+Objectif : vérifier en conditions réelles l'inscription, les paris, le CRON, les points et le classement.
+Hors périmètre de la bêta : trophées/défis, archives des saisons passées, scores en direct.
+
+## 1. Avant de déployer
+
+| # | Étape | Comment |
+|---|---|---|
+| 0 | Comptes de test (optionnel) | `npm run db:delete-users -- email1 email2` (aperçu), puis `--confirm`. Supprime aussi les pronos des saisons passées de ces comptes |
+| 1 | Données de la saison à jour | `npm run db:run-update -- --days=3` puis `npm run db:verify-season` → « Tout est cohérent » |
+| 2 | Configuration | `npm run check:setup` avec le `.env` de production (`vercel env pull .env.production.local`) |
+| 3 | Variables Vercel | `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (= URL de prod, sans `/` final), `NEXT_PUBLIC_API_URL` (même valeur, ou absente — jamais `localhost`), `CRON_SECRET`, `NODEMAILER_USER`, `NODEMAILER_APP_PASSWORD`, `ADMIN_EMAILS`, Google + Cloudinary si utilisés. Modèle : `env.example`. À régler **avant** le push (les `NEXT_PUBLIC_*` sont figées au build) |
+| 4 | Google OAuth | Console Google → identifiants → URI de redirection : `https://<domaine>/api/auth/callback/google` |
+| 5 | Types | `npx tsc --noEmit` sans erreur, puis `npm run build` |
+
+## 2. Après le déploiement
+
+- Vercel → Settings → Functions : région **London (lhr1)**, la même que la base Neon (eu-west-2).
+  Sinon chaque requête traverse l'Atlantique et le CRON ne tient pas dans ses 60 s une nuit de 15 matchs.
+- Vercel → onglet **Cron** : `morning-update` actif (`0 8 * * *` = 09h Paris). Bouton **Run** pour un
+  premier passage : la réponse doit contenir `"ok": true` et un `durationMs` bien en dessous de 50 000.
+- Créer ton compte avec l'adresse de `ADMIN_EMAILS` (rôle admin attribué à la création).
+- Ensuite, rien à surveiller : si un passage reste incomplet (matchs non traités, ESPN en panne, effectifs
+  incomplets, exécution trop lente), un e-mail « Mise à jour du matin incomplète » part vers `ADMIN_EMAILS`.
+  Le passage suivant rattrape tout seul ; `npm run db:run-update` pour rattraper tout de suite.
+
+## 3. Ce que les testeurs doivent essayer
+
+| Parcours | Attendu |
+|---|---|
+| Inscription e-mail | E-mail « Confirme ton adresse » reçu (vérifier les spams), lien → connexion → onboarding |
+| Connexion Google | Arrive directement à l'onboarding |
+| Onboarding | Pseudo, équipe et joueur favoris → accueil |
+| Paris de début de saison | `/pronos/preseason` : classement → bracket → NBA Cup → MVP, avant le **lundi 3 nov. 23h59** |
+| Pari d'un match | Accueil → « Faire mes N paris » ; un clic sur une équipe enregistre ; bonus dans la fenêtre |
+| Le lendemain | Points affichés sur la carte et dans « Hier soir », classement mis à jour. No Spoil actif par défaut : bouton « No Spoil » en haut (→ « Scores visibles », mémorisé sur l'appareil) ou « Afficher » sur la dernière nuit |
+| Mobile | Barre d'onglets en bas, fenêtre de pari en plein écran |
+
+## 4. Limites connues de la bêta
+
+- Résultats et points calculés **une fois par jour** (CRON de 09h). Pour du direct : voir [SCRIPTS.md](./SCRIPTS.md#scores-en-direct-optionnel).
+- Paris de début de saison : points attribués à la fin de la NBA Cup (mi-décembre) et en fin de saison
+  (script de calcul à écrire avant ces dates).
+- Pas encore de notifications ni de rappels par e-mail.
+
+## 5. En cas de souci
+
+| Symptôme | Piste |
+|---|---|
+| Pas d'e-mail de confirmation | `npm run check:setup` (section SMTP) ; mot de passe d'application Gmail valide |
+| « Les adresses @… ne sont pas acceptées » | Ajouter le domaine dans `ALLOWED_EMAIL_DOMAINS` (Vercel) |
+| Erreur après connexion Google | URI de redirection Google ≠ `BETTER_AUTH_URL` |
+| Points non attribués le matin | Logs du CRON ; rattrapage `npm run db:run-update` |
+| Classement incohérent | `npm run db:verify-season` |

@@ -5,14 +5,14 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const injuredOnly = searchParams.get("injured") === "true";
+    // Par défaut : joueurs sous contrat uniquement (la DB garde aussi agents libres et anciens joueurs)
+    const includeFreeAgents = searchParams.get("all") === "true";
 
-    // Build query based on filter
     const players = await prisma.player.findMany({
-      where: injuredOnly
-        ? {
-            isInjured: true,
-          }
-        : undefined,
+      where: {
+        ...(includeFreeAgents ? {} : { teamId: { not: null } }),
+        ...(injuredOnly ? { isInjured: true } : {}),
+      },
       include: {
         team: {
           select: {

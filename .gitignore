@@ -42,3 +42,7 @@ next-env.d.ts
 
 # prisma
 /src/generated
+
+# fichiers parasites (métadonnées Windows, dumps de debug)
+*Zone.Identifier
+debug-*.json

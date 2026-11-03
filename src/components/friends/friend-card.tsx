@@ -7,7 +7,7 @@ interface Friend {
   id: string;
   name: string;
   image: string | null;
-  friendCode: string | null;
+  friendCode?: string | null;
 }
 
 interface FriendCardProps {

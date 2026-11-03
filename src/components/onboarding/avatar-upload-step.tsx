@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { Upload, ChevronLeft, User, X, AlertTriangle } from "lucide-react";
 import { updateUserImageAction } from "@/actions/update-user-image.action";
-import { ImageCropEditor } from "@/components/image-crop-editor";
+import { ImageCropEditor } from "@/components/profile/image-crop-editor";
 
 interface AvatarUploadStepProps {
   userId: string;
@@ -20,18 +20,12 @@ interface AvatarUploadStepProps {
  * Permet d'uploader une image de profil via Cloudinary avec crop et redimensionnement
  * Boutons: "Passer" (skip) ou "Terminer" (submit)
  */
-export function AvatarUploadStep({
-  userId,
-  currentAvatarUrl,
-  onAvatarChange,
-  onSubmit,
-  onBack,
-  isSubmitting,
-}: AvatarUploadStepProps) {
+export function AvatarUploadStep(props: AvatarUploadStepProps) {
+  const { currentAvatarUrl, onAvatarChange, onSubmit, onBack, isSubmitting } = props;
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [croppedImage, setCroppedImage] = useState<string | null>(null);
+  const [, setCroppedImage] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,7 +73,7 @@ export function AvatarUploadStep({
       } else if (result.imageUrl) {
         onAvatarChange(result.imageUrl);
       }
-    } catch (error) {
+    } catch {
       setUploadError("Erreur lors de l'upload de l'image");
       setCroppedImage(null);
     } finally {
@@ -214,7 +208,7 @@ export function AvatarUploadStep({
           </p>
           <p className="text-yellow-200/80 text-sm">
             Veuillez utiliser une photo appropriée. Les contenus inappropriés,
-            offensants ou violant les droits d'autrui sont interdits et
+            offensants ou violant les droits d&apos;autrui sont interdits et
             pourront entraîner la suspension de votre compte.
           </p>
         </div>

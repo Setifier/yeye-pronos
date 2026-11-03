@@ -114,7 +114,7 @@ export function NameConfigurationStep({
           Choisis ton surnom
         </h2>
         <p className="text-zinc-400">
-          C'est ainsi que tu seras connu dans le classement
+          C&apos;est ainsi que tu seras connu dans le classement
         </p>
       </div>
 
@@ -146,7 +146,7 @@ export function NameConfigurationStep({
         <div className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 border border-blue-500/30 rounded-xl p-4">
           <p className="text-xs text-zinc-400 mb-1">Aperçu</p>
           <p className="text-2xl font-bold text-white">
-            "{capitalize(nickname)}"
+            &quot;{capitalize(nickname)}&quot;
           </p>
           {fullNamePreview && (
             <p className="text-sm text-zinc-400 mt-1">{fullNamePreview}</p>
@@ -176,7 +176,7 @@ export function NameConfigurationStep({
       {showOptionalFields && (
         <div className="space-y-4 p-4 bg-zinc-800/30 border border-zinc-700 rounded-xl">
           <p className="text-xs text-zinc-500 mb-3">
-            Ces informations sont optionnelles et n'apparaîtront que si tu les remplis
+            Ces informations sont optionnelles et n&apos;apparaîtront que si tu les remplis
           </p>
 
           {/* Name Inputs - Line 1 */}
@@ -243,7 +243,7 @@ export function NameConfigurationStep({
       {/* Info */}
       <div className="bg-zinc-800/50 border border-zinc-700 rounded-xl p-4">
         <p className="text-sm text-zinc-400">
-          ⚠️ Pas d'espaces autorisés. Seuls les lettres et tirets (-) sont acceptés.
+          ⚠️ Pas d&apos;espaces autorisés. Seuls les lettres et tirets (-) sont acceptés.
         </p>
       </div>
 

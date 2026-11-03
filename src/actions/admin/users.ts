@@ -147,7 +147,7 @@ export async function deleteUserAction({ userId }: { userId: string }) {
       };
     }
 
-    // Supprimer l'utilisateur (cascade sur predictions, badges, etc.)
+    // Supprimer l'utilisateur (cascade sur predictions, etc.)
     await prisma.user.delete({
       where: { id: userId },
     });

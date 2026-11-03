@@ -6,7 +6,6 @@ import {
   HomeIcon,
   UsersIcon,
   TrophyIcon,
-  AwardIcon,
   BellIcon,
   SettingsIcon,
 } from "lucide-react";
@@ -35,11 +34,6 @@ const navItems = [
     href: "/admin/games",
     icon: TrophyIcon,
     label: "Matchs",
-  },
-  {
-    href: "/admin/badges",
-    icon: AwardIcon,
-    label: "Badges",
   },
   {
     href: "/admin/notifications",

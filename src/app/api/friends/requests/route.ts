@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { notifyFriendRequest } from "@/lib/notification-service";
 
 /**
  * API Friends Requests: Récupérer les demandes d'amis reçues
@@ -161,18 +160,6 @@ export async function POST(request: NextRequest) {
         status: "PENDING",
       },
     });
-
-    // 5. Notifier le destinataire
-    try {
-      await notifyFriendRequest({
-        userId: targetUserId,
-        senderName: session.user.name,
-        requestId: friendRequest.id,
-      });
-    } catch (notifError) {
-      // Ne pas faire échouer la requête si la notification échoue
-      console.error("[API Friends Requests] Notification error:", notifError);
-    }
 
     return NextResponse.json({
       success: true,

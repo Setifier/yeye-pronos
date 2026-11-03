@@ -1,205 +1,147 @@
-# Scripts de maintenance NBA
+# CRON et scripts de maintenance
 
-## Production (CRON automatiques)
+Toute la logique de données est dans `src/lib/` et partagée entre le CRON et les scripts :
+un script manuel fait **exactement** la même chose que le CRON, sans limite de temps.
 
-En production sur Vercel, **4 CRON jobs** gèrent tout automatiquement :
+| Bibliothèque | Rôle |
+|---|---|
+| `src/lib/game-sync.ts` | Calendrier ESPN → `Game` (création, horaires, scores, reports, séries, NBA Cup) |
+| `src/lib/game-processing.ts` | Matchs terminés → box scores, pronos, moyennes, classement, séries |
+| `src/lib/roster-sync.ts` | 30 rosters + infirmerie → `Player`, `InjuryReport` |
+| `src/lib/player-odds.ts` | Moyenne de référence pour la cote du meilleur marqueur |
+| `src/lib/standings-calculator.ts` | Bilans des équipes (`TeamSeasonStats`) |
+| `src/lib/calculate-player-season-stats.ts` | Moyennes saison (`PlayerSeasonStats`) |
 
-| CRON | Fréquence | Description |
-|------|-----------|-------------|
-| `refresh-daily-games` | 8h Paris | Détecte les matchs du jour |
-| `update-live-scores` | Toutes les minutes | Scores + pronos + badges + standings + stats |
-| `update-injuries` | Toutes les 15 min | Infirmerie NBA |
-| `daily-digest` | Lundis 9h | Récap hebdo par email |
+## CRON (production, Vercel)
 
-**Aucune intervention manuelle nécessaire** en production.
+Vercel Hobby n'autorise **qu'un CRON par jour** → un seul CRON fait tout :
 
----
+| CRON | Planning (`vercel.json`) | Contenu |
+|---|---|---|
+| `/api/cron/morning-update` | `0 8 * * *` → **09h00 heure de Paris** (10h00 en heure d'été) | Calendrier J-3 → J+7 · matchs terminés (pronos, stats) · classement · séries · effectifs · blessures |
 
-## Scripts principaux
+**Pourquoi 08:00 UTC.** Vercel planifie en UTC et ne suit pas les changements d'heure :
 
-### Synchronisation des données
+| Période | Heure de Paris | Dernier match fini vers* | Marge |
+|---|---|---|---|
+| Heure d'hiver (25 oct. 2026 → 28 mars 2027) | 09h00 | 07h15 | ~1h45 |
+| Heure d'été (28 mars → fin de saison) | 10h00 | 07h15 | ~2h45 |
 
-| Script | Usage |
-|--------|-------|
-| `sync-espn-all-games.ts` | Sync complète matchs + stats |
-| `sync-injuries.ts` | Sync des blessures |
-| `backfill-game-stats.ts` | Stats joueurs uniquement |
-| `update-scores-espn.ts` | Scores uniquement |
+\* Coup d'envoi le plus tardif : 22h30 ET, fin vers 01h15 ET avec prolongation.
+Sur le plan Hobby, Vercel déclenche le CRON à un moment quelconque **dans l'heure** (08:00–08:59 UTC).
 
-```bash
-# Sync complète (matchs + stats)
-npx tsx prisma/sync-espn-all-games.ts
+**Dates.** Les matchs traités ce matin-là portent la date US Eastern de **la veille** :
+un match du 25 octobre à 22h30 ET se joue le 26 à 03h30 à Paris, mais il est rangé au 25.
+Toute l'application suit cette convention (date US Eastern pour le jour, heure de Paris pour
+l'affichage) — voir [DONNEES-NBA.md](./DONNEES-NBA.md#règles-dimport-calendrier).
 
-# Sync blessures
-npx tsx prisma/sync-injuries.ts
+Le traitement des matchs s'arrête à ~38 s (limite Vercel de 60 s) ; s'il reste des matchs,
+ils sont repris au passage suivant et `remaining` l'indique dans la réponse.
 
-# Stats des matchs FINAL
-npx tsx prisma/backfill-game-stats.ts
+**Région.** Les fonctions tournent à Londres (`"regions": ["lhr1"]` dans `vercel.json`), comme la base
+Neon (eu-west-2) : une requête SQL y coûte quelques millisecondes, contre ~80 ms depuis Washington
+(région Vercel par défaut). Un match traité ≈ une centaine de requêtes : c'est ce qui permet de passer
+une nuit de 15 matchs dans le budget. Ne pas changer l'un sans l'autre.
 
-# Scores uniquement
-npx tsx prisma/update-scores-espn.ts
-```
+**Alerte.** Quand un passage reste incomplet (matchs non traités, box score absent, erreur ESPN,
+effectifs incomplets, exécution > 50 s ou plantage), un e-mail part vers `ADMIN_EMAILS`.
+Aucun e-mail quand tout va bien. La réponse JSON contient `ok` et `problems`.
 
-**Options de sync-espn-all-games.ts :**
-```bash
---from=2025-12-01    # Date de début
---to=2025-12-31      # Date de fin
---skip-stats         # Sans les stats (plus rapide)
-```
+### Scores en direct (optionnel)
 
-**Options de backfill-game-stats.ts :**
-```bash
---limit=10           # Limiter à N matchs
---from=2025-12-01    # Depuis cette date
---to=2025-12-31      # Jusqu'à cette date
-```
+Sans plan payant, les scores ne se mettent à jour qu'une fois par jour. Pour du direct, faire
+appeler `/api/cron/update-live-scores` toutes les 5 min pendant les matchs par un service
+gratuit (ex. cron-job.org, de 23h à 7h heure de Paris) avec le header
+`Authorization: Bearer <CRON_SECRET>`. Même logique que le CRON du matin, limitée à la veille
+et au jour en cours.
 
----
+### Routes déclenchables à la main
 
-### Seed initial
+Toutes exigent `Authorization: Bearer $CRON_SECRET`.
 
-| Script | Usage |
-|--------|-------|
-| `seed-espn.ts` | Matchs de la saison |
-| `seed-players.ts` | Joueurs NBA |
-| `seed-badges.ts` | Badges (12 familles) |
-
-```bash
-# Setup complet
-npx tsx prisma/seed-espn.ts
-npx tsx prisma/seed-players.ts
-npx tsx prisma/seed-badges.ts
-```
-
----
-
-### Vérification
-
-| Script | Usage |
-|--------|-------|
-| `check-db-status.ts` | État complet de la DB |
-| `check-standings-data.ts` | Stats équipes |
-| `check-team-logos.ts` | Logos équipes |
+| Route | Effet |
+|---|---|
+| `/api/cron/morning-update` | Tout le pipeline quotidien |
+| `/api/cron/update-live-scores` | Calendrier J-1 → J + matchs terminés |
+| `/api/cron/refresh-daily-games` | Calendrier J-1 → J+7 uniquement |
+| `/api/cron/update-injuries` | Effectifs + blessures |
+| `/api/cron/sync-trades` | Effectifs seuls (transferts, signatures, agents libres) |
+| `POST /api/admin/recalculate-standings` | Classement complet (session admin requise) |
 
 ```bash
-# Diagnostic complet
-npx tsx prisma/check-db-status.ts
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/morning-update
 ```
 
----
+## Scripts du quotidien
 
-### Calculs (rarement nécessaires)
+| Commande | Rôle | Options |
+|---|---|---|
+| `npm run db:run-update` | Équivalent manuel du CRON du matin | `--days=N` (fenêtre J-N, défaut 3) · `--no-sync` · `--no-rosters` · `--season=` |
+| `npm run db:verify-season` | Contrôle complet DB vs ESPN (équipes, effectifs, calendrier, horaires, classement, stats, NBA Cup, blessures). Indique la commande qui corrige chaque erreur | `--quick` (sans ESPN) · `--season=` · `--from= --to=` |
+| `npm run db:update-rosters` | Effectifs (transferts, rookies, two-way, agents libres) | `--no-free-agents` |
+| `npm run db:update-injuries` | Effectifs + infirmerie, puis liste des blessés | — |
 
-Ces scripts ne sont utiles que pour un recalcul en masse (après reset DB ou bug).
-**En fonctionnement normal, le CRON `update-live-scores` fait tout automatiquement.**
+## Mise en ligne
 
-| Script | Usage |
-|--------|-------|
-| `calculate-all-player-stats.ts` | Recalculer TOUTES les moyennes joueurs |
-| `update-scores-and-standings.ts` | Recalculer TOUS les standings équipes |
+| Commande | Rôle |
+|---|---|
+| `npm run check:setup` | Variables d'environnement, URL d'auth, base, SMTP (sans envoi), date limite des paris de saison. Voir [LANCEMENT-BETA.md](./LANCEMENT-BETA.md) |
 
-```bash
-# Seulement si nécessaire (reset DB, bug...)
-npx tsx prisma/calculate-all-player-stats.ts
-npx tsx prisma/update-scores-and-standings.ts
-```
+## Scripts de début de saison
 
----
+Voir la checklist dans [NOUVELLE-SAISON.md](./NOUVELLE-SAISON.md).
 
-### Mise à jour des assets
+| Commande | Rôle | Options |
+|---|---|---|
+| `npm run db:seed-espn` | Calendrier complet (1er oct. → 30 juin), idempotent | `--season=` · `--from= --to=` |
+| `npm run db:backfill-nba-cup` | Tours + groupes NBA Cup | `--season=` · `--dry-run` · `--skip-scan` |
+| `npm run db:seed-players` | Alias de la synchro effectifs + blessures | — |
 
-| Script | Usage |
-|--------|-------|
-| `update-team-logos.ts` | Logos équipes |
-| `update-team-colors.ts` | Couleurs équipes |
-| `fetch-player-headshots.ts` | Photos joueurs |
-| `update-badge-rarities.ts` | Raretés des badges |
+## Recalculs (après un bug ou une correction de données)
 
----
+| Commande | Rôle |
+|---|---|
+| `npm run db:recalculate-standings` | Bilans des 30 équipes + rangs conférence/division (`--team=ABBR` pour une seule, `--season=`) |
+| `npm run db:recalculate-player-stats` | Moyennes de tous les joueurs de la saison |
+| `npm run db:backfill-boxscore-stats` | Re-télécharge les box scores de la saison régulière |
+| `npm run db:cleanup-player-stats` | Supprime les lignes DNP et les joueurs fantômes, puis recalcule |
+| `npm run db:backfill-standings` | Corrige les statuts des matchs passés puis recalcule le classement |
+| `npm run db:import-standings` | Importe le classement final ESPN (archivage de fin de saison) |
+| `npm run db:fix-season-format` | Matchs à saison mal formatée (« 2025 ») : doublon supprimé ou saison corrigée. Aperçu, puis `--apply` |
 
-### Reset / Nettoyage
+## Playoffs (utiles en avril–juin)
 
-| Script | Usage |
-|--------|-------|
-| `reset-games.ts` | Supprimer tous les matchs |
-| `reset-nba-data.ts` | Reset complet des données NBA |
-| `clean-all-stats.ts` | Supprimer toutes les stats |
-| `clear-players.ts` | Supprimer tous les joueurs |
-| `delete-all-notifications.ts` | Supprimer toutes les notifs |
+Le pipeline gère déjà les séries, les numéros de match (Game 1, 2…) et l'annulation des matchs
+if-necessary. Ces scripts restent pour rattraper des données anciennes.
 
----
+| Commande | Rôle |
+|---|---|
+| `npm run db:backfill-postseason` | Play-in + playoffs complets (matchs, box scores, pronos, séries) |
+| `npm run db:fix-playoff-series` | Tours, conférences, victoires et numéros de match des séries |
+| `npm run db:fix-playoff-rounds` | Tour/conférence manquants (via les notes ESPN) |
+| `npm run db:fix-playoff-seeds` | Seeds du 1er tour (inférence avec le Play-in) |
+| `npm run db:fix-game-numbers` | Numéros de match |
+| `npm run db:diagnose-bracket` | Diagnostic du bracket |
 
-### Utilitaires
+## Divers
 
-| Script | Usage |
-|--------|-------|
-| `generate-friend-codes.ts` | Générer codes amis manquants |
-| `refetch-one-game.ts` | Re-sync un match spécifique |
-| `fix-player-teams.ts` | Corriger équipes des joueurs |
-| `fix-team-abbreviations.ts` | Corriger abréviations |
+| Commande | Rôle |
+|---|---|
+| `npm run db:fetch-headshots` | Photos des joueurs (la synchro effectifs les renseigne déjà) |
+| `npm run db:normalize-positions` | PG/SG → G, SF/PF → F |
+| `npm run db:generate-friend-codes` | Codes amis manquants |
+| `npm run db:diagnose-standings` / `db:check-missing` / `db:fix-standings` | Diagnostics de classement de 2025-26 |
 
----
+## ⚠️ Destructifs
 
-## Calculs automatiques
+| Commande | Effet |
+|---|---|
+| `npm run db:reset-games` | Supprime **tous** les matchs |
+| `npm run db:reset-nba` | Vide **toutes** les données NBA |
+| `npm run db:delete-users -- email1 email2` | Comptes : aperçu de ce qui sera perdu (pronos par saison, ligues). Supprime seulement avec `--confirm` |
 
-**Tout est calculé automatiquement** par les CRON, pas besoin de scripts manuels :
+## Fichiers obsolètes
 
-| Donnée | Calculé par | Quand |
-|--------|-------------|-------|
-| TeamSeasonStats (W/L, standings) | `update-live-scores` | Après chaque match FINAL |
-| PlayerSeasonStats (PPG, RPG...) | `update-live-scores` | Après récupération des stats |
-| Points des pronos | `update-live-scores` | Quand match passe à FINAL |
-| Badges | `update-live-scores` | Après calcul des pronos |
-| Blessures | `update-injuries` | Toutes les 15 minutes |
-
-Les scripts `calculate-all-player-stats.ts` et `update-scores-and-standings.ts` ne servent qu'en cas de reset DB ou bug.
-
----
-
-## Workflow recommandé
-
-### Setup initial
-
-```bash
-npx prisma generate
-npx prisma db push
-npx tsx prisma/seed-espn.ts
-npx tsx prisma/seed-players.ts
-npx tsx prisma/seed-badges.ts
-npx tsx prisma/sync-injuries.ts
-```
-
-### Maintenance manuelle (si CRON down)
-
-```bash
-npx tsx prisma/sync-espn-all-games.ts
-npx tsx prisma/sync-injuries.ts
-npx tsx prisma/check-db-status.ts
-```
-
-### Récupérer des stats manquantes
-
-```bash
-npx tsx prisma/backfill-game-stats.ts --from=2025-12-01
-```
-
----
-
-## Test des CRON en local
-
-```bash
-curl http://localhost:3000/api/cron/update-live-scores
-curl http://localhost:3000/api/cron/refresh-daily-games
-curl http://localhost:3000/api/cron/update-injuries
-```
-
----
-
-## API source
-
-**ESPN API** (gratuite, sans clé) :
-- Matchs : `http://site.api.espn.com/.../scoreboard`
-- Stats : `http://site.api.espn.com/.../summary?event={id}`
-- Blessures : `http://site.api.espn.com/.../injuries`
-
-IDs des matchs : **401xxxxxx**
+- `prisma/archive/` : anciens scripts, conservés pour l'historique, non maintenus.
+- `npm run db:fix-player-teams`, `db:seed-boxscores`, `db:seed-boxscores-regular` : corrections
+  ponctuelles de 2025-26, remplacées par `db:update-rosters` et `db:run-update`.

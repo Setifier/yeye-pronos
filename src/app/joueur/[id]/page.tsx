@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { JoueurProfileClient } from "./joueur-profile-client";
 import { cookies } from "next/headers";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -8,7 +9,7 @@ interface PageProps {
 
 async function getPublicProfile(userId: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = getAppBaseUrl();
     const cookieStore = await cookies();
     const cookieHeader = cookieStore
       .getAll()

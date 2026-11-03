@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
     });
     const userId = session?.user?.id;
 
-    console.log(`[API] Querying DB for games on date: ${dateParam}`);
 
     // Parser la date (format: "2025-12-22")
     const [year, month, day] = dateParam.split("-").map(Number);
@@ -54,6 +53,10 @@ export async function GET(request: NextRequest) {
         localGameDate: {
           gte: startDate,
           lte: endDate,
+        },
+        // Hide cancelled if-necessary games (series ended before they were played)
+        NOT: {
+          AND: [{ isIfNecessary: true }, { status: "CANCELLED" }],
         },
       },
       include: {
@@ -96,7 +99,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    console.log(`[API] Found ${dbGames.length} games in wide search for ${dateParam}`);
 
     // Filtrer pour ne garder que les matchs qui correspondent au jour demandé
     // UNIQUEMENT selon la date locale US (Eastern Time), PAS l'heure de Paris
@@ -115,7 +117,6 @@ export async function GET(request: NextRequest) {
       return formattedUsDate === dateParam;
     });
 
-    console.log(`[API] Filtered to ${filteredGames.length} games matching ${dateParam} (US date)`);
 
     // Formater les matchs pour correspondre au format attendu par le frontend
     // (format compatible avec BallDontLie pour éviter de casser le frontend)
@@ -153,10 +154,14 @@ export async function GET(request: NextRequest) {
           conference: game.awayTeam.conference === "EAST" ? "East" : "West",
           division: game.awayTeam.division,
         },
-        home_team_score: game.homeScore,
+        home_team_score:   game.homeScore,
         visitor_team_score: game.awayScore,
-        currentPeriod: game.currentPeriod,
-        gameClock: game.gameClock,
+        currentPeriod:     game.currentPeriod,
+        gameClock:         game.gameClock,
+        isIfNecessary:     game.isIfNecessary,
+        gameNumber:        game.gameNumber,
+        seriesId:          game.seriesId,
+        seasonType:        game.seasonType,
         userPrediction,
       };
     });

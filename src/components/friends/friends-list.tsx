@@ -53,7 +53,7 @@ export function FriendsList({
           Aucun ami pour le moment
         </p>
         <p className="text-zinc-600 text-sm text-center">
-          Utilisez l'onglet "Rechercher" pour trouver des amis
+          Utilisez l&apos;onglet &quot;Rechercher&quot; pour trouver des amis
         </p>
       </div>
     );

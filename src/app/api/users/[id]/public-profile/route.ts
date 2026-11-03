@@ -12,14 +12,13 @@ import { PredictionResult } from "@/generated/prisma";
  * - Informations de base (nom, image, date d'inscription)
  * - Statistiques globales
  * - Derniers pronos terminés (WON/LOST uniquement, pas de PENDING pour éviter les spoilers)
- * - Badges débloqués
  * - Rang au classement
  *
  * Protégé: Authentification requise
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Vérifier l'authentification
@@ -34,7 +33,7 @@ export async function GET(
       );
     }
 
-    const targetUserId = params.id;
+    const { id: targetUserId } = await params;
 
     // 1. Récupérer l'utilisateur
     const user = await prisma.user.findUnique({
@@ -139,18 +138,7 @@ export async function GET(
       };
     });
 
-    // 4. Récupérer les badges
-    const userBadges = await prisma.userBadge.findMany({
-      where: { userId: targetUserId },
-      include: {
-        badge: true,
-      },
-      orderBy: {
-        unlockedAt: "desc",
-      },
-    });
-
-    // 5. Récupérer le rang au classement
+    // 4. Récupérer le rang au classement
     const rank = await getUserRank(targetUserId);
 
     return NextResponse.json({
@@ -159,7 +147,6 @@ export async function GET(
         user,
         stats,
         recentPredictions: formattedPredictions,
-        badges: userBadges,
         rank,
       },
     });

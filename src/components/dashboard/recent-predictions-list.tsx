@@ -60,7 +60,7 @@ function PredictionCard({ prediction }: { prediction: RecentPrediction }) {
     },
   };
 
-  const badge = resultBadge[prediction.result];
+  const badge = resultBadge[prediction.result as keyof typeof resultBadge] || resultBadge.PENDING;
   const Icon = badge.icon;
 
   // Déterminer quelle équipe a été prédite

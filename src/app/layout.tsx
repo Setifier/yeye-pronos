@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { Navbar } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
+import { MobileTabBar } from "@/components/layout/mobile-tab-bar";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
@@ -23,9 +24,6 @@ export const metadata: Metadata = {
   description:
     "Pronostiquez les résultats des matchs NBA et grimpez dans le classement",
 };
-
-// Force dynamic rendering to always fetch fresh session data
-export const dynamic = 'force-dynamic';
 
 export default async function RootLayout({
   children,
@@ -62,6 +60,7 @@ export default async function RootLayout({
         <Navbar user={userWithImage} />
         {children}
         <Footer />
+        {userWithImage?.hasCompletedOnboarding && <MobileTabBar />}
         <Toaster position="top-center" richColors />
       </body>
     </html>

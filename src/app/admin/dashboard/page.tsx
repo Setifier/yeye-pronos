@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth-helpers";
 import { headers } from "next/headers";
+import { getAppBaseUrl } from "@/lib/app-url";
 import { StatCard } from "@/components/admin/stat-card";
 import {
   UsersIcon,
@@ -32,7 +33,7 @@ interface AdminStats {
 
 async function getAdminStats(): Promise<AdminStats | null> {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = getAppBaseUrl();
     const headersList = await headers();
 
     const response = await fetch(`${baseUrl}/api/admin/stats`, {
@@ -57,7 +58,7 @@ async function getAdminStats(): Promise<AdminStats | null> {
 
 export default async function AdminDashboardPage() {
   // Récupérer la session et vérifier les droits admin (gère les cookies orphelins)
-  const session = await requireAdmin();
+  await requireAdmin();
 
   // Récupérer les stats
   const stats = await getAdminStats();
@@ -70,7 +71,7 @@ export default async function AdminDashboardPage() {
           Tableau de bord Admin
         </h1>
         <p className="text-zinc-400 mt-2">
-          Vue d'ensemble de l'application NBA Pronos
+          Vue d&apos;ensemble de l&apos;application NBA Pronos
         </p>
       </div>
 
@@ -103,7 +104,7 @@ export default async function AdminDashboardPage() {
             />
 
             <StatCard
-              title="Taux d'activité"
+              title="Taux d&apos;activité"
               value={
                 stats.users.total > 0
                   ? `${((stats.users.activeToday / stats.users.total) * 100).toFixed(1)}%`

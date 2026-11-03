@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { Trophy, ChevronLeft } from "lucide-react";
+import { getTeamLogo } from "@/lib/nba-logos";
 
 interface Team {
   id: string;
   name: string;
   city: string;
   abbreviation: string;
-  logoUrl: string;
+  logoUrl: string | null;
   conference: string;
   primaryColor?: string | null;
   secondaryColor?: string | null;
@@ -62,7 +63,7 @@ export function TeamSelectionStep({
           Quelle est votre équipe favorite ?
         </h2>
         <p className="text-zinc-400">
-          Sélectionnez l'équipe NBA que vous supportez
+          Sélectionnez l&apos;équipe NBA que vous supportez
         </p>
       </div>
 
@@ -141,7 +142,7 @@ export function TeamSelectionStep({
               {/* Team Logo */}
               <div className="flex flex-col items-center gap-3">
                 <img
-                  src={team.logoUrl}
+                  src={team.logoUrl ?? getTeamLogo(team.abbreviation)}
                   alt={`${team.city} ${team.name}`}
                   className="w-16 h-16 object-contain"
                 />
@@ -169,7 +170,7 @@ export function TeamSelectionStep({
               return (
                 <>
                   <img
-                    src={selected?.logoUrl}
+                    src={selected ? selected.logoUrl ?? getTeamLogo(selected.abbreviation) : undefined}
                     alt={selected?.name}
                     className="w-10 h-10"
                   />

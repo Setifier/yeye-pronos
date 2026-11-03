@@ -113,7 +113,7 @@ function ComparisonBar({
           <span>
             {isWinning ? "Vous êtes en avance" : "Vous êtes en retard"} de{" "}
             <span className="font-bold">
-              {formatValue(Math.abs(myValue - friendValue))}
+              {formatValue(Math.round(Math.abs(myValue - friendValue) * 10) / 10)}
             </span>
           </span>
         </div>
@@ -289,8 +289,8 @@ export default function ComparerPage({
           {/* Win Rate */}
           <ComparisonBar
             title="Win Rate"
-            myValue={comparison.me.winRate}
-            friendValue={comparison.friend.winRate}
+            myValue={Math.round(comparison.me.winRate * 10) / 10}
+            friendValue={Math.round(comparison.friend.winRate * 10) / 10}
             myLabel={comparison.me.user.name}
             friendLabel={comparison.friend.user.name}
             formatValue={(v) => `${v}%`}
@@ -314,16 +314,6 @@ export default function ComparerPage({
             friendValue={comparison.friend.totalPredictions}
             myLabel={comparison.me.user.name}
             friendLabel={comparison.friend.user.name}
-            icon={<Trophy className="w-5 h-5" />}
-          />
-
-          {/* Current Streak */}
-          <ComparisonBar
-            title="Série en cours"
-            myValue={comparison.me.currentStreak.count}
-            friendValue={comparison.friend.currentStreak.count}
-            myLabel={`${comparison.me.user.name} (${comparison.me.currentStreak.type === "WIN" ? "✓" : "✗"})`}
-            friendLabel={`${comparison.friend.user.name} (${comparison.friend.currentStreak.type === "WIN" ? "✓" : "✗"})`}
             icon={<Trophy className="w-5 h-5" />}
           />
 
@@ -410,10 +400,10 @@ export default function ComparerPage({
               <tr className="hover:bg-zinc-800/30 transition-colors">
                 <td className="p-4 text-white font-medium">Win Rate</td>
                 <td className="p-4 text-center text-white font-bold">
-                  {comparison.me.winRate}%
+                  {Math.round(comparison.me.winRate * 10) / 10}%
                 </td>
                 <td className="p-4 text-center text-white font-bold">
-                  {comparison.friend.winRate}%
+                  {Math.round(comparison.friend.winRate * 10) / 10}%
                 </td>
                 <td className="p-4 text-center">
                   <span
@@ -426,7 +416,7 @@ export default function ComparerPage({
                     }`}
                   >
                     {comparison.differences.winRate > 0 ? "+" : ""}
-                    {comparison.differences.winRate}%
+                    {Math.round(comparison.differences.winRate * 10) / 10}%
                   </span>
                 </td>
               </tr>
@@ -477,18 +467,6 @@ export default function ComparerPage({
                       comparison.friend.totalPredictions}
                   </span>
                 </td>
-              </tr>
-              <tr className="hover:bg-zinc-800/30 transition-colors">
-                <td className="p-4 text-white font-medium">Série en cours</td>
-                <td className="p-4 text-center text-white font-bold">
-                  {comparison.me.currentStreak.count}{" "}
-                  {comparison.me.currentStreak.type === "WIN" ? "✓" : "✗"}
-                </td>
-                <td className="p-4 text-center text-white font-bold">
-                  {comparison.friend.currentStreak.count}{" "}
-                  {comparison.friend.currentStreak.type === "WIN" ? "✓" : "✗"}
-                </td>
-                <td className="p-4 text-center text-zinc-500">-</td>
               </tr>
               <tr className="hover:bg-zinc-800/30 transition-colors">
                 <td className="p-4 text-white font-medium">

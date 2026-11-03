@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentSeason } from "@/types/season";
 
 export async function GET(
   request: Request,
@@ -7,6 +8,7 @@ export async function GET(
 ) {
   try {
     const { id: teamId } = await params;
+    const season = getCurrentSeason();
 
     // Fetch team with stats, roster, and injuries
     const team = await prisma.team.findUnique({
@@ -22,7 +24,7 @@ export async function GET(
         primaryColor: true,
         secondaryColor: true,
         seasonStats: {
-          where: { season: "2025-26" },
+          where: { season },
           select: {
             // Record
             wins: true,
@@ -68,7 +70,7 @@ export async function GET(
             injuryStatus: true,
             injuryNote: true,
             seasonStats: {
-              where: { season: "2025-26" },
+              where: { season },
               select: {
                 gamesPlayed: true,
                 pointsPerGame: true,
@@ -107,7 +109,7 @@ export async function GET(
       select: {
         id: true,
         seasonStats: {
-          where: { season: "2025-26" },
+          where: { season },
           select: {
             pointsPerGame: true,
             pointsAllowedPerGame: true,

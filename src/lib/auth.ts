@@ -33,9 +33,9 @@ const options = {
     sendResetPassword: async ({ user, url }) => {
       await sendEmailAction({
         to: user.email,
-        subject: "Reset your password",
+        subject: "Réinitialiser ton mot de passe",
         meta: {
-          description: "Click the link below to reset your password",
+          description: "Clique sur le bouton ci-dessous pour choisir un nouveau mot de passe. Le lien est valable 1 heure.",
           link: url,
         },
       });
@@ -51,9 +51,9 @@ const options = {
 
       await sendEmailAction({
         to: user.email,
-        subject: "Verify your email",
+        subject: "Confirme ton adresse e-mail",
         meta: {
-          description: "Click the link below to verify your email",
+          description: "Bienvenue ! Clique sur le bouton ci-dessous pour activer ton compte et commencer à pronostiquer.",
           link: String(link),
         },
       });
@@ -63,12 +63,12 @@ const options = {
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path === "/sign-up/email") {
         const email = String(ctx.body?.email);
-        const domain = email.split("@")[1];
+        const domain = (email.split("@")[1] ?? "").trim().toLowerCase();
 
         const VALID_DOMAINS = getValidDomains();
         if (!VALID_DOMAINS.includes(domain)) {
           throw new APIError("BAD_REQUEST", {
-            message: "Invalid domain. Please use a valid email address.",
+            message: `Les adresses @${domain} ne sont pas acceptées. Utilise une adresse Gmail, Outlook, iCloud, Orange, Free…`,
           });
         }
 
@@ -117,7 +117,9 @@ const options = {
     user: {
       create: {
         before: async (user) => {
-          const ADMIN_EMAILS = process.env.ADMIN_EMAILS?.split(";") ?? [];
+          // Tolère espaces et majuscules dans la variable (« a@x.com; B@y.com »)
+          const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
+            .split(";").map((e) => e.trim().toLowerCase()).filter(Boolean);
 
           // Générer un friendCode unique
           const friendCode = await generateUniqueFriendCode();
@@ -127,7 +129,7 @@ const options = {
             friendCode,
           };
 
-          if (ADMIN_EMAILS.includes(user.email)) {
+          if (ADMIN_EMAILS.includes(user.email.toLowerCase())) {
             return { data: { ...userData, role: UserRole.ADMIN } };
           }
           return { data: userData };
@@ -176,9 +178,9 @@ const options = {
       sendMagicLink: async ({ email, url }) => {
         await sendEmailAction({
           to: email,
-          subject: "Magic link Login",
+          subject: "Ton lien de connexion",
           meta: {
-            description: "Please click the link below to log in.",
+            description: "Clique sur le bouton ci-dessous pour te connecter, sans mot de passe. Le lien est valable 15 minutes.",
             link: url,
           },
         });
@@ -207,6 +209,7 @@ export const auth = betterAuth({
           id: user.id,
           name: user.name,
           email: user.email,
+          image: user.image ?? null,
           role: user.role,
           hasCompletedOnboarding: userData?.hasCompletedOnboarding ?? false,
         },

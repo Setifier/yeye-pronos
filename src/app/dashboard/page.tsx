@@ -1,7 +1,7 @@
 import { requireAuth } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { DashboardPage } from "@/components/dashboard-page";
+import { DashboardPage } from "@/components/dashboard/dashboard-page";
 
 export default async function Dashboard() {
   // Récupérer la session de manière sécurisée (gère les cookies orphelins)
@@ -12,6 +12,7 @@ export default async function Dashboard() {
     where: { id: session.user.id },
     select: {
       image: true,
+      createdAt: true,
       hasCompletedOnboarding: true,
     },
   });
@@ -26,7 +27,7 @@ export default async function Dashboard() {
     <DashboardPage
       userId={session.user.id}
       userName={session.user.name}
-      userCreatedAt={session.user.createdAt}
+      userCreatedAt={user.createdAt.toISOString()}
       userImage={user?.image || null}
     />
   );

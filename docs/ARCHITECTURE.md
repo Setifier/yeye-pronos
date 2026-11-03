@@ -146,7 +146,8 @@ points = pronos match + paris de saison, ex æquo au même rang. Utilisé par `/
 
 ## Limites connues
 
-1. **Un seul CRON par jour** (Vercel Hobby) : pas de scores en direct sans service externe
+1. **Chaque CRON une fois par jour au plus** (Vercel Hobby) : matin (tout le pipeline) + soir (blessures) ;
+   pas de scores en direct sans service externe
    (voir [SCRIPTS.md](./SCRIPTS.md#scores-en-direct-optionnel)).
 2. **Durée max 60 s** par exécution : les gros rattrapages se font avec `npm run db:run-update`.
 3. **Groupes NBA Cup** : lettres A/B/C inférées, pas forcément les lettres officielles.

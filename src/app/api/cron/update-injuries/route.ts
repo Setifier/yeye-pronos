@@ -6,7 +6,13 @@ export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 /**
- * Effectifs + blessures (déclenchement manuel ; le CRON du matin l'exécute déjà).
+ * Effectifs + blessures, juste avant les matchs.
+ *
+ * CRON du soir — vercel.json : "0 21 * * *" (UTC, sans changement d'heure).
+ *   Plan Hobby : déclenchement entre 21:00 et 21:59 UTC
+ *   = 22h-23h Paris en hiver (23h-00h en été) = 16h-17h à New York (17h-18h en été),
+ *   avant les premiers coups d'envoi de 19h ET. Les matchs du week-end en journée ne sont pas couverts.
+ *   Le CRON du matin fait aussi cette mise à jour (après les matchs de la nuit).
  *
  * Les rosters ESPN servent de complément à l'endpoint blessures et garantissent
  * que chaque joueur est rattaché à la bonne équipe.

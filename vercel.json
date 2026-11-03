@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/morning-update",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/update-injuries",
+      "schedule": "0 21 * * *"
     }
   ]
 }

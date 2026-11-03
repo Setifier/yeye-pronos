@@ -53,9 +53,10 @@ npm run dev
 ## Production (Vercel)
 
 1. Variables d'environnement renseignées (dont `CRON_SECRET`).
-2. `vercel.json` déclare un seul CRON : `/api/cron/morning-update` à `0 8 * * *`
-   (08:00 UTC = 09h00 Paris en hiver, 10h00 en été — Vercel ne suit pas les changements d'heure).
-3. Après déploiement : onglet **Cron** du dashboard Vercel → vérifier que le job est actif,
+2. `vercel.json` déclare deux CRON (Vercel ne suit pas les changements d'heure) :
+   `/api/cron/morning-update` à `0 8 * * *` (09h00 Paris en hiver, 10h00 en été) et
+   `/api/cron/update-injuries` à `0 21 * * *` (blessures avant les matchs, 22h-23h Paris en hiver).
+3. Après déploiement : onglet **Cron** du dashboard Vercel → vérifier que les jobs sont actifs,
    puis consulter ses logs le lendemain matin.
 4. Contrôle de cohérence à tout moment : `npm run db:verify-season`.
 

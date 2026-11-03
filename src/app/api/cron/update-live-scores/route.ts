@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 /**
  * CRON optionnel — scores en direct.
  *
- * Vercel Hobby n'autorise qu'un CRON par jour : cette route n'est donc PAS dans vercel.json.
+ * Vercel Hobby limite chaque CRON à un passage par jour : cette route n'est donc PAS dans vercel.json.
  * Pour avoir les scores en direct, la faire appeler toutes les 5 min pendant les matchs
  * (ex. cron-job.org, 23h → 07h Paris) avec le header `Authorization: Bearer $CRON_SECRET`.
  *

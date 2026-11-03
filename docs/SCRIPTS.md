@@ -14,11 +14,14 @@ un script manuel fait **exactement** la même chose que le CRON, sans limite de 
 
 ## CRON (production, Vercel)
 
-Vercel Hobby n'autorise **qu'un CRON par jour** → un seul CRON fait tout :
+Vercel Hobby : jusqu'à 100 CRON par projet, mais **chacun au plus une fois par jour**, déclenché à un
+moment quelconque dans l'heure prévue. Le CRON du matin fait tout ; celui du soir rafraîchit les blessures
+avant les matchs.
 
 | CRON | Planning (`vercel.json`) | Contenu |
 |---|---|---|
 | `/api/cron/morning-update` | `0 8 * * *` → **09h00 heure de Paris** (10h00 en heure d'été) | Calendrier J-3 → J+7 · matchs terminés (pronos, stats) · classement · séries · effectifs · blessures |
+| `/api/cron/update-injuries` | `0 21 * * *` → **22h-23h heure de Paris** (23h-00h en été) = 16h-17h à New York | Effectifs + blessures, avant les premiers coups d'envoi de 19h ET (les matchs du week-end en journée ne sont pas couverts) |
 
 **Pourquoi 08:00 UTC.** Vercel planifie en UTC et ne suit pas les changements d'heure :
 

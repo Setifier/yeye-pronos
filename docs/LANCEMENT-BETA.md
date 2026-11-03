@@ -33,7 +33,8 @@ Ensuite, chaque `git push` sur `main` redéploie automatiquement.
 
 - Vercel → Settings → Functions : région **London (lhr1)**, la même que la base Neon (eu-west-2).
   Sinon chaque requête traverse l'Atlantique et le CRON ne tient pas dans ses 60 s une nuit de 15 matchs.
-- Vercel → onglet **Cron** : `morning-update` actif (`0 8 * * *` = 09h Paris). Bouton **Run** pour un
+- Vercel → onglet **Cron** : `morning-update` actif (`0 8 * * *` = 09h Paris) et `update-injuries`
+  (`0 21 * * *` = 22h-23h Paris, blessures avant les matchs). Bouton **Run** pour un
   premier passage : la réponse doit contenir `"ok": true` et un `durationMs` bien en dessous de 50 000.
 - Créer ton compte avec l'adresse de `ADMIN_EMAILS` (rôle admin attribué à la création).
 - Ensuite, rien à surveiller : si un passage reste incomplet (matchs non traités, ESPN en panne, effectifs

@@ -20,6 +20,9 @@
 - Fonctions Vercel à Londres (`lhr1`), comme la base Neon : sans ça, ~80 ms par requête SQL et une nuit
   de 15 matchs ne tenait pas dans les 60 s du CRON.
 - CRON du matin : e-mail aux admins seulement si un passage reste incomplet (`ok` / `problems` dans la réponse).
+  Son log indique aussi les jours sans match à traiter, et le nombre de moyennes joueurs recalculées par match.
+- 2e CRON le soir (`/api/cron/update-injuries`, 22h-23h Paris) : blessures et effectifs rafraîchis avant
+  les matchs. Gratuit : Vercel Hobby autorise jusqu'à 100 CRON, chacun une fois par jour.
 - Traitement d'un match ~8× moins de requêtes SQL : box score et moyennes joueurs écrits d'un bloc
   (avant : 2 requêtes par joueur, ~100 par match ; une nuit de 15 matchs prenait 59 s en local).
 - « Mot de passe oublié » réparé : better-auth 1.4 a renommé `forgetPassword` en `requestPasswordReset`

@@ -186,7 +186,8 @@ export async function processFinalGame(
 
   log(
     `  ✓ ${label}${hasOvertime ? " (OT)" : ""} · top ${topScorer ? `${topScorer.playerName} ${topScorer.points} pts` : "inconnu"}` +
-    ` · ${predictions.length} prono(s)`
+    ` · ${predictions.length} prono(s)` +
+    (players > 0 ? ` · moyennes de ${players} joueur(s)` : "")
   );
 
   return {
@@ -255,6 +256,7 @@ export async function runGamePipeline(
   // ── Matchs terminés ─────────────────────────────────────────
   const todo = await findUnprocessedFinalGames(prisma, season, opts.maxGames);
   if (todo.length > 0) log(`🎯 ${todo.length} match(s) terminé(s) à traiter`);
+  else log(`🎯 Aucun nouveau match terminé : box scores, pronos, moyennes et classement déjà à jour`);
 
   const processed: ProcessedGame[] = [];
   const teamsToRecalc = new Set<string>();

@@ -77,7 +77,7 @@ Postseason : Play-in, 1er tour, 2e tour, finales de conférence, Finale NBA.
 
 | Élément | Fichier |
 |---|---|
-| Date limite : **coup d'envoi du 1er match de saison régulière** ; exceptions ponctuelles dans `PRESEASON_DEADLINES` (2026-27 : lun. 3 nov. 23h59, lancement bêta) | `src/types/special-predictions.ts` |
+| Date limite : **coup d'envoi du 1er match de saison régulière** ; exceptions ponctuelles dans `PRESEASON_DEADLINES` (2026-27 : mar. 10 nov. 23h59, lancement bêta) | `src/types/special-predictions.ts` |
 | Cotes NBA Cup (rang de la saison précédente, ou `SpecialPredictionConfig`), validation, classement par défaut | `src/lib/special-bets.ts` |
 | Logique du bracket (seeds = top 10 du classement prédit, play-in 7e/8e, séries 4-7 matchs, nettoyage en cascade) | `src/lib/preseason-bracket.ts` |
 | API lecture / enregistrement (refus après la date limite) | `GET`/`PUT /api/special-predictions` |

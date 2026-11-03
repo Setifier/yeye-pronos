@@ -21,7 +21,8 @@
 - **Scripts** : tsx (dans `/prisma/`)
 - **Saison courante** : calculée par `getCurrentSeason()` (`src/types/season.ts`) — 2026-27 depuis le 1er oct. 2026.
   Ne jamais coder une saison en dur.
-- **Hébergement** : Vercel Hobby → un seul CRON par jour, 60 s max par exécution.
+- **Hébergement** : Vercel Hobby (projet `yeye-pronos`, https://yeye-pronos.vercel.app, fonctions à Londres `lhr1`)
+  → chaque CRON une fois par jour max (100 par projet, déclenchement à ±59 min dans l'heure), 60 s max par exécution.
 
 ## Documentation
 
@@ -77,6 +78,6 @@ npm run db:diagnose-bracket      # Diagnostic données bracket
   de l'accueil ne concernent que cette nuit.
 - Classement des joueurs de l'app : par saison (`src/lib/season-ranking.ts`), paris de saison inclus.
 - Paris de début de saison : fermeture au **coup d'envoi du 1er match de saison régulière** (règle officielle).
-  `PRESEASON_DEADLINES` = exceptions ponctuelles seulement (2026-27 : 3 nov. 23h59, lancement bêta — ne pas reconduire).
+  `PRESEASON_DEADLINES` = exceptions ponctuelles seulement (2026-27 : mar. 10 nov. 23h59, lancement bêta — ne pas reconduire).
 - Paris d'un match : fermeture au coup d'envoi (`predictionDeadlineFor()`).
 - Couleurs : `#5096ff` (action), `#ff5050` (urgence / à faire), `#dcff50` (points), fond zinc-950.

@@ -5,7 +5,8 @@
 ### Paris de début de saison (nouveau)
 - Classement des 30 équipes, bracket Play-in → titre (+ MVP des Finales), champion NBA Cup, MVP.
 - Règle : fermeture au **coup d'envoi du premier match** de la saison régulière.
-  Exception ponctuelle pour le lancement de la bêta 2026-27 : **lundi 3 novembre 23h59** (Paris).
+  Exception ponctuelle pour le lancement de la bêta 2026-27 : **mardi 10 novembre 23h59** (Paris),
+  repoussée le 3 novembre pour laisser le temps aux testeurs.
 - API `GET`/`PUT /api/special-predictions`, validation côté serveur, refus après la date limite.
 - Bracket prérempli par le top 10 du classement, brouillon gardé sur l'appareil, choix effacés en cascade.
 - Statuts « Ouvert/Fermé » réels partout ; rappel sur l'accueil tant que les 4 paris ne sont pas faits.

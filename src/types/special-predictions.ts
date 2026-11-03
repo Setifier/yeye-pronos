@@ -278,8 +278,9 @@ export type PreseasonBetType = typeof PRESEASON_BET_TYPES[number];
  * pour une saison normale.
  *
  * Exception 2026-27 : lancement de la bêta en cours de saison (saison démarrée le 20/10)
- * → tous les paris, NBA Cup comprise, ferment le lundi 3 novembre à 23h59 (Paris).
+ * → tous les paris, NBA Cup comprise, ferment le mardi 10 novembre à 23h59 (Paris)
+ *   (repoussé du 3 au 10 novembre pour laisser le temps aux testeurs de la bêta).
  */
 export const PRESEASON_DEADLINES: Record<string, string> = {
-  "2026-27": "2026-11-03T23:59:00+01:00", // exception lancement bêta
+  "2026-27": "2026-11-10T23:59:00+01:00", // exception lancement bêta
 };

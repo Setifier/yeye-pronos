@@ -14,6 +14,21 @@ Hors périmètre de la bêta : trophées/défis, archives des saisons passées, 
 | 4 | Google OAuth | Console Google → identifiants → URI de redirection : `https://<domaine>/api/auth/callback/google` |
 | 5 | Types | `npx tsc --noEmit` sans erreur, puis `npm run build` |
 
+### Première fois : créer le projet Vercel
+
+1. Pousser le code sur GitHub (`git push origin main`).
+2. vercel.com → *Continue with GitHub* → **Add New… → Project** → importer le dépôt
+   (absent de la liste : *Adjust GitHub App Permissions*).
+3. Écran de configuration : le **nom du projet** donne l'URL (`<nom>.vercel.app`). Framework Next.js,
+   commande de build par défaut (`npm run build` lance `prisma generate`).
+4. *Environment Variables* : coller tout le `.env` dans le premier champ *Key* (Vercel découpe),
+   **supprimer les lignes en `localhost`**, ajouter `CRON_SECRET` s'il manque (`openssl rand -hex 32`). **Deploy**.
+5. Une fois en ligne : ajouter `BETTER_AUTH_URL` et `NEXT_PUBLIC_API_URL` = l'URL de prod
+   (Settings → Domains), puis **Deployments → ⋯ → Redeploy** (les variables sont lues au déploiement).
+6. Connexion Google : ajouter `https://<url>/api/auth/callback/google` dans la console Google.
+
+Ensuite, chaque `git push` sur `main` redéploie automatiquement.
+
 ## 2. Après le déploiement
 
 - Vercel → Settings → Functions : région **London (lhr1)**, la même que la base Neon (eu-west-2).
@@ -32,7 +47,7 @@ Hors périmètre de la bêta : trophées/défis, archives des saisons passées, 
 | Inscription e-mail | E-mail « Confirme ton adresse » reçu (vérifier les spams), lien → connexion → onboarding |
 | Connexion Google | Arrive directement à l'onboarding |
 | Onboarding | Pseudo, équipe et joueur favoris → accueil |
-| Paris de début de saison | `/pronos/preseason` : classement → bracket → NBA Cup → MVP, avant le **lundi 3 nov. 23h59** |
+| Paris de début de saison | `/pronos/preseason` : classement → bracket → NBA Cup → MVP, avant le **mardi 10 nov. 23h59** |
 | Pari d'un match | Accueil → « Faire mes N paris » ; un clic sur une équipe enregistre ; bonus dans la fenêtre |
 | Le lendemain | Points affichés sur la carte et dans « Hier soir », classement mis à jour. No Spoil actif par défaut : bouton « No Spoil » en haut (→ « Scores visibles », mémorisé sur l'appareil) ou « Afficher » sur la dernière nuit |
 | Mobile | Barre d'onglets en bas, fenêtre de pari en plein écran |

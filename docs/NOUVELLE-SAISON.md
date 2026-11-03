@@ -57,4 +57,4 @@ npm run db:verify-season
 **Règle officielle** : les paris de début de saison ferment au **coup d'envoi du premier match** de la saison régulière.
 
 **Exception 2026-27 uniquement** (lancement de la bêta en cours de saison) : tous fermés le
-**lundi 3 novembre 2026 à 23h59** (heure de Paris), NBA Cup comprise. À ne pas reconduire.
+**mardi 10 novembre 2026 à 23h59** (heure de Paris), NBA Cup comprise. À ne pas reconduire.

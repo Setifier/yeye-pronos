@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CheckCircle2, ExternalLink, Loader2, Mail, Send, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
-import { sendInvitationsAction, type InviteResult } from "@/actions/admin/invitations";
+import { sendInvitationsAction, sendTestInvitationAction, type InviteResult } from "@/actions/admin/invitations";
 import { MAX_INVITES_PER_SEND, parseEmailList } from "@/lib/email-list";
 
 /** Bouton « Inviter » de l'admin : saisie des adresses, puis envoi de l'e-mail d'invitation. */
@@ -34,7 +34,16 @@ function InviteDialog({ onClose }: { onClose: () => void }) {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Done | null>(null);
+  const [testing, setTesting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const sendTest = async () => {
+    setTesting(true);
+    const res = await sendTestInvitationAction().catch(() => ({ ok: false as const, error: "L'envoi a échoué." }));
+    setTesting(false);
+    if (res.ok) toast.success(`Test envoyé à ${res.to}`, { description: "Regarde aussi dans les spams." });
+    else toast.error("Le test n'est pas parti", { description: res.error, duration: 15_000 });
+  };
 
   const { valid, invalid } = useMemo(() => parseEmailList(raw), [raw]);
   const tooMany = valid.length > MAX_INVITES_PER_SEND;
@@ -119,11 +128,18 @@ function InviteDialog({ onClose }: { onClose: () => void }) {
                       ? `${valid.length} adresses : ${MAX_INVITES_PER_SEND} maximum par envoi`
                       : `${valid.length} adresse${valid.length > 1 ? "s" : ""} prête${valid.length > 1 ? "s" : ""}`}
                 </span>
-                <a href="/api/admin/invitation-preview" target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 font-semibold text-[#5096ff] hover:underline underline-offset-2">
-                  Voir l&apos;e-mail <ExternalLink className="h-3 w-3" />
-                </a>
+                <span className="flex items-center gap-3">
+                  <a href="/api/admin/invitation-preview" target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 font-semibold text-[#5096ff] hover:underline underline-offset-2">
+                    Voir l&apos;e-mail <ExternalLink className="h-3 w-3" />
+                  </a>
+                  <button type="button" onClick={sendTest} disabled={testing || sending}
+                    className="inline-flex items-center gap-1 font-semibold text-[#5096ff] hover:underline underline-offset-2 disabled:opacity-50">
+                    {testing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Mail className="h-3 w-3" />} M&apos;envoyer un test
+                  </button>
+                </span>
               </div>
+              <p className="text-[11px] text-zinc-500">Les adresses qui ont déjà un compte sont ignorées (la tienne aussi : utilise « M&apos;envoyer un test »).</p>
               {invalid.length > 0 && (
                 <p className="rounded-lg bg-amber-400/10 px-3 py-2 text-xs text-amber-400">
                   Ignorée{invalid.length > 1 ? "s" : ""} (format incorrect) : {invalid.join(", ")}
@@ -164,7 +180,7 @@ function ResultView({ result, onRestart, onClose }: { result: Done; onRestart: (
       hint: "Ajoute le domaine à ALLOWED_EMAIL_DOMAINS (Vercel), puis renvoie.",
     },
     { label: "Format incorrect", emails: result.invalid, tone: "text-amber-400" },
-    { label: "Échec d'envoi", emails: result.failed, tone: "text-[#ff5050]", hint: "Réessaie dans un instant." },
+    { label: "Échec d'envoi", emails: result.failed, tone: "text-[#ff5050]", hint: result.failedReason ?? "Réessaie dans un instant." },
   ].filter((g) => g.emails.length > 0);
 
   return (
@@ -179,6 +195,14 @@ function ResultView({ result, onRestart, onClose }: { result: Done; onRestart: (
               {result.sent.length === 1 ? "Invitation envoyée" : `${result.sent.length} invitations envoyées`}
             </p>
             <p className="text-xs text-zinc-500">Pense à prévenir : l&apos;e-mail peut arriver dans les spams.</p>
+          </div>
+        )}
+        {result.sent.length === 0 && (
+          <div className="rounded-xl bg-amber-400/10 px-3 py-2.5 text-xs text-amber-400">
+            <p className="font-semibold">Aucune invitation n&apos;est partie.</p>
+            {result.alreadyRegistered.length > 0 && (
+              <p className="mt-0.5 text-amber-400/80">Les adresses déjà inscrites ne reçoivent pas d&apos;invitation. Pour voir l&apos;e-mail, utilise « M&apos;envoyer un test ».</p>
+            )}
           </div>
         )}
         {groups.map((g) => (

@@ -6,6 +6,7 @@ import transporter from "@/lib/nodemailer";
 import { getValidDomains } from "@/lib/utils";
 import { MAX_INVITES_PER_SEND, parseEmailList } from "@/lib/email-list";
 import { prepareInvitationEmail } from "@/lib/emails/invitation-email";
+import { describeMailError } from "@/lib/mail-errors";
 
 export type InviteResult =
   | {
@@ -17,8 +18,40 @@ export type InviteResult =
       refusedDomain: string[];
       invalid: string[];
       failed: string[];
+      /** Raison donnée par Gmail pour le premier échec. */
+      failedReason: string | null;
     }
   | { ok: false; error: string };
+
+/**
+ * Envoie l'invitation à l'admin lui-même (objet préfixé « [Test] ») pour voir le rendu dans sa boîte :
+ * l'envoi normal ignore les adresses déjà inscrites, donc la sienne.
+ */
+export async function sendTestInvitationAction(): Promise<{ ok: true; to: string } | { ok: false; error: string }> {
+  let admin: Awaited<ReturnType<typeof assertAdmin>>;
+  try {
+    admin = await assertAdmin();
+  } catch {
+    return { ok: false, error: "Accès réservé aux administrateurs." };
+  }
+  if (!process.env.NODEMAILER_USER || !process.env.NODEMAILER_APP_PASSWORD) {
+    return { ok: false, error: "Envoi d'e-mails non configuré (NODEMAILER_USER / NODEMAILER_APP_PASSWORD)." };
+  }
+  try {
+    const email = await prepareInvitationEmail(prisma, admin.name ?? null);
+    await transporter.sendMail({
+      from: { name: "Yeye Pronos", address: process.env.NODEMAILER_USER ?? "" },
+      to: admin.email,
+      subject: `[Test] ${email.subject}`,
+      html: email.html,
+      text: email.text,
+    });
+    return { ok: true, to: admin.email };
+  } catch (err) {
+    console.error("[invitations] test", err);
+    return { ok: false, error: describeMailError(err) };
+  }
+}
 
 /**
  * Envoie l'e-mail d'invitation à chaque adresse (un e-mail par personne : personne ne voit les autres).
@@ -55,6 +88,7 @@ export async function sendInvitationsAction(raw: string): Promise<InviteResult> 
 
     const sent: string[] = [];
     const failed: string[] = [];
+    let failedReason: string | null = null;
 
     if (toSend.length > 0) {
       const email = await prepareInvitationEmail(prisma, admin.name ?? null);
@@ -70,6 +104,7 @@ export async function sendInvitationsAction(raw: string): Promise<InviteResult> 
           if (r.status === "fulfilled") sent.push(chunk[j]);
           else {
             failed.push(chunk[j]);
+            failedReason ??= describeMailError(r.reason);
             console.error("[invitations]", chunk[j], r.reason);
           }
         });
@@ -77,9 +112,9 @@ export async function sendInvitationsAction(raw: string): Promise<InviteResult> 
     }
 
     console.info(`[invitations] ${sent.length} envoyée(s), ${failed.length} échec(s) — admin ${admin.id}`);
-    return { ok: true, sent, alreadyRegistered, refusedDomain, invalid, failed };
+    return { ok: true, sent, alreadyRegistered, refusedDomain, invalid, failed, failedReason };
   } catch (err) {
     console.error("[invitations]", err);
-    return { ok: false, error: "L'envoi a échoué. Réessaie dans un instant." };
+    return { ok: false, error: describeMailError(err) };
   }
 }

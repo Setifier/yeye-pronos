@@ -12,9 +12,11 @@ interface NavbarProps {
   user: (Pick<PrismaUser, "id" | "name" | "email" | "role" | "image"> & {
     hasCompletedOnboarding?: boolean;
   }) | null;
+  /** Sur mobile, la barre du haut de l'interface mobile prend la place (joueur connecté). */
+  mobileHidden?: boolean;
 }
 
-export function Navbar({ user }: NavbarProps) {
+export function Navbar({ user, mobileHidden = false }: NavbarProps) {
   const pathname = usePathname();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -58,7 +60,7 @@ export function Navbar({ user }: NavbarProps) {
   };
 
   return (
-    <nav className="border-b border-zinc-800 bg-zinc-900/95 backdrop-blur-sm sticky top-0 z-50">
+    <nav className={`border-b border-zinc-800 bg-zinc-900/95 backdrop-blur-sm sticky top-0 z-50 ${mobileHidden ? "hidden md:block" : ""}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo / Brand */}

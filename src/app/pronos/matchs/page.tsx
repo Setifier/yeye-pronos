@@ -87,11 +87,14 @@ export default function PronosMatchsPage() {
       <PronoseNavbar />
 
       <div className="border-b border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950">
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 md:py-6 lg:px-8">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-black tracking-tight text-white">Mes pronos — Matchs</h1>
-              <p className="text-sm text-zinc-500">Saison {getSeasonLabel(season)} · tous tes paris nuit par nuit</p>
+              <h1 className="text-2xl font-black tracking-tight text-white">
+                <span className="md:hidden">Mes paris de match</span>
+                <span className="hidden md:inline">Mes pronos — Matchs</span>
+              </h1>
+              <p className="text-sm text-zinc-500">Saison {getSeasonLabel(season)}<span className="hidden md:inline"> · tous tes paris nuit par nuit</span></p>
             </div>
             <button
               onClick={() => setNoSpoil(!noSpoil)}
@@ -109,9 +112,9 @@ export default function PronosMatchsPage() {
               <StatTile label="Points" value={stats.totalPoints} accent />
               <StatTile label="Réussis" value={stats.won} />
               <StatTile label="Réussite" value={`${Math.round(stats.winRate)}%`} />
-              <StatTile label="Bons écarts" value={stats.bonEcart} />
-              <StatTile label="Top scorers" value={stats.topScorer} />
-              <StatTile label="Combos" value={stats.comboUltime} />
+              <StatTile label="Bons écarts" value={stats.bonEcart} className="hidden sm:block" />
+              <StatTile label="Top scorers" value={stats.topScorer} className="hidden sm:block" />
+              <StatTile label="Combos" value={stats.comboUltime} className="hidden sm:block" />
             </div>
           )}
         </div>
@@ -198,9 +201,9 @@ export default function PronosMatchsPage() {
   );
 }
 
-function StatTile({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {
+function StatTile({ label, value, accent, className = "" }: { label: string; value: number | string; accent?: boolean; className?: string }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 px-3 py-2.5">
+    <div className={`rounded-xl border border-zinc-800 bg-zinc-900/70 px-3 py-2.5 ${className}`}>
       <p className={`text-lg font-black tabular-nums ${accent ? "text-[#dcff50]" : "text-white"}`}>{value}</p>
       <p className="text-[10px] uppercase tracking-wide text-zinc-500">{label}</p>
     </div>

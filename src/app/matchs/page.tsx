@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Trophy, Zap, CalendarX2, Eye, EyeOff } from "lucide-react";
 import { DateNavigation } from "@/components/matchs/date-navigation";
+import { MobileNightPicker } from "@/components/mobile/night-picker";
 import { GameBetCard } from "@/components/bets/game-bet-card";
 import { useBetGames } from "@/components/bets/use-bet-games";
 import { useNow, useNoSpoil } from "@/components/bets/hooks";
@@ -67,8 +68,42 @@ export default function MatchsPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950">
+      {/* Mobile : en-tête compact + bande des nuits (collant) */}
+      <div className="sticky top-16 z-20 border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur-md md:hidden">
+        <MobileNightPicker
+          selectedDate={selectedDate}
+          onDateChange={setSelectedDate}
+          noSpoil={noSpoil}
+          onToggleNoSpoil={() => setNoSpoil(!noSpoil)}
+        />
+      </div>
+
+      {/* Mobile : la nuit choisie + gros bouton pour parier */}
+      <div className="space-y-3 px-4 pt-4 md:hidden">
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            {night.relative && <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#5096ff]">{night.relative}</p>}
+            <p className="text-sm font-semibold text-white first-letter:uppercase">{night.night}</p>
+          </div>
+          {!noSpoil && dayStats && dayStats.total > 0 && dayStats.isAfterRegistration && (
+            <span className="flex-shrink-0 rounded-full bg-[#dcff50]/10 px-3 py-1 text-sm font-black tabular-nums text-[#dcff50]">
+              +{dayStats.totalPoints} pts
+            </span>
+          )}
+        </div>
+        {missing.length > 0 && (
+          <button
+            onClick={() => bets.openSheet(missing, 0)}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#ff6a5a] to-[#ff3b3b] text-sm font-black uppercase tracking-wide text-white shadow-lg shadow-[#ff5050]/25 active:scale-[0.98] transition-transform"
+          >
+            <Zap className="h-4 w-4 fill-white" />
+            Parier · {missing.length} match{missing.length > 1 ? "s" : ""}
+          </button>
+        )}
+      </div>
+
       {/* En-tête */}
-      <div className="border-b border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950">
+      <div className="hidden border-b border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950 md:block">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-6 sm:px-6 lg:px-8">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-white">Matchs</h1>
@@ -87,14 +122,14 @@ export default function MatchsPage() {
       </div>
 
       {/* Navigation par date */}
-      <div className="sticky top-16 z-20 border-b border-zinc-800 bg-zinc-950">
+      <div className="sticky top-16 z-20 hidden border-b border-zinc-800 bg-zinc-950 md:block">
         <div className="mx-auto max-w-6xl">
           <DateNavigation selectedDate={selectedDate} onDateChange={setSelectedDate} />
         </div>
       </div>
 
       {/* Bandeau de la nuit */}
-      <div className="border-b border-zinc-800 bg-zinc-950">
+      <div className="hidden border-b border-zinc-800 bg-zinc-950 md:block">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <div>
             <p className="text-sm font-semibold text-white">
@@ -124,7 +159,7 @@ export default function MatchsPage() {
       </div>
 
       {/* Matchs */}
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-4 sm:px-6 md:py-6 lg:px-8">
         {loading ? (
           <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#5096ff]" /></div>
         ) : error ? (

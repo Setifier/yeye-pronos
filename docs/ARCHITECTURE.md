@@ -131,13 +131,28 @@ Une seule interface, partagée par l'accueil (`/dashboard`), `/matchs` et `/pron
 | `src/components/bets/game-bet-card.tsx` | Carte de match : clic sur une équipe = prono enregistré, clôture + compte à rebours, direct, résultat et points (respecte No Spoil) |
 | `src/components/bets/bet-sheet.tsx` | Fenêtre de pari guidée : vainqueur → écart → meilleur marqueur (cotes), enchaînement « match suivant » pour les paris manquants |
 | `src/components/bets/use-bet-games.tsx` | État partagé : choix rapide, ouverture de la fenêtre, box score |
-| `src/components/bets/hooks.ts` | `useNow`, `useNoSpoil` (préférence commune, localStorage), `savePrediction` |
+| `src/components/bets/hooks.ts` | `useNow`, `useNoSpoil` (préférence commune, localStorage), `savePrediction` (émet l'événement `yeye:prediction-saved` : toutes les listes affichées suivent) |
 
 Accueil : les **paris manquants** ne concernent que la nuit en cours (matchs encore ouverts sans prono).
 S'il n'y a pas de match cette nuit, l'accueil affiche la prochaine nuit sans la compter comme manquante.
 
-Navigation mobile : barre d'onglets en bas (`src/components/layout/mobile-tab-bar.tsx`) —
-Accueil · Matchs · Pronos · Classement · Stats NBA. Le sous-menu Stats donne accès à la NBA Cup, aux Playoffs et à l'infirmerie.
+## Interface mobile (écrans < 768 px, joueur connecté)
+
+Même code, mêmes données, présentation pensée « jeu mobile ». L'ordinateur n'est pas touché :
+chaque écran mobile est en `md:hidden`, la version ordinateur en `hidden md:block`.
+
+| Fichier | Rôle |
+|---|---|
+| `src/components/mobile/mobile-top-bar.tsx` | Barre du haut (remplace la navigation du site) : logo, rang, points, avatar → menu (profil, stats NBA, NBA Cup, playoffs, amis, règles, paramètres, admin, signaler un bug, déconnexion, mentions légales) |
+| `src/components/layout/mobile-tab-bar.tsx` | Onglets Accueil · Matchs · **Parier** · Classement · Pronos. « Parier » ouvre directement la fenêtre de pari avec les paris manquants de la nuit, depuis n'importe quelle page |
+| `src/components/mobile/use-hud.ts` + `GET /api/me/hud` | Points, rang et paris ouverts de la nuit (rechargés à la navigation et après chaque prono ; jamais chargés sur ordinateur) |
+| `src/components/mobile/mobile-home.tsx` | Accueil : nuit en cours (anneau de progression, bouton « Jouer »), matchs, hier soir en une ligne, course au classement |
+| `src/components/mobile/night-picker.tsx` | Page Matchs : bande des nuits + calendrier natif du téléphone |
+| `game-bet-card.tsx` (`MobileGameCard`) | Carte compacte : un toucher sur un logo = prono, le centre ouvre les bonus (ou les stats d'un match terminé) |
+
+Le pied de page est masqué sur mobile pour un joueur connecté (ses liens sont dans le menu).
+Pas d'onglets sur `/admin`, l'onboarding et les formulaires Classement / Bracket des paris de saison (bouton « Enregistrer » en bas).
+Les sous-menus collants restent en `top-16` : la barre du haut mobile fait la même hauteur que celle de l'ordinateur.
 
 ## Classement des joueurs de l'app
 

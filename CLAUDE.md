@@ -89,6 +89,16 @@ npm run db:diagnose-bracket      # Diagnostic données bracket
 - Paris d'un match : fermeture au coup d'envoi (`predictionDeadlineFor()`).
 - Couleurs : `#5096ff` (action), `#ff5050` (urgence / à faire), `#dcff50` (points), fond zinc-950.
 
+## Interface mobile (< 768 px, joueur connecté)
+
+- Pensée « jeu mobile », même données : écrans mobiles en `md:hidden`, version ordinateur en `hidden md:block`
+  (ne jamais changer l'affichage ordinateur en touchant au mobile).
+- `src/components/mobile/*` (barre du haut + menu, accueil, bande des nuits, `useHud` ← `/api/me/hud`),
+  onglets `src/components/layout/mobile-tab-bar.tsx` (bouton central « Parier » = paris manquants de la nuit),
+  carte compacte `MobileGameCard` dans `game-bet-card.tsx`.
+- `savePrediction` émet `yeye:prediction-saved` : les listes de matchs et les compteurs suivent partout.
+- Barre du haut mobile = 4rem, comme l'ordinateur : les sous-menus collants restent en `top-16`.
+
 ## Admin (`/admin/*`, rôle ADMIN)
 
 - Pages : `dashboard` (santé + historique), `users` (joueurs), `games` (matchs par nuit),
@@ -96,3 +106,5 @@ npm run db:diagnose-bracket      # Diagnostic données bracket
 - Lecture : `src/lib/admin-data.ts` · tâches partagées CRON + boutons : `src/lib/update-jobs.ts`
   (historique `CronRun` via `src/lib/cron-runs.ts`) · actions : `src/actions/admin/*`.
 - Un nouveau contrôle de cohérence va dans `getHealthOverview()` ; une nouvelle tâche dans `update-jobs.ts`.
+- Invitations : bouton « Inviter » (Santé, Joueurs) → `src/actions/admin/invitations.ts`, e-mail dans
+  `src/lib/emails/invitation-email.ts` (aperçu `/api/admin/invitation-preview`).

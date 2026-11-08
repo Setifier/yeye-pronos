@@ -14,8 +14,9 @@ import { useBetGames } from "@/components/bets/use-bet-games";
 import { GameBetCard } from "@/components/bets/game-bet-card";
 import { TeamLogo } from "@/components/bets/team-logo";
 import { SpecialPredictionsSummary } from "./special-predictions-summary";
+import { MobileHome } from "@/components/mobile/mobile-home";
 
-interface HomeData {
+export interface HomeData {
   season: string;
   preseason?: { deadline: string; open: boolean; done: number; total: number };
   tonight: { date: string; games: BetGame[] };
@@ -90,7 +91,22 @@ export function DashboardPage({ userId, userName, userImage }: DashboardPageProp
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-8 md:pb-12">
-      <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6 lg:px-8">
+      {/* ── Mobile : accueil façon jeu ── */}
+      <MobileHome
+        data={data}
+        firstName={firstName}
+        userId={userId}
+        games={games}
+        missing={missing}
+        bettable={bettable}
+        predicted={predicted}
+        now={now}
+        noSpoil={noSpoil}
+        onToggleNoSpoil={() => setNoSpoil(!noSpoil)}
+        bets={tonight}
+      />
+
+      <div className="mx-auto hidden max-w-6xl px-4 pt-6 sm:px-6 md:block lg:px-8">
         {/* ── En-tête ── */}
         <header className="mb-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">

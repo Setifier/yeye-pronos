@@ -169,7 +169,10 @@ export default function PreseasonBracketPage() {
 
           {/* Barre d'enregistrement */}
           {open && (
-            <div className="fixed inset-x-0 bottom-16 z-20 border-t border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur md:bottom-0">
+            <div
+              className="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-800 bg-zinc-950/95 px-4 pt-3 backdrop-blur"
+              style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+            >
               <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
                 <span className="text-xs text-zinc-400">
                   {!resolved.complete

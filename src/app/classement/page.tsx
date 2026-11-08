@@ -56,11 +56,11 @@ export default function ClassementPage() {
   return (
     <div className="min-h-screen bg-zinc-950 pb-10">
       <div className="border-b border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950">
-        <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+        <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 md:py-6">
           <h1 className="text-2xl font-black tracking-tight text-white">Classement</h1>
-          <p className="text-sm text-zinc-500">Pronos des matchs + paris de saison</p>
+          <p className="hidden text-sm text-zinc-500 md:block">Pronos des matchs + paris de saison</p>
 
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] md:mt-4">
             {[...seasons, "all"].map((s) => (
               <button
                 key={s}
@@ -85,7 +85,7 @@ export default function ClassementPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-4xl px-4 py-5 sm:px-6 md:py-6">
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-[#5096ff]" /></div>
         ) : list.length === 0 ? (

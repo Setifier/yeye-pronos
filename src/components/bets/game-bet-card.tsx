@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Lock, Clock, Target, Star, Zap, BarChart3, Loader2, SlidersHorizontal } from "lucide-react";
+import { Check, Lock, Clock, Target, Star, Zap, BarChart3, Loader2, SlidersHorizontal, X } from "lucide-react";
 import type { BetGame, BetTeam } from "@/types/bet";
 import { isBettable, marginLabel } from "@/types/bet";
 import { formatParisTime, formatCountdown } from "@/lib/game-night";
@@ -70,7 +70,17 @@ interface GameBetCardProps {
   onShowBoxscore?: (game: BetGame) => void;
 }
 
-export function GameBetCard({ game, now, noSpoil, saving, onQuickPick, onOpen, onShowBoxscore }: GameBetCardProps) {
+/** Carte d'un match : version compacte « jeu » sur mobile, carte détaillée à partir de md. */
+export function GameBetCard(props: GameBetCardProps) {
+  return (
+    <>
+      <div className="md:hidden"><MobileGameCard {...props} /></div>
+      <div className="hidden h-full md:block"><DesktopGameCard {...props} /></div>
+    </>
+  );
+}
+
+function DesktopGameCard({ game, now, noSpoil, saving, onQuickPick, onOpen, onShowBoxscore }: GameBetCardProps) {
   const bettable = isBettable(game, now);
   const isLive   = game.status === "LIVE";
   const isFinal  = game.status === "FINAL";
@@ -93,7 +103,7 @@ export function GameBetCard({ game, now, noSpoil, saving, onQuickPick, onOpen, o
     "border-zinc-800 hover:border-zinc-700";
 
   return (
-    <div className={`flex flex-col rounded-2xl border bg-zinc-900/70 transition-colors ${border}`}>
+    <div className={`flex h-full flex-col rounded-2xl border bg-zinc-900/70 transition-colors ${border}`}>
       {/* En-tête : horaire / statut + clôture / résultat */}
       <div className="flex items-center justify-between gap-2 px-4 pt-3.5">
         <div className="flex items-center gap-2">
@@ -184,6 +194,186 @@ export function GameBetCard({ game, now, noSpoil, saving, onQuickPick, onOpen, o
         ) : null}
       </div>
     </div>
+  );
+}
+
+// ─── Version mobile : un toucher sur un logo = prono enregistré ───────────────
+
+function MobileGameCard({ game, now, noSpoil, saving, onQuickPick, onOpen, onShowBoxscore }: GameBetCardProps) {
+  const bettable = isBettable(game, now);
+  const isLive   = game.status === "LIVE";
+  const isFinal  = game.status === "FINAL";
+  const isOff    = game.status === "POSTPONED" || game.status === "CANCELLED";
+  const showScore = (isLive || isFinal) && !noSpoil && game.homeScore !== null && game.awayScore !== null;
+  const p = game.prediction;
+  const showResult = !!(isFinal && p && (p.result === "WON" || p.result === "LOST")) && !noSpoil;
+  const hideRecord = noSpoil && (isLive || isFinal);
+  const winnerId = showScore && isFinal
+    ? (game.homeScore! > game.awayScore! ? game.homeTeam.id : game.awayTeam.id)
+    : null;
+  const canPick = bettable && !!onQuickPick && !saving;
+  const left = new Date(game.predictionDeadline).getTime() - now;
+
+  const border =
+    bettable && !p ? "border-[#ff5050]/40" :
+    showResult && p?.result === "WON" ? "border-emerald-500/40" :
+    showResult && p?.result === "LOST" ? "border-red-500/25" :
+    "border-zinc-800";
+
+  const centerAction =
+    bettable && onOpen ? () => onOpen(game) :
+    isFinal && onShowBoxscore ? () => onShowBoxscore(game) :
+    undefined;
+
+  const period = game.currentPeriod
+    ? `${game.currentPeriod > 4 ? `Prol. ${game.currentPeriod - 4}` : `Q${game.currentPeriod}`}${game.gameClock && game.gameClock !== "0.0" ? ` · ${game.gameClock}` : ""}`
+    : "";
+
+  const [awayButton, homeButton] = [game.awayTeam, game.homeTeam].map((team, i) => {
+    const picked = p?.predictedTeamId === team.id;
+    const outcome = showResult && picked ? (p?.result === "WON" ? "won" : "lost") : null;
+    return (
+      <MobileTeam
+        key={team.id}
+        team={hideRecord ? { ...team, record: null } : team}
+        home={i === 1}
+        picked={picked}
+        outcome={outcome}
+        dim={winnerId !== null && winnerId !== team.id}
+        clickable={canPick}
+        saving={!!saving && picked}
+        onClick={() => onQuickPick?.(game, team.id)}
+      />
+    );
+  });
+
+  return (
+    <div className={`rounded-3xl border bg-zinc-900/80 p-2.5 ${border}`}>
+      <div className="flex justify-center pb-1.5 empty:hidden [&>div]:justify-center"><GameTags game={game} /></div>
+
+      <div className="grid grid-cols-[1fr_5.5rem_1fr] items-center gap-1">
+        {awayButton}
+        <button
+          type="button"
+          onClick={centerAction}
+          disabled={!centerAction}
+          className={`flex flex-col items-center justify-center gap-0.5 rounded-2xl py-2 transition-transform ${centerAction ? "active:scale-95" : ""}`}
+        >
+          {isLive ? (
+            <>
+              <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-red-400">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-red-500" /> Live
+              </span>
+              {showScore && <span className="text-lg font-black tabular-nums text-white">{game.awayScore}–{game.homeScore}</span>}
+              {period && <span className="text-[10px] text-zinc-500">{period}</span>}
+            </>
+          ) : isFinal ? (
+            <>
+              {showScore
+                ? <span className="text-lg font-black tabular-nums text-white">{game.awayScore}–{game.homeScore}</span>
+                : <span className="text-base font-black text-zinc-600">•••</span>}
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Terminé</span>
+            </>
+          ) : isOff ? (
+            <span className="text-xs font-semibold text-zinc-500">{game.status === "POSTPONED" ? "Reporté" : "Annulé"}</span>
+          ) : (
+            <>
+              <span className="text-lg font-black tabular-nums text-white">{formatParisTime(game.gameDate)}</span>
+              {bettable ? (
+                <span className={`text-[10px] font-semibold ${left <= 15 * 60_000 ? "text-red-400" : left <= 60 * 60_000 ? "text-amber-400" : "text-zinc-500"}`}>
+                  {formatCountdown(left)}
+                </span>
+              ) : (
+                <span className="flex items-center gap-0.5 text-[10px] font-semibold text-zinc-500"><Lock className="h-2.5 w-2.5" /> Fermé</span>
+              )}
+            </>
+          )}
+        </button>
+        {homeButton}
+      </div>
+
+      {(p || bettable || (isFinal && onShowBoxscore)) && (
+        <div className="mt-1.5 flex min-h-8 items-center justify-between gap-2 border-t border-zinc-800/70 px-1 pt-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-1">
+            {showResult && p ? (
+              <>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-black ${p.result === "WON" ? "bg-emerald-500/15 text-emerald-400" : "bg-zinc-800 text-zinc-400"}`}>
+                  {p.pointsEarned > 0 ? `+${p.pointsEarned} pts` : "0 pt"}
+                </span>
+                {p.marginBonusPoints > 0 && <Target className="h-3.5 w-3.5 text-emerald-400" />}
+                {p.topScorerBonusPoints > 0 && <Star className="h-3.5 w-3.5 text-emerald-400" />}
+                {p.comboBonusPoints > 0 && <Zap className="h-3.5 w-3.5 text-purple-300" />}
+              </>
+            ) : p ? (
+              <>
+                {p.predictedScoreMargin && <Chip icon={<Target className="h-3 w-3" />}>{marginLabel(p.predictedScoreMargin)}</Chip>}
+                {p.predictedTopScorer && <Chip icon={<Star className="h-3 w-3" />}>{p.predictedTopScorer.fullName.split(" ").slice(-1)[0]}</Chip>}
+                {!p.predictedScoreMargin && !p.predictedTopScorer && (
+                  <span className="text-[11px] text-zinc-500">{bettable ? "Pas encore de bonus" : "Sans bonus"}</span>
+                )}
+              </>
+            ) : bettable ? (
+              <span className="text-[11px] font-semibold text-[#ff5050]">Touche ton vainqueur</span>
+            ) : (
+              <span className="text-[11px] text-zinc-500">Pas de prono</span>
+            )}
+          </div>
+
+          {bettable && onOpen ? (
+            <button
+              type="button"
+              onClick={() => onOpen(game)}
+              className="flex flex-shrink-0 items-center gap-1 rounded-full bg-zinc-800 px-3 py-1.5 text-[11px] font-bold text-white active:scale-95 transition-transform"
+            >
+              <SlidersHorizontal className="h-3 w-3" /> {p ? "Bonus" : "Détails"}
+            </button>
+          ) : isFinal && onShowBoxscore ? (
+            <button
+              type="button"
+              onClick={() => onShowBoxscore(game)}
+              className="flex flex-shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-semibold text-zinc-400 active:bg-zinc-800"
+            >
+              <BarChart3 className="h-3 w-3" /> Stats
+            </button>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobileTeam({ team, home, picked, outcome, dim, clickable, saving, onClick }: {
+  team: BetTeam; home: boolean; picked: boolean; outcome: "won" | "lost" | null; dim: boolean;
+  clickable: boolean; saving: boolean; onClick: () => void;
+}) {
+  const zone =
+    outcome === "won" ? "bg-emerald-500/10 ring-2 ring-emerald-500/60" :
+    outcome === "lost" ? "bg-red-500/5 ring-2 ring-red-500/40" :
+    picked ? "bg-[#5096ff]/15 ring-2 ring-[#5096ff]" :
+    clickable ? "bg-zinc-800/40 active:bg-zinc-800" : "";
+  const badge = outcome === "won" ? "bg-emerald-500" : outcome === "lost" ? "bg-red-500" : "bg-[#5096ff]";
+  return (
+    <button
+      type="button"
+      onClick={clickable ? onClick : undefined}
+      disabled={!clickable}
+      aria-pressed={picked}
+      aria-label={`${team.city} ${team.name}`}
+      className={`flex flex-col items-center gap-0.5 rounded-2xl px-1 py-2 transition-all disabled:cursor-default ${zone} ${clickable ? "active:scale-95" : ""}`}
+    >
+      <span className="relative">
+        <TeamLogo abbreviation={team.abbreviation} size={44} className={dim ? "opacity-40" : ""} />
+        {picked && (
+          <span className={`absolute -right-2 -top-1 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-zinc-900 ${badge}`}>
+            {saving
+              ? <Loader2 className="h-3 w-3 animate-spin text-white" />
+              : outcome === "lost" ? <X className="h-3 w-3 stroke-[3] text-white" /> : <Check className="h-3 w-3 stroke-[3] text-white" />}
+          </span>
+        )}
+      </span>
+      <span className={`mt-0.5 text-sm font-black tracking-wide ${dim ? "text-zinc-500" : "text-white"}`}>{team.abbreviation}</span>
+      <span className="text-[10px] text-zinc-500">{team.record ?? (home ? "dom." : "ext.")}</span>
+    </button>
   );
 }
 

@@ -3,11 +3,12 @@ import { IS_BETA } from "@/lib/beta";
 import { CREATOR } from "@/lib/legal";
 import { BugReportButton } from "@/components/feedback/bug-report";
 
-export function Footer({ loggedIn }: { loggedIn: boolean }) {
+/** `mobileHidden` : sur mobile, ces liens sont dans le menu (avatar en haut), comme dans une appli. */
+export function Footer({ loggedIn, mobileHidden = false }: { loggedIn: boolean; mobileHidden?: boolean }) {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-zinc-800 bg-zinc-900 mt-auto">
+    <footer className={`border-t border-zinc-800 bg-zinc-900 mt-auto ${mobileHidden ? "hidden md:block" : ""}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* About */}

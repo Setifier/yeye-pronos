@@ -9,9 +9,27 @@ import { reportBugAction } from "@/actions/report-bug.action";
 const MIN_LENGTH = 10;
 const MAX_LENGTH = 2000;
 
-/** Bouton « Signaler un bug » (bandeau bêta ou footer) + fenêtre de saisie. */
-export function BugReportButton({ loggedIn, variant }: { loggedIn: boolean; variant: "banner" | "footer" }) {
+/** Bouton « Signaler un bug » (bandeau bêta, footer ou menu mobile) + fenêtre de saisie. */
+export function BugReportButton({ loggedIn, variant }: { loggedIn: boolean; variant: "banner" | "footer" | "menu" }) {
   const [open, setOpen] = useState(false);
+
+  if (variant === "menu") {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium text-zinc-200 transition-colors active:bg-zinc-800"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#ff5050]/15">
+            <Bug className="h-4 w-4 text-[#ff5050]" />
+          </span>
+          Signaler un bug
+        </button>
+        {open && <BugReportDialog loggedIn={loggedIn} onClose={() => setOpen(false)} />}
+      </>
+    );
+  }
 
   return (
     <>

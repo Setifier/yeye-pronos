@@ -31,6 +31,23 @@ export function useNoSpoil(): [boolean, (v: boolean) => void] {
   return [enabled, update];
 }
 
+/**
+ * Événement envoyé à chaque prono enregistré ou annulé, où qu'il soit fait (page, bouton « Parier »
+ * de la barre d'onglets) : les listes de matchs affichées et les compteurs se mettent à jour.
+ */
+export const PREDICTION_SAVED_EVENT = "yeye:prediction-saved";
+
+export interface PredictionSavedDetail {
+  gameId: string;
+  prediction: BetPrediction | null;
+}
+
+function announce(detail: PredictionSavedDetail) {
+  try {
+    window.dispatchEvent(new CustomEvent<PredictionSavedDetail>(PREDICTION_SAVED_EVENT, { detail }));
+  } catch { /* hors navigateur */ }
+}
+
 export interface SavePredictionInput {
   gameId: string;
   predictedTeamId: string;
@@ -50,7 +67,7 @@ export async function savePrediction(input: SavePredictionInput): Promise<BetPre
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Impossible d'enregistrer le prono");
   const p = data.prediction;
-  return {
+  const saved: BetPrediction = {
     predictedTeamId:      p.predictedTeamId,
     predictedScoreMargin: p.predictedScoreMargin ?? null,
     predictedTopScorer:   p.predictedTopScorer
@@ -62,6 +79,8 @@ export async function savePrediction(input: SavePredictionInput): Promise<BetPre
     topScorerBonusPoints: 0,
     comboBonusPoints:     0,
   };
+  announce({ gameId: input.gameId, prediction: saved });
+  return saved;
 }
 
 /** Annule un prono (avant la clôture). */
@@ -71,4 +90,5 @@ export async function deletePrediction(gameId: string): Promise<void> {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || "Impossible d'annuler le prono");
   }
+  announce({ gameId, prediction: null });
 }

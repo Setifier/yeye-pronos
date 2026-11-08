@@ -327,7 +327,10 @@ export function BetSheet({ games, startIndex = 0, title, onClose, onPredictionCh
             </div>
 
             {/* ── Pied ── */}
-            <div className="flex items-center justify-between gap-3 border-t border-zinc-800/80 px-5 py-4">
+            <div
+              className="flex items-center justify-between gap-3 border-t border-zinc-800/80 px-5 pt-4"
+              style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+            >
               {multi && index > 0 ? (
                 <button onClick={() => goTo(index - 1)} className="flex items-center gap-1 rounded-xl px-3 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800">
                   <ChevronLeft className="h-4 w-4" /> Précédent

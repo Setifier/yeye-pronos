@@ -38,6 +38,8 @@ Ensuite, chaque `git push` sur `main` redéploie automatiquement.
   (`0 21 * * *` = 22h-23h Paris, blessures avant les matchs). Bouton **Run** pour un
   premier passage : la réponse doit contenir `"ok": true` et un `durationMs` bien en dessous de 50 000.
 - Créer ton compte avec l'adresse de `ADMIN_EMAILS` (rôle admin attribué à la création).
+- Inviter les testeurs : **Admin → Santé → Inviter** (une adresse par ligne, 20 max). « Voir l'e-mail » montre
+  l'invitation telle qu'elle part. Prévenir les testeurs : elle peut arriver dans les spams.
 - Ensuite, rien à surveiller : si un passage reste incomplet (matchs non traités, ESPN en panne, effectifs
   incomplets, exécution trop lente), un e-mail « Mise à jour du matin incomplète » part vers `ADMIN_EMAILS`.
   Le passage suivant rattrape tout seul ; pour rattraper tout de suite : **Admin → Santé → Lancer la mise à jour**.
@@ -53,7 +55,7 @@ Ensuite, chaque `git push` sur `main` redéploie automatiquement.
 | Paris de début de saison | `/pronos/preseason` : classement → bracket → NBA Cup → MVP → DPOY → Rookie, avant le **dimanche 15 nov. 23h59** |
 | Pari d'un match | Accueil → « Faire mes N paris » ; un clic sur une équipe enregistre ; bonus dans la fenêtre |
 | Le lendemain | Points affichés sur la carte et dans « Hier soir », classement mis à jour. No Spoil actif par défaut : bouton « No Spoil » en haut (→ « Scores visibles », mémorisé sur l'appareil) ou « Afficher » sur la dernière nuit |
-| Mobile | Barre d'onglets en bas, fenêtre de pari en plein écran |
+| Mobile | Barre du haut (rang, points, avatar → menu), onglets en bas ; le bouton central « Parier » ouvre les paris manquants de la nuit ; un toucher sur un logo enregistre le prono |
 
 ## 4. Limites connues de la bêta
 

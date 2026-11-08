@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { BetGame, BetPrediction } from "@/types/bet";
-import { savePrediction } from "./hooks";
+import { PREDICTION_SAVED_EVENT, savePrediction, type PredictionSavedDetail } from "./hooks";
 import { BetSheet } from "./bet-sheet";
 import { BoxscoreModal } from "@/components/matchs/boxscore-modal";
 
@@ -26,6 +26,16 @@ export function useBetGames(noSpoil: boolean) {
   const setPrediction = useCallback((gameId: string, prediction: BetPrediction | null) => {
     setGames((list) => list.map((g) => (g.id === gameId ? { ...g, prediction } : g)));
   }, []);
+
+  // Pronos faits ailleurs (ex. bouton « Parier » de la barre d'onglets mobile) : la liste suit
+  useEffect(() => {
+    const onSaved = (e: Event) => {
+      const { gameId, prediction } = (e as CustomEvent<PredictionSavedDetail>).detail;
+      setPrediction(gameId, prediction);
+    };
+    window.addEventListener(PREDICTION_SAVED_EVENT, onSaved);
+    return () => window.removeEventListener(PREDICTION_SAVED_EVENT, onSaved);
+  }, [setPrediction]);
 
   /** Un clic sur une équipe = prono enregistré (les bonus déjà choisis sont conservés). */
   const quickPick = useCallback(async (game: BetGame, teamId: string) => {

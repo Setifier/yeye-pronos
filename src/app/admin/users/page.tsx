@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getPlayersOverview } from "@/lib/admin-data";
 import { PageHeader } from "@/components/admin/ui";
 import { PlayersPanel } from "@/components/admin/players-panel";
+import { InviteButton } from "@/components/admin/invite-button";
 
 export const metadata: Metadata = { title: "Admin · Joueurs" };
 
@@ -19,6 +20,7 @@ export default async function AdminPlayersPage() {
       <PageHeader
         title="Joueurs"
         description={`Saison ${data.season} · inscriptions, pronos, paris de saison et activité`}
+        actions={<InviteButton />}
       />
       <PlayersPanel data={data} currentUserId={session?.user.id ?? ""} />
     </div>

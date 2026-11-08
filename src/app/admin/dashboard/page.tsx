@@ -11,6 +11,7 @@ import { Badge, Card, Dot, PageHeader, ProgressBar, StatTile, tone, type Tone } 
 import { JobButton, type JobKind } from "@/components/admin/job-button";
 import { RunHistory } from "@/components/admin/run-history";
 import { SummaryChips } from "@/components/admin/job-details";
+import { InviteButton } from "@/components/admin/invite-button";
 
 export const metadata: Metadata = { title: "Admin · Santé" };
 
@@ -87,7 +88,12 @@ export default async function AdminDashboardPage() {
       <PageHeader
         title="Santé de l’app"
         description={`Saison ${h.season} · état actuel de la base`}
-        actions={<JobButton kind="morning" label="Lancer la mise à jour" variant="primary" />}
+        actions={
+          <>
+            <InviteButton />
+            <JobButton kind="morning" label="Lancer la mise à jour" variant="primary" />
+          </>
+        }
       />
 
       {/* ── Verdict ── */}

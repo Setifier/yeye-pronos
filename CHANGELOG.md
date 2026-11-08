@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-11-08 — Version mobile et invitations
+
+### Version mobile (écrans < 768 px)
+- Interface pensée comme un jeu mobile, l'affichage ordinateur ne change pas.
+- **Barre du haut** : logo, rang, points ; l'avatar ouvre le menu (profil, stats NBA, NBA Cup, playoffs, amis,
+  règles, paramètres, admin, signaler un bug, déconnexion). Plus de pied de page pour un joueur connecté.
+- **Onglets** Accueil · Matchs · **Parier** · Classement · Pronos. Le bouton central ouvre directement les
+  paris manquants de la nuit, avec le nombre à faire en pastille.
+- **Accueil** : la nuit en cours avec un anneau de progression et un gros bouton « Jouer », les matchs,
+  hier soir en une ligne (repliable), la course au classement (« à 45 pts de Kevin »).
+- **Cartes de match compactes** : un toucher sur un logo = prono ; le centre ouvre les bonus.
+- **Matchs** : bande des nuits à faire défiler + calendrier natif du téléphone.
+- **Pronos** : bilan en grand (points, réussite, écarts, marqueurs, combos) et deux tuiles (paris de match,
+  paris de saison).
+- Formulaires Classement et Bracket des paris de saison : bouton « Enregistrer » collé en bas, sans onglets.
+
+### Invitations (admin)
+- Bouton **Inviter** dans Admin → Santé et Admin → Joueurs : une ou plusieurs adresses (20 max), un e-mail
+  d'invitation par personne. Mention bêta / saison test, rappel de la date limite des paris de saison tant
+  qu'ils sont ouverts. Aperçu : `/api/admin/invitation-preview`.
+- Adresses déjà inscrites et domaines refusés à l'inscription (`ALLOWED_EMAIL_DOMAINS`) : pas d'envoi, signalé.
+
 ## 2026-11-01 — Préparation de la bêta
 
 ### Administration (refonte)

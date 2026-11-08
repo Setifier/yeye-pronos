@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import type { PreseasonBetType, StandingsPredictionData } from "@/types/special-predictions";
+import type { PlayerAwardType, PreseasonBetType, StandingsPredictionData } from "@/types/special-predictions";
 
 export interface PreseasonTeam {
   id: string;
@@ -26,6 +26,8 @@ export interface PreseasonPlayer {
   ppg: number | null;
   games: number;
   previousPpg: number | null;
+  /** Cote par trophée (null = pas candidat : Rookie uniquement). */
+  odds: Record<PlayerAwardType, number | null>;
 }
 
 export interface SavedPrediction {
@@ -41,7 +43,6 @@ export interface PreseasonData {
   deadline: string;
   open: boolean;
   teams: PreseasonTeam[];
-  mvpPoints: number;
   defaults: { standings: StandingsPredictionData };
   predictions: Record<PreseasonBetType, SavedPrediction | null>;
   players?: PreseasonPlayer[];

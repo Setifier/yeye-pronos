@@ -7,8 +7,9 @@ import { TeamLogo } from "@/components/bets/team-logo";
 import { PreseasonLayout } from "@/components/preseason/preseason-layout";
 import { usePreseason } from "@/components/preseason/use-preseason";
 import { STANDINGS_POINTS, type StandingsPredictionData } from "@/types/special-predictions";
-import { fmtPts } from "@/lib/format";
 import { stableStringify } from "@/lib/preseason-bracket";
+
+const LOWEST_BONUS = STANDINGS_POINTS.BONUS[STANDINGS_POINTS.BONUS.length - 1];
 
 type Conf = "east" | "west";
 
@@ -44,7 +45,7 @@ export default function PreseasonClassementPage() {
       open={open}
       now={now}
       saved={!!saved}
-      points={`${STANDINGS_POINTS.PER_TEAM_CORRECT} pts par place exacte · +${fmtPts(STANDINGS_POINTS.COMBO_ULTIME)} si tout est juste`}
+      points={`${STANDINGS_POINTS.EXACT} pts par place exacte · ${STANDINGS_POINTS.ONE_OFF} à une place près · bonus dès ${LOWEST_BONUS.teams} places exactes`}
       loading={!data && !error}
       error={error}
     >

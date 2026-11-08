@@ -147,10 +147,12 @@ export async function deleteUserAction({ userId }: { userId: string }) {
       };
     }
 
-    // Supprimer l'utilisateur (cascade sur predictions, etc.)
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+    // Ligues dont il est propriétaire d'abord (pas de cascade sur le propriétaire),
+    // puis le compte (cascade : pronos, paris de saison, amis, sessions…)
+    await prisma.$transaction([
+      prisma.privateLeague.deleteMany({ where: { ownerId: userId } }),
+      prisma.user.delete({ where: { id: userId } }),
+    ]);
 
     revalidatePath("/admin/users");
     return { success: true };

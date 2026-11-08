@@ -154,7 +154,7 @@ export function OnboardingClient(props: OnboardingClientProps) {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">
-            Bienvenue dans NBA Pronos !
+            Bienvenue dans Yeye Pronos !
           </h1>
           <p className="text-zinc-400 text-lg">
             Configurons votre profil en quelques étapes

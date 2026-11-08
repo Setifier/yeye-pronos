@@ -61,10 +61,10 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-white flex flex-col min-h-screen`}
       >
-        {showBetaBanner && <BetaBanner />}
+        {showBetaBanner && <BetaBanner loggedIn={!!session?.user} />}
         <Navbar user={userWithImage} />
         {children}
-        <Footer />
+        <Footer loggedIn={!!session?.user} />
         {userWithImage?.hasCompletedOnboarding && <MobileTabBar />}
         <Toaster position="top-center" richColors />
       </body>

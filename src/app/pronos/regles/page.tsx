@@ -4,8 +4,16 @@ import { PronoseNavbar } from "@/components/layout/pronos-navbar";
 import { BONUS_POINTS, MAX_POINTS_POSSIBLE } from "@/types/bonus";
 import { MARGIN_OPTIONS } from "@/types/bet";
 import { ODDS_STABILIZATION_GAMES } from "@/lib/player-odds";
+import { fmtPts } from "@/lib/format";
+import {
+  NBA_CUP_POINTS, nbaCupChampionPoints, TROPHY_POINTS, STANDINGS_POINTS,
+  PRESEASON_BRACKET_POINTS as B,
+} from "@/types/special-predictions";
 
 export const metadata = { title: "Règles des pronos · Yeye Pronos" };
+
+const trophyRange = `${TROPHY_POINTS.FIRST} à ${fmtPts(TROPHY_POINTS.MAX)}`;
+const roundPoints = (points: number) => `${points} +${Math.round(points * B.GAMES_BONUS)}`;
 
 export default function ReglesPage() {
   return (
@@ -70,18 +78,53 @@ export default function ReglesPage() {
           </Info>
         </section>
 
-        {/* Paris de saison */}
-        <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5">
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Trophy className="h-4 w-4 text-amber-400" /> Paris de saison</h2>
-          <p className="text-sm text-zinc-400">
-            En plus des matchs : champion NBA Cup, MVP, classement final, bracket des playoffs, puis un pari à chaque tour des playoffs.
-            Leurs points s&apos;ajoutent à ton total de la saison. Les paris de début de saison ferment au coup d&apos;envoi
-            du premier match de la saison (la date exacte est affichée sur chaque pari).
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link href="/pronos/preseason" className="rounded-xl bg-zinc-800 px-3 py-2 text-sm hover:bg-zinc-700">Début de saison →</Link>
-            <Link href="/pronos/postseason" className="rounded-xl bg-zinc-800 px-3 py-2 text-sm hover:bg-zinc-700">Play-in & Playoffs →</Link>
+        {/* Paris de début de saison */}
+        <section className="space-y-3">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 className="flex items-center gap-2 text-lg font-black"><Trophy className="h-5 w-5 text-amber-400" /> Paris de début de saison</h2>
+              <p className="mt-1 text-sm text-zinc-400">
+                À faire une fois, avant le coup d&apos;envoi du premier match de la saison (la date exacte est affichée sur chaque pari).
+                Plus ton choix est inattendu, plus il rapporte. Les points s&apos;ajoutent à ton total dès que le résultat est connu.
+              </p>
+            </div>
+            <Link href="/pronos/preseason" className="flex-shrink-0 rounded-xl bg-zinc-800 px-3 py-2 text-sm hover:bg-zinc-700">Parier →</Link>
           </div>
+
+          <Box title="Trophées" note="La cote affichée au moment du pari est celle qui compte.">
+            <PointRow title="Champion NBA Cup" points={`${fmtPts(NBA_CUP_POINTS.FIRST)} à ${fmtPts(nbaCupChampionPoints(30))}`}>
+              Selon le bilan de la saison passée : {NBA_CUP_POINTS.FIRST} pts pour la meilleure équipe, +{NBA_CUP_POINTS.STEP} par place. Résultat en décembre.
+            </PointRow>
+            <PointRow title="MVP" points={trophyRange}>
+              Selon le vote MVP de la saison passée, puis l&apos;All-NBA. Un joueur absent des votes est placé d&apos;après ses stats.
+            </PointRow>
+            <PointRow title="Défenseur de l'année" points={trophyRange}>
+              Selon le vote DPOY de la saison passée, puis l&apos;All-Defensive.
+            </PointRow>
+            <PointRow title="Rookie de l'année" points={trophyRange}>
+              Selon l&apos;ordre de la draft : {TROPHY_POINTS.FIRST} pts pour le 1er choix, +{TROPHY_POINTS.STEP} par choix.
+            </PointRow>
+          </Box>
+
+          <Box title="Classement" note="Seul le palier de bonus le plus haut compte. Résultat à la fin de la saison régulière.">
+            <PointRow title="Place exacte" points={`${STANDINGS_POINTS.EXACT}`}>Par équipe.</PointRow>
+            <PointRow title="1 place d'écart" points={`${STANDINGS_POINTS.ONE_OFF}`}>Par équipe.</PointRow>
+            <PointRow title="Bonus" points={`+${STANDINGS_POINTS.BONUS[STANDINGS_POINTS.BONUS.length - 1].points} à +${fmtPts(STANDINGS_POINTS.BONUS[0].points)}`}>
+              {[...STANDINGS_POINTS.BONUS].reverse().map((b) => `${b.teams} places exactes : +${fmtPts(b.points)}`).join(" · ")}
+            </PointRow>
+          </Box>
+
+          <Box
+            title="Bracket"
+            note="Les points comptent pour chaque équipe qui passe le tour, même contre un autre adversaire que prévu. Le bonus « bon nombre de matchs » compte seulement si la série prévue a eu lieu."
+          >
+            <PointRow title="Play-in" points={`${B.PLAYIN_TEAM}`}>Par équipe qualifiée en 7e ou 8e place.</PointRow>
+            <PointRow title="1er tour" points={roundPoints(B.R1)}>Par équipe qui passe, + bon nombre de matchs.</PointRow>
+            <PointRow title="Demi-finale de conférence" points={roundPoints(B.R2)}>Par équipe qui passe, + bon nombre de matchs.</PointRow>
+            <PointRow title="Finale de conférence" points={roundPoints(B.CF)}>Par équipe qui passe, + bon nombre de matchs.</PointRow>
+            <PointRow title="Champion NBA" points={roundPoints(B.CHAMPION)}>+ bon nombre de matchs de la Finale.</PointRow>
+            <PointRow title="MVP des Finales" points={`${B.FINALS_MVP}`}>Un joueur d&apos;un des deux finalistes.</PointRow>
+          </Box>
         </section>
       </div>
     </div>
@@ -99,6 +142,28 @@ function Row({ icon, title, points, children }: { icon: React.ReactNode; title: 
         </div>
         <p className="mt-0.5 text-sm text-zinc-400">{children}</p>
       </div>
+    </div>
+  );
+}
+
+function Box({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
+      <h3 className="border-b border-zinc-800 px-5 py-3 text-sm font-semibold">{title}</h3>
+      <div className="divide-y divide-zinc-800/80">{children}</div>
+      {note && <p className="border-t border-zinc-800 px-5 py-3 text-xs text-zinc-500">{note}</p>}
+    </div>
+  );
+}
+
+function PointRow({ title, points, children }: { title: string; points: string; children: React.ReactNode }) {
+  return (
+    <div className="px-5 py-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-sm font-semibold text-white">{title}</p>
+        <p className="flex-shrink-0 text-sm font-bold tabular-nums text-[#dcff50]">{points} pts</p>
+      </div>
+      <p className="mt-0.5 text-sm text-zinc-400">{children}</p>
     </div>
   );
 }

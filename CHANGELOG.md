@@ -2,19 +2,66 @@
 
 ## 2026-11-01 — Préparation de la bêta
 
+### Administration (refonte)
+- **Santé** (`/admin/dashboard`) : verdict « Tout est à jour / N points à vérifier » avec le bouton qui règle
+  chaque point, derniers passages des CRON du matin et du soir, nuit en cours (joueurs qui ont parié), joueurs,
+  signalements, contrôles des données (ceux de `db:verify-season --quick`), historique des 15 derniers passages
+  avec leur journal.
+- **Actions en un clic**, mêmes tâches que les CRON (`src/lib/update-jobs.ts`) : lancer la mise à jour,
+  blessures, recalculer le classement, mettre à jour une nuit, retraiter un match.
+- **Joueurs** : recherche, filtres (paris de saison incomplets, pas parié ce soir, e-mail non confirmé, bannis),
+  points et rang, paris de saison faits, dernière activité ; passer admin, bannir, supprimer (la suppression
+  échouait si le joueur possédait une ligue).
+- **Matchs** : nuit par nuit (traité ou non, box score, pronos) et matchs à rattraper sur toute la saison.
+- **Signalements** : enregistrés en base, « à traiter / résolus », réponse par e-mail en un clic.
+- Nouvelles tables `CronRun` (historique, 60 jours) et `BugReport` : `npx prisma db push`.
+- Admin utilisable sur mobile ; liens morts (Notifications, Paramètres) et routes `/api/admin/{stats,users,games}`
+  retirés.
+
 ### Paris de début de saison (nouveau)
-- Classement des 30 équipes, bracket Play-in → titre (+ MVP des Finales), champion NBA Cup, MVP.
+- 6 paris : classement des 30 équipes, bracket Play-in → titre (+ MVP des Finales), champion NBA Cup,
+  MVP, **Défenseur de l'année** et **Rookie de l'année** (ajoutés le 8 novembre).
 - Règle : fermeture au **coup d'envoi du premier match** de la saison régulière.
-  Exception ponctuelle pour le lancement de la bêta 2026-27 : **mardi 10 novembre 23h59** (Paris),
-  repoussée le 3 novembre pour laisser le temps aux testeurs.
+  Exception ponctuelle pour le lancement de la bêta 2026-27 : **dimanche 15 novembre 23h59** (Paris),
+  repoussée deux fois (3 → 10 → 15 novembre) pour les testeurs et l'ajout des deux trophées.
+- **Barème revu** (8 novembre, une très bonne série ≈ 2 400 pts, ≈ 1/4 d'une saison de paris de match) :
+  - Trophées : une cote par joueur, 200 pts pour le 1er du classement de référence, +50 par place,
+    1 000 max (`src/lib/award-odds.ts`). MVP : vote MVP puis All-NBA, les absents placés d'après leur
+    évaluation NBA ; DPOY : vote DPOY puis All-Defensive ; Rookie : ordre de la draft.
+  - NBA Cup : 400 pts (meilleur bilan de la saison passée) → 1 125 pts, +25 par place.
+  - Classement : 50 pts par place exacte, 10 à une place près, bonus de +100 à +1 000 dès 6 places exactes.
+  - Bracket : points par équipe qui passe le tour, doublés à chaque tour (50 · 100 · 200 · 400 pour le
+    champion), +50 % si bon nombre de matchs, Play-in 50 par équipe, MVP des Finales 200.
+    Les seeds ne rapportent plus rien (déjà comptées par le classement).
+- Affichage sobre : un chiffre par choix, une phrase par pari, barème complet sur la seule page Règles.
+- Paris des playoffs (Play-in, tours) retirés de la navigation : ils deviendront des événements créés
+  depuis l'admin.
 - API `GET`/`PUT /api/special-predictions`, validation côté serveur, refus après la date limite.
 - Bracket prérempli par le top 10 du classement, brouillon gardé sur l'appareil, choix effacés en cascade.
-- Statuts « Ouvert/Fermé » réels partout ; rappel sur l'accueil tant que les 4 paris ne sont pas faits.
+- Statuts « Ouvert/Fermé » réels partout ; rappel sur l'accueil tant que les paris ne sont pas tous faits.
+- Reste à faire : le calcul des points (NBA Cup avant la finale du 11 décembre, le reste en fin de saison).
 
 ### Comptes
 - Inscription : domaines acceptés élargis (iCloud, Orange, Free, SFR, Laposte, Proton…) + `ALLOWED_EMAIL_DOMAINS`.
 - Les noms gardent leurs accents (« Éloïse » devenait « Loise »).
 - E-mails et messages d'erreur de connexion en français ; retour à la page demandée après connexion.
+
+### Pages légales
+- `/legal/mentions`, `/legal/confidentialite`, `/legal/cgu` (les liens du footer menaient à des 404).
+  Éditeur particulier non professionnel (crédit Setifier D&D), hébergeur Vercel, non-affiliation NBA/ESPN,
+  sources des données, RGPD (données, prestataires, cookies strictement nécessaires, droits), jeu gratuit sans
+  mise ni gain. Contenu centralisé dans `src/lib/legal.ts`, contact via `CONTACT_EMAIL`.
+- Footer : « Les noms et logos des équipes appartiennent à la NBA et à ses équipes » + crédit. Inscription :
+  acceptation des conditions. Bouton « GitHub » retiré (fournisseur non configuré : il renvoyait une erreur).
+- Nom « NBA Pronos » remplacé par « Yeye Pronos » partout (expéditeur et objet des e-mails, onboarding, admin) :
+  l'app ne doit pas utiliser la marque NBA dans son nom.
+
+### Signaler un bug
+- Bouton « Signaler un bug » dans le bandeau bêta et le footer : petite fenêtre, message envoyé par e-mail à
+  `CONTACT_EMAIL` avec la page et l'appareil (« Répondre » écrit directement à la personne). Anti-robots
+  (champ piège, 5 envois / 10 min par IP).
+- E-mails automatiques signés « Yeye Pronos », avec « merci de ne pas répondre » et l'adresse de contact en
+  pied de page.
 
 ### Interface
 - Bandeau « Version bêta » en haut des pages, fermable une fois pour toutes (cookie, pas de clignotement),

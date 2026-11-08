@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { CheckCircle2, ChevronRight, Circle, Clock, Lock } from "lucide-react";
 import { PronoseNavbar } from "@/components/layout/pronos-navbar";
-import { SPECIAL_PRED_WINDOWS, MAX_POINTS, type PreseasonBetType } from "@/types/special-predictions";
-import { fmtPts } from "@/lib/format";
+import { SPECIAL_PRED_WINDOWS, type PreseasonBetType } from "@/types/special-predictions";
 import { formatCountdown } from "@/lib/game-night";
 import { getSeasonLabel } from "@/types/season";
 import { usePreseason } from "@/components/preseason/use-preseason";
@@ -13,9 +12,12 @@ import { formatDeadline } from "@/components/preseason/preseason-layout";
 const ITEMS: { type: PreseasonBetType; href: string; hint: string }[] = [
   { type: "PRESEASON_NBA_STANDINGS",    href: "/pronos/preseason/classement", hint: "À faire en premier : ton top 10 prépare ton bracket" },
   { type: "PRESEASON_BRACKET",          href: "/pronos/preseason/bracket",    hint: "Play-in, playoffs, champion et MVP des Finales" },
-  { type: "PRESEASON_NBA_CUP_CHAMPION", href: "/pronos/preseason/nba-cup",    hint: "Un seul choix, cote selon la saison passée" },
-  { type: "PRESEASON_MVP_SEASON",       href: "/pronos/preseason/mvp",        hint: "Un seul choix" },
+  { type: "PRESEASON_NBA_CUP_CHAMPION", href: "/pronos/preseason/nba-cup",    hint: "Une équipe, résultat en décembre" },
+  { type: "PRESEASON_MVP_SEASON",       href: "/pronos/preseason/mvp",        hint: "Un joueur" },
+  { type: "PRESEASON_DPOY",             href: "/pronos/preseason/dpoy",       hint: "Un joueur" },
+  { type: "PRESEASON_ROOKIE",           href: "/pronos/preseason/rookie",     hint: "Un joueur de la dernière draft" },
 ];
+const TOTAL = ITEMS.length;
 
 export default function PreseasonPage() {
   const { data, error, open, now } = usePreseason();
@@ -30,7 +32,7 @@ export default function PreseasonPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-black tracking-tight">Paris de début de saison</h1>
           <p className="mt-0.5 text-sm text-zinc-500">
-            {data ? `Saison ${getSeasonLabel(data.season)} · ` : ""}4 paris à faire une fois, résultats en décembre (NBA Cup) et en fin de saison
+            {data ? `Saison ${getSeasonLabel(data.season)} · ` : ""}{TOTAL} paris à faire une fois. Plus ton choix est inattendu, plus il rapporte.
           </p>
         </div>
 
@@ -43,10 +45,10 @@ export default function PreseasonPage() {
                   ? <>Ouverts jusqu&apos;au <b className="text-white">{formatDeadline(data.deadline)}</b> · dans {formatCountdown(left)}</>
                   : <>Paris fermés depuis le {formatDeadline(data.deadline)}</>}
               </p>
-              <p className="text-sm font-bold tabular-nums">{done}/4 <span className="font-normal text-zinc-500">faits</span></p>
+              <p className="text-sm font-bold tabular-nums">{done}/{TOTAL} <span className="font-normal text-zinc-500">faits</span></p>
             </div>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-zinc-800">
-              <div className="h-full rounded-full bg-gradient-to-r from-[#5096ff] to-[#dcff50]" style={{ width: `${(done / 4) * 100}%` }} />
+              <div className="h-full rounded-full bg-gradient-to-r from-[#5096ff] to-[#dcff50]" style={{ width: `${(done / TOTAL) * 100}%` }} />
             </div>
           </div>
         )}
@@ -65,12 +67,9 @@ export default function PreseasonPage() {
                   <p className="font-semibold">{meta.label}</p>
                   <p className="text-xs text-zinc-500">{hint}</p>
                 </div>
-                <div className="flex-shrink-0 text-right">
-                  <p className={`text-xs font-semibold ${made ? "text-green-400" : open ? "text-[#ff5050]" : "text-zinc-600"}`}>
-                    {made ? "Fait" : open ? "À faire" : "Non joué"}
-                  </p>
-                  <p className="text-[11px] text-zinc-600">jusqu&apos;à {fmtPts(MAX_POINTS[type])} pts</p>
-                </div>
+                <p className={`flex-shrink-0 text-xs font-semibold ${made ? "text-green-400" : open ? "text-[#ff5050]" : "text-zinc-600"}`}>
+                  {made ? "Fait" : open ? "À faire" : "Non joué"}
+                </p>
                 <ChevronRight className="h-4 w-4 flex-shrink-0 text-zinc-600 group-hover:text-zinc-400" />
               </Link>
             );
@@ -78,7 +77,7 @@ export default function PreseasonPage() {
         </div>
 
         <p className="mt-6 text-xs text-zinc-600">
-          Les points des paris de saison s&apos;ajoutent à ton total au classement. <Link href="/pronos/regles" className="text-zinc-400 hover:text-white">Voir les règles</Link>
+          Les points s&apos;ajoutent à ton total au classement, dès que le résultat est connu. <Link href="/pronos/regles" className="text-zinc-400 hover:text-white">Voir le barème</Link>
         </p>
       </div>
     </div>

@@ -15,7 +15,6 @@ export function PronoseNavbar() {
     { href: "/pronos",            label: "Vue d'ensemble"     },
     { href: "/pronos/matchs",     label: "Matchs"             },
     { href: "/pronos/preseason",  label: "Début de saison"    },
-    { href: "/pronos/postseason", label: "Play-in & Playoffs" },
     { href: "/pronos/regles",     label: "Règles"             },
   ];
 

@@ -58,6 +58,23 @@ gratuit (ex. cron-job.org, de 23h à 7h heure de Paris) avec le header
 `Authorization: Bearer <CRON_SECRET>`. Même logique que le CRON du matin, limitée à la veille
 et au jour en cours.
 
+### Depuis l'admin
+
+Pages **Santé** (`/admin/dashboard`) et **Matchs** (`/admin/games`) : mêmes tâches que les CRON, sans terminal
+(60 s max, comme sur Vercel). Chaque passage, automatique ou manuel, est enregistré (table `CronRun`, 60 jours)
+et visible avec son journal dans l'historique.
+
+| Bouton | Effet |
+|---|---|
+| Lancer la mise à jour | Tout le pipeline du matin |
+| Blessures | Effectifs + blessures |
+| Recalculer le classement | Bilans + rangs des 30 équipes |
+| Mettre à jour cette nuit | Calendrier et matchs terminés d'une nuit |
+| Retraiter | Un match : pronos remis en attente puis recalculés, box score, moyennes, classement |
+
+Restent en commandes : les gros rattrapages (`db:backfill-*`, `db:run-update -- --days=N`) et le contrôle
+complet avec ESPN (`db:verify-season`), trop longs pour 60 s.
+
 ### Routes déclenchables à la main
 
 Toutes exigent `Authorization: Bearer $CRON_SECRET`.

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { IS_BETA } from "@/lib/beta";
+import { CREATOR } from "@/lib/legal";
+import { BugReportButton } from "@/components/feedback/bug-report";
 
-export function Footer() {
+export function Footer({ loggedIn }: { loggedIn: boolean }) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -75,7 +77,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/legal/privacy"
+                  href="/legal/confidentialite"
                   className="text-sm text-zinc-400 hover:text-zinc-300 transition-colors"
                 >
                   Politique de confidentialité
@@ -83,10 +85,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/legal/cgv"
+                  href="/legal/cgu"
                   className="text-sm text-zinc-400 hover:text-zinc-300 transition-colors"
                 >
-                  Conditions générales
+                  Conditions d&apos;utilisation
                 </Link>
               </li>
             </ul>
@@ -95,16 +97,22 @@ export function Footer() {
 
         <div className="mt-8 pt-8 border-t border-zinc-800">
           <p className="text-xs text-center text-zinc-500">
-            © {currentYear} Yeye Pronos. Tous droits réservés.
+            © {currentYear} Yeye Pronos · Créé par {CREATOR}
           </p>
-          {IS_BETA && (
-            <p className="mt-3 flex items-center justify-center gap-2 text-xs text-zinc-500">
-              <span className="rounded-md bg-[#5096ff]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#5096ff]">
-                Bêta
+          <p className="mt-2 text-[11px] leading-relaxed text-center text-zinc-600">
+            Les noms et logos des équipes appartiennent à la NBA et à ses équipes.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-zinc-500">
+            {IS_BETA && (
+              <span className="flex items-center gap-2">
+                <span className="rounded-md bg-[#5096ff]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#5096ff]">
+                  Bêta
+                </span>
+                Version de test : merci pour vos retours !
               </span>
-              Version de test : merci pour vos retours !
-            </p>
-          )}
+            )}
+            <BugReportButton loggedIn={loggedIn} variant="footer" />
+          </div>
         </div>
       </div>
     </footer>

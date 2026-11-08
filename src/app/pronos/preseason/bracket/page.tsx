@@ -11,7 +11,7 @@ import {
   resolveBracket, bracketToData, dataToBracket, emptyBracketPicks, stableStringify, SERIES_GAMES,
   type BracketPicks, type ConfPicks, type Matchup, type ResolvedConference, type SeriesGames,
 } from "@/lib/preseason-bracket";
-import { PRESEASON_BRACKET_POINTS as P, type PreseasonBracketData, type StandingsPredictionData } from "@/types/special-predictions";
+import { PRESEASON_BRACKET_POINTS as P, bracketRoundLabel, type PreseasonBracketData, type StandingsPredictionData } from "@/types/special-predictions";
 import { fmtPts } from "@/lib/format";
 
 type Conf = "east" | "west";
@@ -82,13 +82,12 @@ export default function PreseasonBracketPage() {
   return (
     <PreseasonLayout
       title="Bracket Play-in + Playoffs"
-      subtitle="Du Play-in jusqu'au titre, à partir de ton classement."
+      subtitle="Du Play-in jusqu'au titre, à partir de ton classement. Chaque tour rapporte le double du précédent."
       season={data?.season}
       deadline={data?.deadline}
       open={open}
       now={now}
       saved={!!savedData}
-      points={`jusqu'à ${fmtPts(P.FINALS_CHAMPION)} pts pour le champion`}
       loading={!data && !error}
       error={error}
     >
@@ -219,7 +218,10 @@ function ConferenceView({ conf, resolved, teamById, open, onSeed, onPick, onGame
     <div className="space-y-5">
       {/* Play-in */}
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <h3 className="mb-1 text-sm font-semibold">Play-in · Conférence {conf === "east" ? "Est" : "Ouest"}</h3>
+        <div className="mb-1 flex items-baseline justify-between gap-2">
+          <h3 className="text-sm font-semibold">Play-in · Conférence {conf === "east" ? "Est" : "Ouest"}</h3>
+          <span className="text-[11px] font-semibold text-[#dcff50]">{P.PLAYIN_TEAM} pts par équipe qualifiée</span>
+        </div>
         <p className="mb-3 text-xs text-zinc-500">Parmi tes 7e à 10e, qui décroche les places 7 et 8 ?</p>
         {(["seed7", "seed8"] as const).map((which) => (
           <div key={which} className="mb-3 last:mb-0">
@@ -246,21 +248,21 @@ function ConferenceView({ conf, resolved, teamById, open, onSeed, onPick, onGame
         ))}
       </section>
 
-      <RoundSection title="1er tour" hint={`${fmtPts(P.R1_WINNER)} pts · +${fmtPts(P.R1_WINNER_AND_WL)} si bon nombre de matchs`}>
+      <RoundSection title="1er tour" hint={bracketRoundLabel(P.R1)}>
         {resolved.r1.map((m, i) => (
           <SeriesCard key={i} label={R1_LABELS[i]} matchup={m} seedOf={seedOf} teamById={teamById} open={open}
             onPick={(w) => onPick("r1", i, w)} onGames={(g) => onGames("r1", i, g)} />
         ))}
       </RoundSection>
 
-      <RoundSection title="Demi-finales de conférence" hint={`${fmtPts(P.R2_WINNER)} pts · +${fmtPts(P.R2_WINNER_AND_WL)}`}>
+      <RoundSection title="Demi-finales de conférence" hint={bracketRoundLabel(P.R2)}>
         {resolved.r2.map((m, i) => (
           <SeriesCard key={i} label={i === 0 ? "Haut de tableau" : "Bas de tableau"} matchup={m} seedOf={seedOf} teamById={teamById} open={open}
             onPick={(w) => onPick("r2", i, w)} onGames={(g) => onGames("r2", i, g)} />
         ))}
       </RoundSection>
 
-      <RoundSection title="Finale de conférence" hint={`${fmtPts(P.CF_WINNER)} pts · +${fmtPts(P.CF_WINNER_AND_WL)}`}>
+      <RoundSection title="Finale de conférence" hint={bracketRoundLabel(P.CF)}>
         <SeriesCard label={`Finale ${conf === "east" ? "Est" : "Ouest"}`} matchup={resolved.cf} seedOf={seedOf} teamById={teamById} open={open}
           onPick={(w) => onPick("cf", 0, w)} onGames={(g) => onGames("cf", 0, g)} />
       </RoundSection>
@@ -353,7 +355,7 @@ function FinalsView({ resolved, teamById, players, open, onPick, onGames, onMvp 
 
   return (
     <div className="space-y-5">
-      <RoundSection title="Finale NBA" hint={`${fmtPts(P.FINALS_CHAMPION)} pts · +${fmtPts(P.FINALS_WL)} si bon nombre de matchs`}>
+      <RoundSection title="Finale NBA" hint={bracketRoundLabel(P.CHAMPION)}>
         <SeriesCard label="Est vs Ouest" matchup={finals} seedOf={() => null} teamById={teamById} open={open} onPick={onPick} onGames={onGames} />
       </RoundSection>
 

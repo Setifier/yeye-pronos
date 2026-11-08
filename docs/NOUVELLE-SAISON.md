@@ -16,8 +16,9 @@ Aucune date de saison n'est codée en dur dans l'application.
 | 6 | `npm run db:update-injuries` | Infirmerie |
 | 7 | `npm run db:verify-season` | Contrôle complet DB vs ESPN — doit finir sur « Tout est cohérent » |
 | 8 | Vercel → onglet **Cron** | Vérifier que `morning-update` est actif et que les logs sont propres |
-| 9 | Paris de début de saison | Rien à faire : ils ferment automatiquement au coup d'envoi du 1er match. `PRESEASON_DEADLINES` ne sert qu'aux exceptions (ex. 2026-27) |
-| 10 | `npm run check:setup` | Variables d'environnement, SMTP, base, date limite |
+| 9 | Cotes des trophées | Ajouter la saison dans `AWARD_RANKINGS` (`src/lib/award-odds.ts`) **avant l'ouverture des paris** : vote MVP puis All-NBA, vote DPOY puis All-Defensive, ordre de la draft de l'été (source : basketball-reference.com). Sans cette entrée, MVP et DPOY valent 1 000 pts pour tous et le pari Rookie n'a aucun candidat |
+| 10 | Paris de début de saison | Ils ferment automatiquement au coup d'envoi du 1er match. `PRESEASON_DEADLINES` ne sert qu'aux exceptions (ex. 2026-27) |
+| 11 | `npm run check:setup` | Variables d'environnement, SMTP, base, date limite |
 
 Ensuite tout est automatique (voir [SCRIPTS.md](./SCRIPTS.md)). En cas de doute, relancer
 `npm run db:verify-season` : chaque erreur indique la commande qui la corrige.
@@ -57,4 +58,4 @@ npm run db:verify-season
 **Règle officielle** : les paris de début de saison ferment au **coup d'envoi du premier match** de la saison régulière.
 
 **Exception 2026-27 uniquement** (lancement de la bêta en cours de saison) : tous fermés le
-**mardi 10 novembre 2026 à 23h59** (heure de Paris), NBA Cup comprise. À ne pas reconduire.
+**dimanche 15 novembre 2026 à 23h59** (heure de Paris), NBA Cup comprise. À ne pas reconduire.

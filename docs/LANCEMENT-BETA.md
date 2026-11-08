@@ -10,9 +10,10 @@ Hors périmètre de la bêta : trophées/défis, archives des saisons passées, 
 | 0 | Comptes de test (optionnel) | `npm run db:delete-users -- email1 email2` (aperçu), puis `--confirm`. Supprime aussi les pronos des saisons passées de ces comptes |
 | 1 | Données de la saison à jour | `npm run db:run-update -- --days=3` puis `npm run db:verify-season` → « Tout est cohérent » |
 | 2 | Configuration | `npm run check:setup` avec le `.env` de production (`vercel env pull .env.production.local`) |
-| 3 | Variables Vercel | `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (= URL de prod, sans `/` final), `NEXT_PUBLIC_API_URL` (même valeur, ou absente — jamais `localhost`), `CRON_SECRET`, `NODEMAILER_USER`, `NODEMAILER_APP_PASSWORD`, `ADMIN_EMAILS`, Google + Cloudinary si utilisés. Modèle : `env.example`. À régler **avant** le push (les `NEXT_PUBLIC_*` sont figées au build) |
+| 3 | Variables Vercel | `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (= URL de prod, sans `/` final), `NEXT_PUBLIC_API_URL` (même valeur, ou absente — jamais `localhost`), `CRON_SECRET`, `NODEMAILER_USER`, `NODEMAILER_APP_PASSWORD`, `ADMIN_EMAILS`, `CONTACT_EMAIL` (affichée sur les pages légales), Google + Cloudinary si utilisés. Modèle : `env.example`. À régler **avant** le push (les `NEXT_PUBLIC_*` sont figées au build) |
 | 4 | Google OAuth | Console Google → identifiants → URI de redirection : `https://<domaine>/api/auth/callback/google` |
 | 5 | Types | `npx tsc --noEmit` sans erreur, puis `npm run build` |
+| 6 | Base de données | `npx prisma db push` après tout changement de `schema.prisma` (ex. tables de l'admin `CronRun`, `BugReport`) |
 
 ### Première fois : créer le projet Vercel
 
@@ -39,7 +40,8 @@ Ensuite, chaque `git push` sur `main` redéploie automatiquement.
 - Créer ton compte avec l'adresse de `ADMIN_EMAILS` (rôle admin attribué à la création).
 - Ensuite, rien à surveiller : si un passage reste incomplet (matchs non traités, ESPN en panne, effectifs
   incomplets, exécution trop lente), un e-mail « Mise à jour du matin incomplète » part vers `ADMIN_EMAILS`.
-  Le passage suivant rattrape tout seul ; `npm run db:run-update` pour rattraper tout de suite.
+  Le passage suivant rattrape tout seul ; pour rattraper tout de suite : **Admin → Santé → Lancer la mise à jour**.
+- Suivi au quotidien : **Admin → Santé** (état, historique des CRON), **Joueurs**, **Signalements**.
 
 ## 3. Ce que les testeurs doivent essayer
 
@@ -48,7 +50,7 @@ Ensuite, chaque `git push` sur `main` redéploie automatiquement.
 | Inscription e-mail | E-mail « Confirme ton adresse » reçu (vérifier les spams), lien → connexion → onboarding |
 | Connexion Google | Arrive directement à l'onboarding |
 | Onboarding | Pseudo, équipe et joueur favoris → accueil |
-| Paris de début de saison | `/pronos/preseason` : classement → bracket → NBA Cup → MVP, avant le **mardi 10 nov. 23h59** |
+| Paris de début de saison | `/pronos/preseason` : classement → bracket → NBA Cup → MVP → DPOY → Rookie, avant le **dimanche 15 nov. 23h59** |
 | Pari d'un match | Accueil → « Faire mes N paris » ; un clic sur une équipe enregistre ; bonus dans la fenêtre |
 | Le lendemain | Points affichés sur la carte et dans « Hier soir », classement mis à jour. No Spoil actif par défaut : bouton « No Spoil » en haut (→ « Scores visibles », mémorisé sur l'appareil) ou « Afficher » sur la dernière nuit |
 | Mobile | Barre d'onglets en bas, fenêtre de pari en plein écran |

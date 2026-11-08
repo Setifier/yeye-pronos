@@ -1,7 +1,13 @@
 "use server";
 
 import transporter from "@/lib/nodemailer";
+import { getContactEmail } from "@/lib/legal";
 
+/**
+ * E-mails automatiques (confirmation d'adresse, mot de passe oublié, alertes admin).
+ * Expéditeur « Yeye Pronos » (NODEMAILER_USER), mention « merci de ne pas répondre » ; le pied de page
+ * renvoie vers CONTACT_EMAIL.
+ */
 export async function sendEmailAction({
   to,
   subject,
@@ -14,6 +20,11 @@ export async function sendEmailAction({
     link: string;
   };
 }) {
+  const contact = getContactEmail();
+  const contactLine = contact
+    ? `<br>Une question, un bug ? <a href="mailto:${contact}" style="color: #5096ff; text-decoration: none;">${contact}</a>`
+    : "";
+
   const emailTemplate = `
     <!DOCTYPE html>
     <html lang="fr">
@@ -33,7 +44,7 @@ export async function sendEmailAction({
               <tr>
                 <td style="background: linear-gradient(135deg, #ff5050 0%, #5096ff 50%, #dcff50 100%); padding: 40px 20px; text-align: center;">
                   <h1 style="margin: 0; font-size: 32px; font-weight: bold; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-                    NBA Pronos
+                    Yeye Pronos
                   </h1>
                 </td>
               </tr>
@@ -70,10 +81,10 @@ export async function sendEmailAction({
               <tr>
                 <td style="padding: 30px; background-color: #0a0a0a; border-top: 1px solid #27272a; text-align: center;">
                   <p style="margin: 0; font-size: 14px; color: #71717a;">
-                    © ${new Date().getFullYear()} NBA Pronos. Tous droits réservés.
+                    © ${new Date().getFullYear()} Yeye Pronos. Tous droits réservés.
                   </p>
                   <p style="margin: 10px 0 0 0; font-size: 12px; color: #52525b;">
-                    Pronostiquez les matchs NBA et grimpez dans le classement
+                    E-mail automatique, merci de ne pas y répondre.${contactLine}
                   </p>
                 </td>
               </tr>
@@ -105,11 +116,11 @@ export async function sendEmailAction({
 
   const mailOptions = {
     from: {
-      name: "NBA Pronos",
+      name: "Yeye Pronos",
       address: process.env.NODEMAILER_USER || "",
     },
     to,
-    subject: `NBA Pronos - ${subject}`,
+    subject: `Yeye Pronos - ${subject}`,
     html: emailTemplate,
   };
 

@@ -77,7 +77,7 @@ Postseason : Play-in, 1er tour, 2e tour, finales de conférence, Finale NBA.
 
 | Élément | Fichier |
 |---|---|
-| Date limite : **coup d'envoi du 1er match de saison régulière** ; exceptions ponctuelles dans `PRESEASON_DEADLINES` (2026-27 : mar. 10 nov. 23h59, lancement bêta) | `src/types/special-predictions.ts` |
+| Date limite : **coup d'envoi du 1er match de saison régulière** ; exceptions ponctuelles dans `PRESEASON_DEADLINES` (2026-27 : dim. 15 nov. 23h59, lancement bêta) · cotes MVP / DPOY / Rookie dans `src/lib/award-odds.ts` | `src/types/special-predictions.ts` |
 | Cotes NBA Cup (rang de la saison précédente, ou `SpecialPredictionConfig`), validation, classement par défaut | `src/lib/special-bets.ts` |
 | Logique du bracket (seeds = top 10 du classement prédit, play-in 7e/8e, séries 4-7 matchs, nettoyage en cascade) | `src/lib/preseason-bracket.ts` |
 | API lecture / enregistrement (refus après la date limite) | `GET`/`PUT /api/special-predictions` |
@@ -103,7 +103,7 @@ Affichage : uniquement « Ouvert » ou « Fermé ».
 | Utilisateurs | `user/profile` · `users/search` · `users/[id]/public-profile` · `classement` · `competitions` · `archives` |
 | Social | `friends` · `friends/requests` · `friends/requests/sent` · `friends/requests/[id]/accept` · `friends/requests/[id]/reject` · `friends/[id]/compare` |
 | Dashboard | `dashboard/stats` · `dashboard/recent-predictions` · `dashboard/leaderboard` |
-| Admin | `admin/games` · `admin/users` · `admin/stats` · `admin/recalculate-standings` |
+| Admin | `admin/recalculate-standings` (le reste passe par les server actions `src/actions/admin/*`) |
 | Auth | `auth/[...all]` · `clear-session` |
 
 ## Pages
@@ -117,7 +117,7 @@ Affichage : uniquement « Ouvert » ou « Fermé ».
 | Playoffs | `/playoffs` · `/playoffs/equipes` · `/playoffs/joueurs` |
 | NBA Cup | `/nba-cup` · `/nba-cup/groupes` · `/nba-cup/wildcard` · `/nba-cup/equipes` · `/nba-cup/joueurs` |
 | Compte | `/dashboard` · `/classement` · `/profile` · `/parametres` · `/amis` · `/comparer/[friendId]` · `/onboarding` |
-| Admin | `/admin/dashboard` · `/admin/games` · `/admin/users` |
+| Admin | `/admin/dashboard` (santé) · `/admin/users` (joueurs) · `/admin/games` (matchs) · `/admin/bugs` (signalements) |
 
 ## Interface de pari
 

@@ -26,7 +26,7 @@ export default function RegisterPage() {
             <div>
               <h1 className="text-2xl font-bold text-white">Inscription</h1>
               <p className="text-sm text-zinc-400">
-                Créez votre compte NBA Pronos
+                Créez votre compte Yeye Pronos
               </p>
             </div>
           </div>
@@ -60,8 +60,20 @@ export default function RegisterPage() {
           {/* OAuth Buttons */}
           <div className="space-y-3">
             <SignInOAuthButtons signUp provider="google" />
-            <SignInOAuthButtons signUp provider="github" />
           </div>
+
+          {/* Acceptation des conditions (vaut aussi pour l'inscription avec Google) */}
+          <p className="mt-6 text-center text-xs leading-relaxed text-zinc-500">
+            En créant un compte, vous acceptez les{" "}
+            <Link href="/legal/cgu" className="text-zinc-300 underline-offset-2 hover:underline">
+              conditions d&apos;utilisation
+            </Link>{" "}
+            et la{" "}
+            <Link href="/legal/confidentialite" className="text-zinc-300 underline-offset-2 hover:underline">
+              politique de confidentialité
+            </Link>
+            .
+          </p>
         </div>
       </div>
     </div>

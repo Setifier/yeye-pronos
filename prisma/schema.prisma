@@ -37,6 +37,11 @@ enum PredictionResult {
   CANCELLED
 }
 
+enum BugReportStatus {
+  OPEN
+  RESOLVED
+}
+
 
 // ============================================
 // AUTH (Better-Auth compatible)
@@ -73,6 +78,7 @@ model User {
   leagueMemberships      LeagueMember[]
   sentFriendRequests     FriendRequest[]       @relation("FriendRequestSender")
   receivedFriendRequests FriendRequest[]       @relation("FriendRequestReceiver")
+  bugReports             BugReport[]
 
   @@map("users")
 }
@@ -674,4 +680,46 @@ model FriendRequest {
   @@unique([senderId, receiverId])
   @@index([receiverId])
   @@map("friend_requests")
+}
+
+// ============================================
+// ADMIN : historique des mises à jour et signalements
+// ============================================
+
+/// Un passage d'une tâche de mise à jour, déclenchée par un CRON ou depuis l'admin.
+model CronRun {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+
+  job        String   // "morning-update" | "update-injuries" | "refresh-night" | "reprocess-game" | "recalculate-standings"
+  trigger    String   // "cron" | "admin"
+  ok         Boolean
+  durationMs Int
+  summary    Json?    // compteurs affichés dans l'admin
+  problems   String[]
+  logs       String[]
+
+  @@index([job, createdAt])
+  @@map("cron_runs")
+}
+
+/// Signalement envoyé depuis le bouton « Signaler un bug ».
+model BugReport {
+  id        String          @id @default(uuid())
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  message   String
+  page      String?
+  userAgent String?
+  screen    String?
+  email     String?         // pour répondre : compte connecté ou e-mail saisi
+
+  userId    String?
+  user      User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  status    BugReportStatus @default(OPEN)
+
+  @@index([status, createdAt])
+  @@map("bug_reports")
 }

@@ -11,15 +11,16 @@ import {
   defaultStandings,
   isPreseasonType,
   validatePreseasonData,
-  MVP_POINTS,
 } from "@/lib/special-bets";
+import { awardPoints, getAwardBoards } from "@/lib/award-odds";
 
 export const dynamic = "force-dynamic";
 
 /**
  * GET /api/special-predictions[?include=players]
  *   Paris de début de saison de l'utilisateur (saison en cours), date limite, équipes,
- *   cotes NBA Cup, classement par défaut. `include=players` ajoute les candidats MVP.
+ *   cotes NBA Cup, classement par défaut. `include=players` ajoute les joueurs sous contrat
+ *   avec leurs cotes MVP, DPOY et Rookie (null = pas rookie de la dernière draft).
  *
  * PUT /api/special-predictions  { type, data }
  *   Enregistre un pari de début de saison (refusé après la date limite).
@@ -43,13 +44,17 @@ export async function GET(request: NextRequest) {
     let players: unknown[] | undefined;
     if (request.nextUrl.searchParams.get("include") === "players") {
       const previous = getPreviousSeason(season);
-      const rows = await prisma.player.findMany({
-        where: { teamId: { not: null } },
-        select: {
-          id: true, fullName: true, headshot: true, position: true, teamId: true,
-          seasonStats: { where: { season: { in: [season, previous] } }, select: { season: true, pointsPerGame: true, gamesPlayed: true } },
-        },
-      });
+      const [rows, boards] = await Promise.all([
+        prisma.player.findMany({
+          where: { teamId: { not: null } },
+          select: {
+            id: true, fullName: true, headshot: true, position: true, teamId: true,
+            seasonStats: { where: { season: { in: [season, previous] } }, select: { season: true, pointsPerGame: true, gamesPlayed: true } },
+          },
+        }),
+        getAwardBoards(prisma, season),
+      ]);
+      if (boards.unmatched.length > 0) console.warn("[award-odds] Joueurs introuvables :", boards.unmatched.join(", "));
       players = rows
         .map((p) => {
           const cur = p.seasonStats.find((s) => s.season === season);
@@ -58,6 +63,11 @@ export async function GET(request: NextRequest) {
             id: p.id, fullName: p.fullName, headshot: p.headshot, position: p.position, teamId: p.teamId,
             ppg: cur?.pointsPerGame ?? null, games: cur?.gamesPlayed ?? 0,
             previousPpg: prev?.pointsPerGame ?? null,
+            odds: {
+              PRESEASON_MVP_SEASON: awardPoints(boards, "PRESEASON_MVP_SEASON", p.id),
+              PRESEASON_DPOY:       awardPoints(boards, "PRESEASON_DPOY", p.id),
+              PRESEASON_ROOKIE:     awardPoints(boards, "PRESEASON_ROOKIE", p.id),
+            },
           };
         })
         .sort((a, b) => (b.previousPpg ?? b.ppg ?? 0) - (a.previousPpg ?? a.ppg ?? 0));
@@ -70,7 +80,6 @@ export async function GET(request: NextRequest) {
       open: Date.now() < deadline.getTime(),
       serverTime: new Date().toISOString(),
       teams: teams.map((t) => ({ ...t, nbaCupPoints: odds.get(t.id) ?? null })),
-      mvpPoints: MVP_POINTS,
       defaults: { standings: defaultStandings(teams) },
       predictions: Object.fromEntries(
         PRESEASON_BET_TYPES.map((type) => {

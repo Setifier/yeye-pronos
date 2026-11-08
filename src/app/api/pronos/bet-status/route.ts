@@ -60,6 +60,8 @@ export async function GET() {
     preseasonDeadline: preseasonDeadline.toISOString(),
     PRESEASON_NBA_CUP_CHAMPION: preseason,
     PRESEASON_MVP_SEASON:       preseason,
+    PRESEASON_DPOY:             preseason,
+    PRESEASON_ROOKIE:           preseason,
     PRESEASON_NBA_STANDINGS:    preseason,
     PRESEASON_BRACKET:          preseason,
     POSTSEASON_PLAYIN:          status(playInStarted, regDone),

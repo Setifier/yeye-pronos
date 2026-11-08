@@ -77,7 +77,19 @@ npm run db:diagnose-bracket      # Diagnostic données bracket
 - « Nuit NBA » (`src/lib/game-night.ts`) : nuit en cours = date US Eastern de maintenant. Les paris manquants
   de l'accueil ne concernent que cette nuit.
 - Classement des joueurs de l'app : par saison (`src/lib/season-ranking.ts`), paris de saison inclus.
+- Deux sortes de paris : les paris de match et 6 paris de début de saison (classement, bracket, NBA Cup, MVP,
+  DPOY, Rookie). Les paris des playoffs (`/pronos/postseason`) sont mis de côté : futurs événements créés depuis l'admin.
 - Paris de début de saison : fermeture au **coup d'envoi du 1er match de saison régulière** (règle officielle).
-  `PRESEASON_DEADLINES` = exceptions ponctuelles seulement (2026-27 : mar. 10 nov. 23h59, lancement bêta — ne pas reconduire).
+  `PRESEASON_DEADLINES` = exceptions ponctuelles seulement (2026-27 : dim. 15 nov. 23h59, lancement bêta — ne pas reconduire).
+- Barèmes : `src/types/special-predictions.ts` (principe : plus c'est dur, plus ça rapporte ; rien n'est payé deux fois).
+  Cotes MVP / DPOY / Rookie : `src/lib/award-odds.ts`, classements `AWARD_RANKINGS` à saisir chaque saison.
+  Barème complet affiché sur une seule page (`/pronos/regles`) ; ailleurs, un chiffre par choix.
 - Paris d'un match : fermeture au coup d'envoi (`predictionDeadlineFor()`).
 - Couleurs : `#5096ff` (action), `#ff5050` (urgence / à faire), `#dcff50` (points), fond zinc-950.
+
+## Admin (`/admin/*`, rôle ADMIN)
+
+- Pages : `dashboard` (santé + historique), `users` (joueurs), `games` (matchs par nuit), `bugs` (signalements).
+- Lecture : `src/lib/admin-data.ts` · tâches partagées CRON + boutons : `src/lib/update-jobs.ts`
+  (historique `CronRun` via `src/lib/cron-runs.ts`) · actions : `src/actions/admin/*`.
+- Un nouveau contrôle de cohérence va dans `getHealthOverview()` ; une nouvelle tâche dans `update-jobs.ts`.

@@ -4,7 +4,8 @@
  *   - date limite (src/types/special-predictions.ts → PRESEASON_DEADLINES)
  *   - équipes + bilan de la saison précédente (préremplissage du classement, cotes NBA Cup)
  *   - cotes NBA Cup : SpecialPredictionConfig si renseigné, sinon rang de la saison précédente
- *     (meilleure équipe = 500 pts … pire = 1 950 pts, cf. nbaCupChampionPoints)
+ *     (meilleure équipe = 400 pts … pire = 1 125 pts, cf. nbaCupChampionPoints)
+ *   - cotes MVP, DPOY, Rookie : src/lib/award-odds.ts
  *   - validation des données envoyées par l'utilisateur
  */
 
@@ -12,14 +13,14 @@ import type { PrismaClient } from "@/generated/prisma";
 import {
   PRESEASON_DEADLINES,
   PRESEASON_BET_TYPES,
-  MVP_SEASON_DEFAULT_POINTS,
   nbaCupChampionPoints,
   type PreseasonBetType,
   type PreseasonBracketData,
   type StandingsPredictionData,
 } from "@/types/special-predictions";
-import { getPreviousSeason, getSeasonStartYear } from "@/types/season";
+import { getCurrentSeason, getPreviousSeason, getSeasonStartYear } from "@/types/season";
 import { bracketToData, dataToBracket, resolveBracket } from "@/lib/preseason-bracket";
+import { getAwardBoards } from "@/lib/award-odds";
 
 export interface SeasonTeam {
   id: string;
@@ -89,8 +90,6 @@ export async function getNbaCupOdds(prisma: PrismaClient, season: string, teams:
   return new Map(teams.map((t) => [t.id, nbaCupChampionPoints(t.previousRank ?? 15)]));
 }
 
-export const MVP_POINTS = MVP_SEASON_DEFAULT_POINTS;
-
 /** Classement par défaut : ordre de la saison précédente, par conférence. */
 export function defaultStandings(teams: SeasonTeam[]): StandingsPredictionData {
   const conf = (c: "EAST" | "WEST") => teams.filter((t) => t.conference === c).map((t) => t.id); // déjà triées par rang
@@ -116,10 +115,14 @@ export async function validatePreseasonData(
     return { ok: true, data: { teamId } };
   }
 
-  if (type === "PRESEASON_MVP_SEASON") {
+  if (type === "PRESEASON_MVP_SEASON" || type === "PRESEASON_DPOY" || type === "PRESEASON_ROOKIE") {
     const playerId = String(d.playerId ?? "");
     const player = await prisma.player.findUnique({ where: { id: playerId }, select: { teamId: true } });
     if (!player?.teamId) return { ok: false, error: "Joueur introuvable ou sans équipe" };
+    if (type === "PRESEASON_ROOKIE") {
+      const boards = await getAwardBoards(prisma, getCurrentSeason());
+      if (!boards.PRESEASON_ROOKIE.has(playerId)) return { ok: false, error: "Ce joueur n'est pas un rookie de la dernière draft" };
+    }
     return { ok: true, data: { playerId } };
   }
 

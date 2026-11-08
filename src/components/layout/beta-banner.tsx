@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import { BETA_BANNER_COOKIE } from "@/lib/beta";
+import { BugReportButton } from "@/components/feedback/bug-report";
 
 const ONE_YEAR = 60 * 60 * 24 * 365;
 
 /** Bandeau « version bêta » en haut des pages. Une fois fermé, il ne revient plus sur cet appareil. */
-export function BetaBanner() {
+export function BetaBanner({ loggedIn }: { loggedIn: boolean }) {
   const [open, setOpen] = useState(true);
   if (!open) return null;
 
@@ -18,7 +19,7 @@ export function BetaBanner() {
 
   return (
     <div className="border-b border-[#5096ff]/20 bg-[#5096ff]/10">
-      <div className="max-w-7xl mx-auto flex items-center gap-3 px-4 sm:px-6 lg:px-8 py-2">
+      <div className="max-w-7xl mx-auto flex items-center gap-2 sm:gap-3 px-4 sm:px-6 lg:px-8 py-2">
         <span className="shrink-0 rounded-md bg-[#5096ff] px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
           Bêta
         </span>
@@ -26,6 +27,7 @@ export function BetaBanner() {
           Yeye Pronos est en version bêta
           <span className="hidden sm:inline"> : des bugs peuvent encore traîner, merci de les signaler</span>.
         </p>
+        <BugReportButton loggedIn={loggedIn} variant="banner" />
         <button
           type="button"
           onClick={close}

@@ -7,6 +7,7 @@ import { PreseasonLayout } from "@/components/preseason/preseason-layout";
 import { usePreseason, type PreseasonTeam } from "@/components/preseason/use-preseason";
 import { fmtPts } from "@/lib/format";
 import { getSeasonLabel } from "@/types/season";
+import { NBA_CUP_POINTS, nbaCupChampionPoints } from "@/types/special-predictions";
 
 export default function PreseasonNbaCupPage() {
   const { data, error, open, now, saving, save } = usePreseason();
@@ -29,13 +30,12 @@ export default function PreseasonNbaCupPage() {
   return (
     <PreseasonLayout
       title="Champion NBA Cup"
-      subtitle="Choisis l'équipe qui remportera la NBA Cup en décembre."
+      subtitle="Choisis l'équipe qui remportera la NBA Cup en décembre. Plus ton choix est inattendu, plus il rapporte."
       season={data?.season}
       deadline={data?.deadline}
       open={open}
       now={now}
       saved={!!pick}
-      points="cote selon le bilan de la saison passée"
       loading={!data && !error}
       error={error}
     >
@@ -56,8 +56,8 @@ export default function PreseasonNbaCupPage() {
           )}
 
           <p className="text-xs text-zinc-500">
-            Plus une équipe a fini haut en {getSeasonLabel(data.previousSeason)}, moins elle rapporte : de 500 pts (meilleur bilan) à 1 950 pts (pire bilan).
-            {open && " Touche une équipe pour la choisir, tu peux changer jusqu'à la date limite."}
+            Cote selon le bilan {getSeasonLabel(data.previousSeason)} : {fmtPts(NBA_CUP_POINTS.FIRST)} pts pour le meilleur, {fmtPts(nbaCupChampionPoints(30))} pts pour le moins bon.
+            {open && " Tu peux changer jusqu'à la date limite."}
           </p>
 
           {groups.map((g) => (

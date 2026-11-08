@@ -1,317 +1,152 @@
-"use client";
+import Link from "next/link";
+import type { Metadata } from "next";
+import { AlertTriangle, CalendarDays, CalendarX, CheckCircle2, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { prisma } from "@/lib/prisma";
+import { getAdminNight, type AdminGameRow } from "@/lib/admin-data";
+import { formatParisTimeOnly } from "@/lib/admin-format";
+import { Badge, Card, EmptyState, PageHeader, type Tone } from "@/components/admin/ui";
+import { JobButton } from "@/components/admin/job-button";
 
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import {
-  RefreshCw,
-  Filter,
-  X,
-  Calendar,
-  Trophy,
-  Target,
-  Loader2,
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
-import { toast } from "sonner";
-import { refreshGameScoresAction } from "@/actions/admin/games";
+export const metadata: Metadata = { title: "Admin · Matchs" };
 
-interface Team {
-  id: string;
-  name: string;
-  abbreviation: string;
-  city: string;
+const STATUS: Record<AdminGameRow["status"], { label: string; tone: Tone }> = {
+  SCHEDULED: { label: "Programmé", tone: "neutral" },
+  LIVE:      { label: "En direct", tone: "info" },
+  FINAL:     { label: "Terminé",   tone: "neutral" },
+  POSTPONED: { label: "Reporté",   tone: "warn" },
+  CANCELLED: { label: "Annulé",    tone: "warn" },
+};
+
+const s = (n: number) => (n > 1 ? "s" : "");
+
+function GameItem({ game: g }: { game: AdminGameRow }) {
+  const status = STATUS[g.status];
+  const final = g.status === "FINAL";
+  const awayWon = final && (g.away.score ?? 0) > (g.home.score ?? 0);
+  const p = g.predictions;
+
+  return (
+    <li className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:gap-4 sm:px-5">
+      <span className="w-12 shrink-0 text-xs tabular-nums text-zinc-500">{formatParisTimeOnly(g.gameDate)}</span>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+          <span className={`font-bold ${final && !awayWon ? "text-zinc-500" : "text-white"}`}>{g.away.abbr}</span>
+          <span className="font-bold tabular-nums text-white">{g.away.score ?? "–"}</span>
+          <span className="text-zinc-600">@</span>
+          <span className="font-bold tabular-nums text-white">{g.home.score ?? "–"}</span>
+          <span className={`font-bold ${final && awayWon ? "text-zinc-500" : "text-white"}`}>{g.home.abbr}</span>
+          {g.tag && <Badge tone="info">{g.tag}</Badge>}
+        </div>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+          <Badge tone={status.tone}>{status.label}</Badge>
+          {final &&
+            (g.processed ? (
+              <span className="inline-flex items-center gap-1 text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Traité
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[#ff5050]">
+                <Clock className="h-3.5 w-3.5" /> À traiter
+              </span>
+            ))}
+          {final && <span>{g.boxScore > 0 ? `Box score : ${g.boxScore} joueurs` : "Pas de box score"}</span>}
+          <span>
+            {p.total} prono{s(p.total)}
+            {g.processed && p.total > 0 && ` · ${p.won} ✓ · ${p.lost} ✗`}
+            {g.processed && p.pending > 0 && <span className="text-[#ff5050]"> · {p.pending} en attente</span>}
+          </span>
+          {g.topScorer && <span className="text-zinc-400">Top : {g.topScorer}</span>}
+        </div>
+      </div>
+
+      {final && (
+        <div className="shrink-0">
+          <JobButton kind="reprocess" arg={g.id} label="Retraiter" confirm="Retraiter ?" size="sm" />
+        </div>
+      )}
+    </li>
+  );
 }
 
-interface Game {
-  id: string;
-  gameDate: string;
-  localGameDate: string;
-  status: string;
-  homeTeam: Team;
-  awayTeam: Team;
-  homeScore: number | null;
-  awayScore: number | null;
-  predictions: number;
-}
+export default async function AdminGamesPage({ searchParams }: { searchParams: Promise<{ night?: string }> }) {
+  const { night: requested } = await searchParams;
+  const data = await getAdminNight(prisma, requested);
 
-interface GamesResponse {
-  success: boolean;
-  games: Game[];
-  total: number;
-}
-
-export default function GamesAdminPage() {
-  const [games, setGames] = useState<Game[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshingId, setRefreshingId] = useState<string | null>(null);
-
-  // Filtres
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [dateFilter, setDateFilter] = useState<string>("");
-
-  // Fetch games
-  useEffect(() => {
-    fetchGames();
-  }, [statusFilter, dateFilter]);
-
-  async function fetchGames() {
-    setIsLoading(true);
-    try {
-      const params = new URLSearchParams();
-
-      if (statusFilter) params.append("status", statusFilter);
-      if (dateFilter) params.append("date", dateFilter);
-
-      const response = await fetch(`/api/admin/games?${params}`);
-      const data: GamesResponse = await response.json();
-
-      if (data.success) {
-        setGames(data.games);
-      }
-    } catch (error) {
-      console.error("Error fetching games:", error);
-      toast.error("Erreur lors du chargement des matchs");
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  const handleRefreshGame = async (gameId: string) => {
-    setRefreshingId(gameId);
-    const result = await refreshGameScoresAction({ gameId });
-    setRefreshingId(null);
-
-    if (result.success) {
-      toast.success("Scores mis à jour");
-      fetchGames();
-    } else {
-      toast.error(result.error || "Erreur lors de la mise à jour");
-    }
-  };
-
-  const clearFilters = () => {
-    setStatusFilter("");
-    setDateFilter("");
-  };
-
-  const hasActiveFilters = statusFilter || dateFilter;
-
-  // Stats rapides
-  const liveGames = games.filter((g) => g.status === "LIVE").length;
-  const finalGames = games.filter((g) => g.status === "FINAL").length;
-  const totalPredictions = games.reduce((sum, g) => sum + g.predictions, 0);
+  const finished = data.games.filter((g) => g.status === "FINAL");
+  const processed = finished.filter((g) => g.processed).length;
+  const navBtn = "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white";
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-white">Monitoring des matchs</h1>
-        <p className="text-zinc-400 mt-2">
-          Surveillez les matchs et mettez à jour les scores manuellement
-        </p>
+      <PageHeader
+        title="Matchs"
+        description="Scores, pronos et box scores, nuit par nuit (date US, heures de Paris)"
+        actions={<JobButton kind="night" arg={data.night} label="Mettre à jour cette nuit" variant="primary" />}
+      />
+
+      {data.issues.length > 0 && (
+        <section className="rounded-2xl bg-[#ff5050]/10 p-4 ring-1 ring-[#ff5050]/25">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-white">
+            <AlertTriangle className="h-4 w-4 text-[#ff5050]" />
+            Matchs à rattraper
+          </h2>
+          <p className="mt-1 text-xs text-zinc-400">
+            « Lancer la mise à jour » (page Santé) les traite tous d’un coup. Sinon, ouvrez la nuit concernée.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {data.issues.map((i) => (
+              <li key={i.id}>
+                <Link
+                  href={`/admin/games?night=${i.night}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-950/60 px-2.5 py-1.5 text-xs text-zinc-200 transition-colors hover:bg-zinc-900"
+                >
+                  <span className="font-semibold">{i.label}</span>
+                  <span className="text-zinc-500">
+                    {i.reason === "unprocessed" ? "terminé, pas traité" : "score pas à jour"} · {i.night}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Navigation entre les nuits */}
+      <div className="flex items-center gap-2">
+        <Link href={`/admin/games?night=${data.prev}`} aria-label="Nuit précédente" className={navBtn}>
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
+        <div className="min-w-0 flex-1 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-2 text-center">
+          <p className="truncate text-sm font-semibold text-white">{data.relative ?? data.label}</p>
+          {data.relative && <p className="truncate text-xs text-zinc-500">{data.label}</p>}
+        </div>
+        <Link href={`/admin/games?night=${data.next}`} aria-label="Nuit suivante" className={navBtn}>
+          <ChevronRight className="h-5 w-5" />
+        </Link>
       </div>
 
-      {/* Stats rapides */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Trophy className="w-4 h-4 text-blue-400" />
-            <span className="text-sm text-zinc-400">Total matchs</span>
-          </div>
-          <p className="text-2xl font-bold text-white">{games.length}</p>
-        </div>
-
-        <div className="bg-zinc-900 border border-red-500/20 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-            <span className="text-sm text-zinc-400">En direct</span>
-          </div>
-          <p className="text-2xl font-bold text-red-400">{liveGames}</p>
-        </div>
-
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Trophy className="w-4 h-4 text-green-400" />
-            <span className="text-sm text-zinc-400">Terminés</span>
-          </div>
-          <p className="text-2xl font-bold text-white">{finalGames}</p>
-        </div>
-
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Target className="w-4 h-4 text-purple-400" />
-            <span className="text-sm text-zinc-400">Pronos totaux</span>
-          </div>
-          <p className="text-2xl font-bold text-white">{totalPredictions}</p>
-        </div>
-      </div>
-
-      {/* Filtres */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="w-5 h-5 text-zinc-400" />
-          <h2 className="text-lg font-semibold text-white">Filtres</h2>
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFilters}
-              className="ml-auto text-zinc-400 hover:text-white"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Réinitialiser
-            </Button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Filtre par statut */}
-          <div>
-            <Label htmlFor="status" className="text-zinc-400">
-              Statut
-            </Label>
-            <select
-              id="status"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="mt-1 w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5096ff] focus:border-transparent"
-            >
-              <option value="">Tous les statuts</option>
-              <option value="LIVE">En direct</option>
-              <option value="FINAL">Terminés</option>
-              <option value="SCHEDULED">À venir</option>
-            </select>
-          </div>
-
-          {/* Filtre par date */}
-          <div>
-            <Label htmlFor="date" className="text-zinc-400">
-              Date
-            </Label>
-            <input
-              id="date"
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="mt-1 w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5096ff] focus:border-transparent"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Liste des matchs */}
-      <div className="space-y-4">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-zinc-400 animate-spin" />
-          </div>
-        ) : games.length === 0 ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-12 text-center">
-            <p className="text-zinc-400">
-              {hasActiveFilters
-                ? "Aucun match ne correspond aux filtres"
-                : "Aucun match trouvé"}
-            </p>
-          </div>
+      <Card
+        title={`${data.games.length} match${s(data.games.length)}`}
+        icon={CalendarDays}
+        padded={false}
+        action={finished.length > 0 ? <span className="text-xs text-zinc-500">{processed}/{finished.length} traité{s(processed)}</span> : undefined}
+      >
+        {data.games.length === 0 ? (
+          <EmptyState icon={CalendarX} title="Pas de match cette nuit-là" />
         ) : (
-          games.map((game) => (
-            <div
-              key={game.id}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-zinc-700 transition-colors"
-            >
-              <div className="flex items-center justify-between mb-4">
-                {/* Status Badge */}
-                <div>
-                  {game.status === "LIVE" && (
-                    <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg font-medium">
-                      <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                      En direct
-                    </span>
-                  )}
-                  {game.status === "FINAL" && (
-                    <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 bg-green-500/10 text-green-400 border border-green-500/20 rounded-lg font-medium">
-                      Terminé
-                    </span>
-                  )}
-                  {game.status === "SCHEDULED" && (
-                    <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-lg font-medium">
-                      À venir
-                    </span>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 text-sm text-zinc-400">
-                    <Target className="w-4 h-4" />
-                    <span>{game.predictions} prono{game.predictions > 1 ? "s" : ""}</span>
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRefreshGame(game.id)}
-                    disabled={refreshingId === game.id}
-                  >
-                    {refreshingId === game.id ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Mise à jour...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Rafraîchir
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Match Info */}
-              <div className="grid grid-cols-3 gap-4 items-center">
-                {/* Away Team */}
-                <div className="text-right">
-                  <p className="text-lg font-semibold text-white">
-                    {game.awayTeam.city} {game.awayTeam.name}
-                  </p>
-                  <p className="text-sm text-zinc-400">{game.awayTeam.abbreviation}</p>
-                </div>
-
-                {/* Score */}
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-white">
-                    {game.awayScore !== null ? game.awayScore : "-"}{" "}
-                    <span className="text-zinc-600">-</span>{" "}
-                    {game.homeScore !== null ? game.homeScore : "-"}
-                  </div>
-                </div>
-
-                {/* Home Team */}
-                <div className="text-left">
-                  <p className="text-lg font-semibold text-white">
-                    {game.homeTeam.city} {game.homeTeam.name}
-                  </p>
-                  <p className="text-sm text-zinc-400">{game.homeTeam.abbreviation}</p>
-                </div>
-              </div>
-
-              {/* Date */}
-              <div className="mt-4 pt-4 border-t border-zinc-800 flex items-center gap-2 text-sm text-zinc-500">
-                <Calendar className="w-4 h-4" />
-                <span>
-                  {formatDistanceToNow(new Date(game.gameDate), {
-                    addSuffix: true,
-                    locale: fr,
-                  })}
-                </span>
-              </div>
-            </div>
-          ))
+          <ul className="divide-y divide-zinc-800/80">
+            {data.games.map((g) => (
+              <GameItem key={g.id} game={g} />
+            ))}
+          </ul>
         )}
-      </div>
+      </Card>
+
+      <p className="text-xs leading-relaxed text-zinc-600">
+        « Retraiter » remet les pronos du match en attente, relit le score et le box score sur ESPN, puis recalcule
+        points, moyennes et classement. À utiliser si un résultat semble faux.
+      </p>
     </div>
   );
 }

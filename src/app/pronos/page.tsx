@@ -28,19 +28,14 @@ type BetStatuses = Record<keyof typeof SPECIAL_PRED_WINDOWS, BetStatus>;
 
 // ─── Config paris spéciaux ────────────────────────────────────────────────────
 
+// Paris des playoffs mis de côté : ils deviendront des événements créés depuis l'admin.
 const PRESEASON_ITEMS: { type: keyof typeof SPECIAL_PRED_WINDOWS; href: string }[] = [
-  { type: "PRESEASON_NBA_CUP_CHAMPION", href: "/pronos/preseason/nba-cup"   },
-  { type: "PRESEASON_MVP_SEASON",       href: "/pronos/preseason/mvp"        },
   { type: "PRESEASON_NBA_STANDINGS",    href: "/pronos/preseason/classement" },
   { type: "PRESEASON_BRACKET",          href: "/pronos/preseason/bracket"    },
-];
-
-const POSTSEASON_ITEM_TYPES: { type: keyof typeof SPECIAL_PRED_WINDOWS; href: string }[] = [
-  { type: "POSTSEASON_PLAYIN",          href: "/pronos/postseason/playin"          },
-  { type: "POSTSEASON_PLAYOFFS_R1",     href: "/pronos/postseason/playoffs-r1"     },
-  { type: "POSTSEASON_PLAYOFFS_R2",     href: "/pronos/postseason/playoffs-r2"     },
-  { type: "POSTSEASON_PLAYOFFS_CF",     href: "/pronos/postseason/playoffs-cf"     },
-  { type: "POSTSEASON_PLAYOFFS_FINALS", href: "/pronos/postseason/playoffs-finals" },
+  { type: "PRESEASON_NBA_CUP_CHAMPION", href: "/pronos/preseason/nba-cup"    },
+  { type: "PRESEASON_MVP_SEASON",       href: "/pronos/preseason/mvp"        },
+  { type: "PRESEASON_DPOY",             href: "/pronos/preseason/dpoy"       },
+  { type: "PRESEASON_ROOKIE",           href: "/pronos/preseason/rookie"     },
 ];
 
 // ─── Mini stat card ───────────────────────────────────────────────────────────
@@ -94,7 +89,7 @@ export default function PronosOverviewPage() {
       .catch(() => {});
   }, []);
 
-  const openCount = POSTSEASON_ITEM_TYPES.filter(
+  const openCount = PRESEASON_ITEMS.filter(
     (i) => betStatuses[i.type] === "open"
   ).length;
 
@@ -144,43 +139,23 @@ export default function PronosOverviewPage() {
         {/* Paris spéciaux */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Paris spéciaux</p>
+            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Paris de saison</p>
             {openCount > 0 && (
               <span className="text-[11px] text-green-400 font-medium">{openCount} ouvert{openCount > 1 ? "s" : ""}</span>
             )}
           </div>
           <div className="space-y-3">
 
-            {/* Présaison */}
+            {/* Début de saison */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/60">
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Présaison</p>
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Début de saison</p>
                 <Link href="/pronos/preseason" className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors">
                   Voir →
                 </Link>
               </div>
               <div className="px-1 py-1">
                 {PRESEASON_ITEMS.map(({ type, href }) => (
-                  <BetRow
-                    key={type}
-                    href={href}
-                    label={SPECIAL_PRED_WINDOWS[type].label}
-                    status={betStatuses[type] ?? "locked"}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Postseason */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/60">
-                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Saison / Postseason</p>
-                <Link href="/pronos/postseason" className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors">
-                  Voir →
-                </Link>
-              </div>
-              <div className="px-1 py-1">
-                {POSTSEASON_ITEM_TYPES.map(({ type, href }) => (
                   <BetRow
                     key={type}
                     href={href}

@@ -8,23 +8,17 @@ import { SPECIAL_PRED_WINDOWS } from "@/types/special-predictions";
 type BetType = keyof typeof SPECIAL_PRED_WINDOWS;
 
 const PRESEASON: { type: BetType; href: string }[] = [
-  { type: "PRESEASON_NBA_CUP_CHAMPION", href: "/pronos/preseason/nba-cup" },
-  { type: "PRESEASON_MVP_SEASON",       href: "/pronos/preseason/mvp" },
   { type: "PRESEASON_NBA_STANDINGS",    href: "/pronos/preseason/classement" },
   { type: "PRESEASON_BRACKET",          href: "/pronos/preseason/bracket" },
-];
-
-const POSTSEASON: { type: BetType; href: string }[] = [
-  { type: "POSTSEASON_PLAYIN",          href: "/pronos/postseason/playin" },
-  { type: "POSTSEASON_PLAYOFFS_R1",     href: "/pronos/postseason/playoffs-r1" },
-  { type: "POSTSEASON_PLAYOFFS_R2",     href: "/pronos/postseason/playoffs-r2" },
-  { type: "POSTSEASON_PLAYOFFS_CF",     href: "/pronos/postseason/playoffs-cf" },
-  { type: "POSTSEASON_PLAYOFFS_FINALS", href: "/pronos/postseason/playoffs-finals" },
+  { type: "PRESEASON_NBA_CUP_CHAMPION", href: "/pronos/preseason/nba-cup" },
+  { type: "PRESEASON_MVP_SEASON",       href: "/pronos/preseason/mvp" },
+  { type: "PRESEASON_DPOY",             href: "/pronos/preseason/dpoy" },
+  { type: "PRESEASON_ROOKIE",           href: "/pronos/preseason/rookie" },
 ];
 
 /**
- * Paris de saison : statuts identiques à /pronos/postseason (même API).
- * Les paris de présaison 2026-27 restent "Fermé" tant qu'ils ne sont pas configurés.
+ * Paris de saison (statuts via /api/pronos/bet-status).
+ * Les paris des playoffs sont mis de côté : ils deviendront des événements créés depuis l'admin.
  */
 export function SpecialPredictionsSummary() {
   const [statuses, setStatuses] = useState<Record<string, string>>({});
@@ -36,7 +30,7 @@ export function SpecialPredictionsSummary() {
       .catch(() => {});
   }, []);
 
-  const openCount = [...PRESEASON, ...POSTSEASON].filter((i) => statuses[i.type] === "open").length;
+  const openCount = PRESEASON.filter((i) => statuses[i.type] === "open").length;
 
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60">
@@ -52,7 +46,6 @@ export function SpecialPredictionsSummary() {
         )}
       </div>
       <Group title="Début de saison" href="/pronos/preseason" items={PRESEASON} statuses={statuses} />
-      <Group title="Play-in & Playoffs" href="/pronos/postseason" items={POSTSEASON} statuses={statuses} />
     </section>
   );
 }

@@ -44,6 +44,7 @@ async function main() {
     ["GOOGLE_CLIENT_ID", "connexion Google"],
     ["GOOGLE_CLIENT_SECRET", "connexion Google"],
     ["ADMIN_EMAILS", "comptes administrateurs"],
+    ["CONTACT_EMAIL", "adresse de contact des pages légales"],
     ["NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME", "avatars"],
     ["CLOUDINARY_API_KEY", "avatars"],
     ["CLOUDINARY_API_SECRET", "avatars"],

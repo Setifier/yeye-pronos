@@ -20,6 +20,7 @@ Copier `.env.example` en `.env` :
 | `NODEMAILER_USER` / `NODEMAILER_APP_PASSWORD` | Emails (Gmail SMTP) |
 | `CRON_SECRET` | Protège les routes `/api/cron/*` (`openssl rand -hex 32`) |
 | `ADMIN_EMAILS` | Emails administrateurs, séparés par `;` |
+| `CONTACT_EMAIL` | Adresse de contact publique des pages légales (`/legal/*`) |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Avatars |
 
 ## Base de données

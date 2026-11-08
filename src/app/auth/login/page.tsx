@@ -78,7 +78,6 @@ export default function LoginPage() {
           {/* OAuth Buttons */}
           <div className="space-y-3">
             <SignInOAuthButtons provider="google" />
-            <SignInOAuthButtons provider="github" />
           </div>
         </div>
       </div>

@@ -103,7 +103,7 @@ function expandRanks(entries: RankEntry[]): { name: string; rank: number }[] {
 }
 
 /**
- * Cotes de chaque joueur sous contrat, pour les trois trophées.
+ * Cotes de chaque joueur pour les trois trophées (stables toute la saison : même calcul au pari et à la notation).
  * MVP et DPOY : un joueur absent de la table vaut la cote maximale.
  * Rookie : un joueur absent de la table n'est pas candidat.
  */
@@ -117,10 +117,11 @@ export async function getAwardBoards(prisma: PrismaClient, season: string): Prom
   const rankings = AWARD_RANKINGS[season];
   if (!rankings) return boards;
 
+  // Tous les joueurs, pas seulement ceux sous contrat : les rangs ne doivent pas bouger d'ici la notation
+  // quand un joueur est coupé ou part à l'étranger.
   const players = await prisma.player.findMany({
-    where:  { teamId: { not: null } },
     select: {
-      id: true, fullName: true,
+      id: true, fullName: true, teamId: true,
       seasonStats: {
         where:  { season: getPreviousSeason(season) },
         select: {
@@ -146,12 +147,15 @@ export async function getAwardBoards(prisma: PrismaClient, season: string): Prom
     eff.set(p.id, total / s.gamesPlayed);
   }
 
-  // Noms → joueur (homonymes : celui qui a le plus joué la saison passée)
+  // Noms → joueur (homonymes : celui sous contrat, puis celui qui a le plus joué la saison passée)
   const byName = new Map<string, string>();
+  const hasTeam = new Map(players.map((p) => [p.id, !!p.teamId]));
+  const better = (a: string, b: string) =>
+    Number(hasTeam.get(a)) - Number(hasTeam.get(b)) || (games.get(a) ?? 0) - (games.get(b) ?? 0);
   for (const p of players) {
     const key = normalizePlayerName(p.fullName);
     const current = byName.get(key);
-    if (!current || (games.get(p.id) ?? 0) > (games.get(current) ?? 0)) byName.set(key, p.id);
+    if (!current || better(p.id, current) > 0) byName.set(key, p.id);
   }
   const lookup = (name: string) => byName.get(normalizePlayerName(name)) ?? null;
   const set = (type: PlayerAwardType, id: string, rank: number) =>

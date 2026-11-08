@@ -13,7 +13,7 @@ Hors périmètre de la bêta : trophées/défis, archives des saisons passées, 
 | 3 | Variables Vercel | `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (= URL de prod, sans `/` final), `NEXT_PUBLIC_API_URL` (même valeur, ou absente — jamais `localhost`), `CRON_SECRET`, `NODEMAILER_USER`, `NODEMAILER_APP_PASSWORD`, `ADMIN_EMAILS`, `CONTACT_EMAIL` (affichée sur les pages légales), Google + Cloudinary si utilisés. Modèle : `env.example`. À régler **avant** le push (les `NEXT_PUBLIC_*` sont figées au build) |
 | 4 | Google OAuth | Console Google → identifiants → URI de redirection : `https://<domaine>/api/auth/callback/google` |
 | 5 | Types | `npx tsc --noEmit` sans erreur, puis `npm run build` |
-| 6 | Base de données | `npx prisma db push` après tout changement de `schema.prisma` (ex. tables de l'admin `CronRun`, `BugReport`) |
+| 6 | Base de données | `npx prisma db push` après tout changement de `schema.prisma` (ex. tables de l'admin `CronRun`, `BugReport`, `SeasonAwardResult`) |
 
 ### Première fois : créer le projet Vercel
 

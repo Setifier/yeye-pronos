@@ -39,7 +39,15 @@
 - API `GET`/`PUT /api/special-predictions`, validation côté serveur, refus après la date limite.
 - Bracket prérempli par le top 10 du classement, brouillon gardé sur l'appareil, choix effacés en cascade.
 - Statuts « Ouvert/Fermé » réels partout ; rappel sur l'accueil tant que les paris ne sont pas tous faits.
-- Reste à faire : le calcul des points (NBA Cup avant la finale du 11 décembre, le reste en fin de saison).
+- **Notation** (`src/lib/preseason-grading.ts`), chaque matin après les matchs et depuis l'admin :
+  progressive et idempotente, les points arrivent dès qu'un résultat est connu (NBA Cup en décembre,
+  classement mi-avril, bracket tour par tour, trophées à leur annonce), statut « noté » quand tout est connu.
+  Détail des points affiché sur chaque pari, total sur la page Début de saison, inclus au classement.
+- Cotes des trophées indépendantes des effectifs (un joueur coupé ne change plus la cote des autres).
+- Admin **Paris de saison** (`/admin/saison`) : résultats automatiques (NBA Cup, classement final, Play-in,
+  séries), saisie des vainqueurs MVP, DPOY, Rookie et MVP des Finales (la notation repart aussitôt),
+  paris joués / notés / points donnés, bouton « Recalculer les points ».
+- Nouvelle table `SeasonAwardResult` : `npx prisma db push`.
 
 ### Comptes
 - Inscription : domaines acceptés élargis (iCloud, Orange, Free, SFR, Laposte, Proton…) + `ALLOWED_EMAIL_DOMAINS`.

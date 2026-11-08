@@ -4,7 +4,9 @@ import Link from "next/link";
 import { Clock, Lock, CheckCircle2, Loader2, ArrowLeft } from "lucide-react";
 import { PronoseNavbar } from "@/components/layout/pronos-navbar";
 import { formatCountdown } from "@/lib/game-night";
+import { fmtPts } from "@/lib/format";
 import { getSeasonLabel } from "@/types/season";
+import { hasResult, type SavedPrediction } from "@/components/preseason/use-preseason";
 
 export function formatDeadline(iso: string) {
   const d = new Date(iso);
@@ -15,7 +17,7 @@ export function formatDeadline(iso: string) {
 
 /** Cadre commun des pages de paris de début de saison. */
 export function PreseasonLayout({
-  title, subtitle, season, deadline, open, now, saved, points, loading, error, children,
+  title, subtitle, season, deadline, open, now, saved, points, prediction, loading, error, children,
 }: {
   title: string;
   subtitle: string;
@@ -25,6 +27,8 @@ export function PreseasonLayout({
   now: number;
   saved: boolean;
   points?: string;
+  /** Pari enregistré : ses points s'affichent dès qu'il y en a. */
+  prediction?: SavedPrediction | null;
   loading: boolean;
   error: string | null;
   children: React.ReactNode;
@@ -66,6 +70,8 @@ export function PreseasonLayout({
           </div>
         )}
 
+        {hasResult(prediction) && <ResultBox prediction={prediction} />}
+
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-[#5096ff]" /></div>
         ) : error ? (
@@ -74,6 +80,30 @@ export function PreseasonLayout({
           children
         )}
       </div>
+    </div>
+  );
+}
+
+/** Points gagnés, avec leur détail (pari noté, ou en cours de notation). */
+function ResultBox({ prediction }: { prediction: SavedPrediction }) {
+  const final = prediction.status === "GRADED";
+  const lines = prediction.breakdown?.lines ?? [];
+  return (
+    <div className="mb-5 rounded-xl border border-[#dcff50]/25 bg-[#dcff50]/5 px-4 py-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-sm text-zinc-300">{final ? "Points gagnés" : "Points gagnés pour l'instant"}</span>
+        <span className="text-lg font-black tabular-nums text-[#dcff50]">+{fmtPts(prediction.pointsEarned)}</span>
+      </div>
+      {lines.length > 0 && (
+        <ul className="mt-1.5 space-y-0.5 text-xs text-zinc-400">
+          {lines.map((l) => (
+            <li key={l.label} className="flex justify-between gap-3">
+              <span>{l.label}</span>
+              <span className="tabular-nums">+{fmtPts(l.points)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

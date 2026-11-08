@@ -88,6 +88,7 @@ export default function PreseasonBracketPage() {
       open={open}
       now={now}
       saved={!!savedData}
+      prediction={data?.predictions.PRESEASON_BRACKET}
       loading={!data && !error}
       error={error}
     >

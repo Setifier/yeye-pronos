@@ -122,7 +122,6 @@ export function PlayersPanel({ data, currentUserId }: { data: PlayersOverview; c
 
 function Avatar({ player }: { player: PlayerRow }) {
   if (player.image) {
-    // eslint-disable-next-line @next/next/no-img-element
     return <img src={player.image} alt="" className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-zinc-800" />;
   }
   return (

@@ -5,7 +5,10 @@
 
 import type { Prisma, PrismaClient } from "@/generated/prisma";
 import { getCurrentSeason } from "@/types/season";
-import { PRESEASON_BET_TYPES } from "@/types/special-predictions";
+import { AWARD_KEYS, PRESEASON_BET_TYPES, SPECIAL_PRED_WINDOWS, type AwardKey, type PreseasonBetType } from "@/types/special-predictions";
+import { getPreseasonDeadline } from "@/lib/special-bets";
+import { getAwardBoards } from "@/lib/award-odds";
+import { loadSeasonResults } from "@/lib/preseason-grading";
 import { getCurrentNightDate, toNightDate, shiftNightDate, formatNight } from "@/lib/game-night";
 import { getSeasonRanking } from "@/lib/season-ranking";
 import type { JobName } from "@/lib/cron-runs";
@@ -564,4 +567,90 @@ export async function getBugReports(prisma: PrismaClient, filter: BugFilter) {
   } catch {
     return { ready: false as const, counts: { open: 0, resolved: 0, all: 0 }, rows: [] as BugRow[] };
   }
+}
+
+// ============================================
+// PARIS DE SAISON
+// ============================================
+
+export interface AwardPlayer { id: string; name: string; team: string | null }
+
+export interface SeasonBetsOverview {
+  season:   string;
+  deadline: string;
+  open:     boolean;
+  /** La table des trophées existe (sinon : npx prisma db push). */
+  ready:    boolean;
+  bets:     { type: PreseasonBetType; label: string; count: number; graded: number; points: number }[];
+  results: {
+    nbaCupChampion: string | null;
+    standingsKnown: boolean;
+    /** Conférences dont les qualifiés du Play-in sont connus (0 à 2). */
+    playinKnown:    number;
+    seriesDone:     number;
+    awards:         Record<AwardKey, AwardPlayer | null>;
+  };
+  /** Noms des classements de référence introuvables dans la base (AWARD_RANKINGS). */
+  unmatched: string[];
+  /** Joueurs sous contrat, pour la saisie des trophées. */
+  players:   AwardPlayer[];
+}
+
+export async function getSeasonBetsOverview(prisma: PrismaClient): Promise<SeasonBetsOverview> {
+  const season = getCurrentSeason();
+  const [deadline, results, boards, groups, players, teams, ready] = await Promise.all([
+    getPreseasonDeadline(prisma, season),
+    loadSeasonResults(prisma, season),
+    getAwardBoards(prisma, season),
+    prisma.specialPrediction.groupBy({
+      by:     ["type", "status"],
+      where:  { season, type: { in: [...PRESEASON_BET_TYPES] } },
+      _count: { _all: true },
+      _sum:   { pointsEarned: true },
+    }),
+    prisma.player.findMany({
+      where:   { teamId: { not: null } },
+      select:  { id: true, fullName: true, team: { select: { abbreviation: true } } },
+      orderBy: { fullName: "asc" },
+    }),
+    prisma.team.findMany({ select: { id: true, abbreviation: true } }),
+    prisma.seasonAwardResult.count().then(() => true, () => false),
+  ]);
+
+  const winnerIds = Object.values(results.awards).filter((id): id is string => !!id);
+  const winners = winnerIds.length
+    ? await prisma.player.findMany({ where: { id: { in: winnerIds } }, select: { id: true, fullName: true, team: { select: { abbreviation: true } } } })
+    : [];
+  const toPlayer = (p: { id: string; fullName: string; team: { abbreviation: string } | null }): AwardPlayer =>
+    ({ id: p.id, name: p.fullName, team: p.team?.abbreviation ?? null });
+  const winnerById = new Map(winners.map((p) => [p.id, toPlayer(p)]));
+  const abbr = new Map(teams.map((t) => [t.id, t.abbreviation]));
+
+  return {
+    season,
+    deadline: deadline.toISOString(),
+    open:     Date.now() < deadline.getTime(),
+    ready,
+    bets: PRESEASON_BET_TYPES.map((type) => {
+      const rows = groups.filter((g) => g.type === type);
+      return {
+        type,
+        label:  SPECIAL_PRED_WINDOWS[type].label,
+        count:  rows.reduce((s, g) => s + g._count._all, 0),
+        graded: rows.filter((g) => g.status === "GRADED").reduce((s, g) => s + g._count._all, 0),
+        points: rows.reduce((s, g) => s + (g._sum.pointsEarned ?? 0), 0),
+      };
+    }),
+    results: {
+      nbaCupChampion: results.nbaCupChampion ? abbr.get(results.nbaCupChampion) ?? "?" : null,
+      standingsKnown: !!results.standings,
+      playinKnown:    (results.playin.east ? 1 : 0) + (results.playin.west ? 1 : 0),
+      seriesDone:     ([1, 2, 3, 4] as const).reduce((s, r) => s + results.rounds[r].series.filter((x) => x.winnerId).length, 0),
+      awards: Object.fromEntries(
+        AWARD_KEYS.map((k) => [k, results.awards[k] ? winnerById.get(results.awards[k]!) ?? null : null])
+      ) as Record<AwardKey, AwardPlayer | null>,
+    },
+    unmatched: boards.unmatched,
+    players:   players.map(toPlayer),
+  };
 }

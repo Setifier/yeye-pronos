@@ -13,6 +13,7 @@ import { recalculateAllStandings } from "@/lib/standings-calculator";
 import { alertAdmins } from "@/lib/admin-alert";
 import { recordJobRun, type JobName, type JobResult, type JobTrigger } from "@/lib/cron-runs";
 import { toNightDate } from "@/lib/game-night";
+import { gradeSeasonBets } from "@/lib/preseason-grading";
 import { getCurrentSeason } from "@/types/season";
 
 const GAME_PROCESSING_BUDGET_MS = 38_000;
@@ -83,14 +84,33 @@ async function syncRostersStep(
   }
 }
 
+/** Notation des paris de début de saison (progressive : refaite à chaque passage). */
+async function gradeSeasonBetsStep(
+  prisma: PrismaClient,
+  log: (m: string) => void,
+  summary: JobResult["summary"],
+  problems: string[]
+) {
+  try {
+    const r = await gradeSeasonBets(prisma, getCurrentSeason(), log);
+    if (r.skipped) { log(`🏆 Paris de saison : pas de notation (${r.skipped})`); return; }
+    if (r.updated) summary.seasonBetsUpdated = r.updated;
+    if (r.graded)  summary.seasonBetsGraded  = r.graded;
+    problems.push(...r.problems);
+  } catch (err) {
+    log(`⚠️  Paris de saison : ${errorMessage(err)}`);
+    problems.push(`Notation des paris de saison en erreur : ${errorMessage(err)}`);
+  }
+}
+
 // ============================================
 // TÂCHES
 // ============================================
 
 /**
  * Mise à jour complète (CRON du matin) : calendrier J-3 → J+7, matchs terminés (box scores, pronos,
- * moyennes), classement, séries, effectifs, blessures. Lancée par le CRON, un e-mail part vers
- * ADMIN_EMAILS si quelque chose reste à vérifier.
+ * moyennes), classement, séries, effectifs, blessures, notation des paris de saison. Lancée par le
+ * CRON, un e-mail part vers ADMIN_EMAILS si quelque chose reste à vérifier.
  */
 export async function runMorningUpdate(prisma: PrismaClient, trigger: JobTrigger): Promise<JobResult> {
   const { log, problems, summary, finish } = createJob("morning-update", "MORNING");
@@ -107,6 +127,7 @@ export async function runMorningUpdate(prisma: PrismaClient, trigger: JobTrigger
     });
     collectPipeline(pipeline, summary, problems);
     await syncRostersStep(prisma, log, summary, problems);
+    await gradeSeasonBetsStep(prisma, log, summary, problems);
   } catch (err) {
     fatal = true;
     log(`❌ ${errorMessage(err)}`);
@@ -212,6 +233,15 @@ export async function reprocessGame(prisma: PrismaClient, gameId: string, trigge
   }
 
   const result = finish(fatal);
+  await recordJobRun(prisma, trigger, result);
+  return result;
+}
+
+/** Notation des paris de début de saison (bouton de l'admin, ou après la saisie d'un trophée). */
+export async function gradeSeasonBetsJob(prisma: PrismaClient, trigger: JobTrigger): Promise<JobResult> {
+  const { log, problems, summary, finish } = createJob("grade-season-bets", "SEASON-BETS");
+  await gradeSeasonBetsStep(prisma, log, summary, problems);
+  const result = finish();
   await recordJobRun(prisma, trigger, result);
   return result;
 }

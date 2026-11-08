@@ -32,10 +32,17 @@ export interface PreseasonPlayer {
 
 export interface SavedPrediction {
   data: unknown;
+  /** OPEN (modifiable) · LOCKED (fermé, en cours de notation) · GRADED (noté définitivement). */
   status: string;
   pointsEarned: number;
+  /** Détail des points (rempli par la notation). */
+  breakdown?: { final: boolean; lines: { label: string; points: number }[] } | null;
   updatedAt: string;
 }
+
+/** Des points à montrer : pari noté, ou points déjà gagnés en cours de saison. */
+export const hasResult = (p?: SavedPrediction | null): p is SavedPrediction =>
+  !!p && (p.status === "GRADED" || p.pointsEarned > 0);
 
 export interface PreseasonData {
   season: string;

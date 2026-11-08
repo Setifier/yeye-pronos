@@ -84,12 +84,15 @@ npm run db:diagnose-bracket      # Diagnostic données bracket
 - Barèmes : `src/types/special-predictions.ts` (principe : plus c'est dur, plus ça rapporte ; rien n'est payé deux fois).
   Cotes MVP / DPOY / Rookie : `src/lib/award-odds.ts`, classements `AWARD_RANKINGS` à saisir chaque saison.
   Barème complet affiché sur une seule page (`/pronos/regles`) ; ailleurs, un chiffre par choix.
+- Notation des paris de saison : `src/lib/preseason-grading.ts` (progressive, idempotente, CRON du matin + admin).
+  Trophées (MVP, DPOY, Rookie, MVP des Finales) saisis dans Admin → Paris de saison (table `SeasonAwardResult`).
 - Paris d'un match : fermeture au coup d'envoi (`predictionDeadlineFor()`).
 - Couleurs : `#5096ff` (action), `#ff5050` (urgence / à faire), `#dcff50` (points), fond zinc-950.
 
 ## Admin (`/admin/*`, rôle ADMIN)
 
-- Pages : `dashboard` (santé + historique), `users` (joueurs), `games` (matchs par nuit), `bugs` (signalements).
+- Pages : `dashboard` (santé + historique), `users` (joueurs), `games` (matchs par nuit),
+  `saison` (paris de saison : résultats, trophées à saisir, notation), `bugs` (signalements).
 - Lecture : `src/lib/admin-data.ts` · tâches partagées CRON + boutons : `src/lib/update-jobs.ts`
   (historique `CronRun` via `src/lib/cron-runs.ts`) · actions : `src/actions/admin/*`.
 - Un nouveau contrôle de cohérence va dans `getHealthOverview()` ; une nouvelle tâche dans `update-jobs.ts`.

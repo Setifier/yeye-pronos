@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, AlertTriangle, Loader2, X, RefreshCw, Stethoscope, Trophy, RotateCcw, type LucideIcon } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Loader2, X, RefreshCw, Stethoscope, Trophy, RotateCcw, Medal, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
   runMorningUpdateAction,
@@ -11,27 +11,30 @@ import {
   recalculateStandingsAction,
   refreshNightAction,
   reprocessGameAction,
+  gradeSeasonBetsAction,
 } from "@/actions/admin/maintenance";
 import { JOB_LABELS, type JobResult } from "@/lib/cron-runs";
 import { formatDuration } from "@/lib/admin-format";
 import { SummaryChips, ProblemList, LogBox } from "@/components/admin/job-details";
 
-export type JobKind = "morning" | "injuries" | "standings" | "night" | "reprocess";
+export type JobKind = "morning" | "injuries" | "standings" | "night" | "reprocess" | "seasonBets";
 
 const RUNNERS: Record<JobKind, (arg?: string) => Promise<JobResult>> = {
-  morning:   () => runMorningUpdateAction(),
-  injuries:  () => runInjuriesUpdateAction(),
-  standings: () => recalculateStandingsAction(),
-  night:     (arg) => refreshNightAction(arg ?? ""),
-  reprocess: (arg) => reprocessGameAction(arg ?? ""),
+  morning:    () => runMorningUpdateAction(),
+  injuries:   () => runInjuriesUpdateAction(),
+  standings:  () => recalculateStandingsAction(),
+  night:      (arg) => refreshNightAction(arg ?? ""),
+  reprocess:  (arg) => reprocessGameAction(arg ?? ""),
+  seasonBets: () => gradeSeasonBetsAction(),
 };
 
 const ICONS: Record<JobKind, LucideIcon> = {
-  morning:   RefreshCw,
-  injuries:  Stethoscope,
-  standings: Trophy,
-  night:     RefreshCw,
-  reprocess: RotateCcw,
+  morning:    RefreshCw,
+  injuries:   Stethoscope,
+  standings:  Trophy,
+  night:      RefreshCw,
+  reprocess:  RotateCcw,
+  seasonBets: Medal,
 };
 
 const VARIANTS = {

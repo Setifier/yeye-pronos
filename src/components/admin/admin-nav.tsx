@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, Bug, CalendarDays, Users, ArrowLeft } from "lucide-react";
+import { Activity, Bug, CalendarDays, Medal, Users, ArrowLeft } from "lucide-react";
 
 const ITEMS = [
-  { href: "/admin/dashboard", label: "Santé",        icon: Activity },
-  { href: "/admin/users",     label: "Joueurs",      icon: Users },
-  { href: "/admin/games",     label: "Matchs",       icon: CalendarDays },
-  { href: "/admin/bugs",      label: "Signalements", icon: Bug },
+  { href: "/admin/dashboard", label: "Santé",           icon: Activity },
+  { href: "/admin/users",     label: "Joueurs",         icon: Users },
+  { href: "/admin/games",     label: "Matchs",          icon: CalendarDays },
+  { href: "/admin/saison",    label: "Paris de saison", icon: Medal },
+  { href: "/admin/bugs",      label: "Signalements",    icon: Bug },
 ] as const;
 
 /** Navigation de l'admin : colonne sur ordinateur, onglets défilants sur mobile. */

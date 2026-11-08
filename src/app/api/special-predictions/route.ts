@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       loadSeasonTeams(prisma, season),
       prisma.specialPrediction.findMany({
         where: { userId: session.user.id, season, type: { in: [...PRESEASON_BET_TYPES] } },
-        select: { type: true, data: true, status: true, pointsEarned: true, updatedAt: true },
+        select: { type: true, data: true, status: true, pointsEarned: true, breakdown: true, updatedAt: true },
       }),
     ]);
     const odds = await getNbaCupOdds(prisma, season, teams);
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
       predictions: Object.fromEntries(
         PRESEASON_BET_TYPES.map((type) => {
           const p = saved.find((s) => s.type === type);
-          return [type, p ? { data: p.data, status: p.status, pointsEarned: p.pointsEarned, updatedAt: p.updatedAt } : null];
+          return [type, p ? { data: p.data, status: p.status, pointsEarned: p.pointsEarned, breakdown: p.breakdown, updatedAt: p.updatedAt } : null];
         })
       ),
       ...(players ? { players } : {}),
@@ -118,7 +118,7 @@ export async function PUT(request: NextRequest) {
       where:  { userId_type_season: { userId: session.user.id, type, season } },
       create: { userId: session.user.id, type, season, data: result.data as Prisma.InputJsonValue, status: "OPEN" },
       update: { data: result.data as Prisma.InputJsonValue, status: "OPEN" },
-      select: { type: true, data: true, status: true, pointsEarned: true, updatedAt: true },
+      select: { type: true, data: true, status: true, pointsEarned: true, breakdown: true, updatedAt: true },
     });
 
     return NextResponse.json({ success: true, prediction: saved });

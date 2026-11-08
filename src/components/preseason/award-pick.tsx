@@ -62,6 +62,7 @@ export function AwardPick({ type, title, subtitle, pickedLabel, listHint, emptyH
       open={open}
       now={now}
       saved={!!pick}
+      prediction={data?.predictions[type]}
       loading={!data && !error}
       error={error}
     >

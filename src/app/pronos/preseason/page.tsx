@@ -6,7 +6,8 @@ import { PronoseNavbar } from "@/components/layout/pronos-navbar";
 import { SPECIAL_PRED_WINDOWS, type PreseasonBetType } from "@/types/special-predictions";
 import { formatCountdown } from "@/lib/game-night";
 import { getSeasonLabel } from "@/types/season";
-import { usePreseason } from "@/components/preseason/use-preseason";
+import { hasResult, usePreseason } from "@/components/preseason/use-preseason";
+import { fmtPts } from "@/lib/format";
 import { formatDeadline } from "@/components/preseason/preseason-layout";
 
 const ITEMS: { type: PreseasonBetType; href: string; hint: string }[] = [
@@ -58,7 +59,9 @@ export default function PreseasonPage() {
         <div className="space-y-3">
           {ITEMS.map(({ type, href, hint }) => {
             const meta = SPECIAL_PRED_WINDOWS[type];
-            const made = !!data?.predictions[type];
+            const saved = data?.predictions[type];
+            const made = !!saved;
+            const result = hasResult(saved) ? saved : null;
             return (
               <Link key={type} href={href}
                 className="group flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-4 py-4 transition-colors hover:border-zinc-700 hover:bg-zinc-900">
@@ -67,9 +70,13 @@ export default function PreseasonPage() {
                   <p className="font-semibold">{meta.label}</p>
                   <p className="text-xs text-zinc-500">{hint}</p>
                 </div>
-                <p className={`flex-shrink-0 text-xs font-semibold ${made ? "text-green-400" : open ? "text-[#ff5050]" : "text-zinc-600"}`}>
-                  {made ? "Fait" : open ? "À faire" : "Non joué"}
-                </p>
+                {result ? (
+                  <p className="flex-shrink-0 text-sm font-bold tabular-nums text-[#dcff50]">+{fmtPts(result.pointsEarned)} pts</p>
+                ) : (
+                  <p className={`flex-shrink-0 text-xs font-semibold ${made ? "text-green-400" : open ? "text-[#ff5050]" : "text-zinc-600"}`}>
+                    {made ? "Fait" : open ? "À faire" : "Non joué"}
+                  </p>
+                )}
                 <ChevronRight className="h-4 w-4 flex-shrink-0 text-zinc-600 group-hover:text-zinc-400" />
               </Link>
             );

@@ -10,6 +10,7 @@ import {
   refreshNight,
   reprocessGame,
   recalculateStandingsJob,
+  gradeSeasonBetsJob,
 } from "@/lib/update-jobs";
 
 /**
@@ -42,4 +43,8 @@ export async function refreshNightAction(night: string) {
 
 export async function reprocessGameAction(gameId: string) {
   return run(() => reprocessGame(prisma, gameId, "admin"));
+}
+
+export async function gradeSeasonBetsAction() {
+  return run(() => gradeSeasonBetsJob(prisma, "admin"));
 }

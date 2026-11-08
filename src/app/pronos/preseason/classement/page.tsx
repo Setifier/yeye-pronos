@@ -45,6 +45,7 @@ export default function PreseasonClassementPage() {
       open={open}
       now={now}
       saved={!!saved}
+      prediction={data?.predictions.PRESEASON_NBA_STANDINGS}
       points={`${STANDINGS_POINTS.EXACT} pts par place exacte · ${STANDINGS_POINTS.ONE_OFF} à une place près · bonus dès ${LOWEST_BONUS.teams} places exactes`}
       loading={!data && !error}
       error={error}

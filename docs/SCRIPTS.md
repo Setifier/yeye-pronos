@@ -71,6 +71,7 @@ et visible avec son journal dans l'historique.
 | Recalculer le classement | Bilans + rangs des 30 équipes |
 | Mettre à jour cette nuit | Calendrier et matchs terminés d'une nuit |
 | Retraiter | Un match : pronos remis en attente puis recalculés, box score, moyennes, classement |
+| Recalculer les points (Paris de saison) | Notation des 6 paris de début de saison avec les résultats connus (aussi faite chaque matin) |
 
 Restent en commandes : les gros rattrapages (`db:backfill-*`, `db:run-update -- --days=N`) et le contrôle
 complet avec ESPN (`db:verify-season`), trop longs pour 60 s.

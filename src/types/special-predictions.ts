@@ -304,6 +304,17 @@ export type PreseasonBetType = typeof PRESEASON_BET_TYPES[number];
 export const PLAYER_AWARD_TYPES = ["PRESEASON_MVP_SEASON", "PRESEASON_DPOY", "PRESEASON_ROOKIE"] as const;
 export type PlayerAwardType = typeof PLAYER_AWARD_TYPES[number];
 
+/** Trophées dont le vainqueur est saisi dans l'admin (/admin/saison) pour noter les paris. */
+export const AWARD_KEYS = ["MVP", "DPOY", "ROOKIE", "FINALS_MVP"] as const;
+export type AwardKey = typeof AWARD_KEYS[number];
+
+export const AWARD_LABELS: Record<AwardKey, string> = {
+  MVP:        "MVP",
+  DPOY:       "Défenseur de l'année",
+  ROOKIE:     "Rookie de l'année",
+  FINALS_MVP: "MVP des Finales",
+};
+
 /**
  * RÈGLE OFFICIELLE : les paris de début de saison ferment au coup d'envoi du premier
  * match de saison régulière (calculé par getPreseasonDeadline côté serveur).

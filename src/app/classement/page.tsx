@@ -150,7 +150,6 @@ export default function ClassementPage() {
 
 function Avatar({ name, image, size }: { name: string; image: string | null; size: number }) {
   return image ? (
-    // eslint-disable-next-line @next/next/no-img-element
     <img src={image} alt="" className="flex-shrink-0 rounded-full object-cover" style={{ width: size, height: size }} />
   ) : (
     <span

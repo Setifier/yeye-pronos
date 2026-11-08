@@ -96,7 +96,6 @@ export function DashboardPage({ userId, userName, userImage }: DashboardPageProp
           <div className="flex items-center gap-3">
             <Link href="/profile" className="flex-shrink-0">
               {userImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={userImage} alt="" className="h-11 w-11 rounded-xl object-cover ring-1 ring-zinc-700" />
               ) : (
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#5096ff] to-[#ff5050] text-sm font-bold text-white">

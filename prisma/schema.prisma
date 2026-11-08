@@ -208,6 +208,7 @@ model Player {
   predictionsAsTopScorer Prediction[]      @relation("PredictionTopScorer")
   gamesAsTopScorer       Game[]            @relation("GameTopScorer")
   favoritedBy            User[]            @relation("UserFavoritePlayer")
+  awardResults           SeasonAwardResult[]
 
   @@index([teamId])
   @@index([fullName])
@@ -596,6 +597,22 @@ model SpecialPredictionConfig {
   @@unique([season, type, entityId])
   @@index([season, type])
   @@map("special_prediction_configs")
+}
+
+// Vainqueurs des trophées, saisis dans l'admin (/admin/saison) pour noter les paris de début de saison.
+// award : "MVP" | "DPOY" | "ROOKIE" | "FINALS_MVP"
+model SeasonAwardResult {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  season    String
+  award     String
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([season, award])
+  @@map("season_award_results")
 }
 
 // ============================================

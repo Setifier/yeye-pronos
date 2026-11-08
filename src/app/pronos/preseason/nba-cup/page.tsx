@@ -36,6 +36,7 @@ export default function PreseasonNbaCupPage() {
       open={open}
       now={now}
       saved={!!pick}
+      prediction={data?.predictions.PRESEASON_NBA_CUP_CHAMPION}
       loading={!data && !error}
       error={error}
     >

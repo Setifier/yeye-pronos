@@ -143,8 +143,8 @@ chaque écran mobile est en `md:hidden`, la version ordinateur en `hidden md:blo
 
 | Fichier | Rôle |
 |---|---|
-| `src/components/mobile/mobile-top-bar.tsx` | Barre du haut (remplace la navigation du site) : logo, rang, points, avatar → menu (profil, stats NBA, NBA Cup, playoffs, amis, règles, paramètres, admin, signaler un bug, déconnexion, mentions légales) |
-| `src/components/layout/mobile-tab-bar.tsx` | Onglets Accueil · Matchs · **Parier** · Classement · Pronos. « Parier » ouvre directement la fenêtre de pari avec les paris manquants de la nuit, depuis n'importe quelle page |
+| `src/components/mobile/mobile-top-bar.tsx` | Barre du haut (remplace la navigation du site) : logo, rang (→ classement), points (→ Mes pronos), avatar → menu (Mes pronos, paris de saison, amis, NBA Cup, playoffs, infirmerie, profil, règles, saisons passées, paramètres, admin, signaler un bug, déconnexion, mentions légales) |
+| `src/components/layout/mobile-tab-bar.tsx` | Onglets Accueil · Matchs · **Parier** · Classement · Stats NBA. « Parier » ouvre directement la fenêtre de pari avec les paris manquants de la nuit, depuis n'importe quelle page |
 | `src/components/mobile/use-hud.ts` + `GET /api/me/hud` | Points, rang et paris ouverts de la nuit (rechargés à la navigation et après chaque prono ; jamais chargés sur ordinateur) |
 | `src/components/mobile/mobile-home.tsx` | Accueil : nuit en cours (anneau de progression, bouton « Jouer »), matchs, hier soir en une ligne, course au classement |
 | `src/components/mobile/night-picker.tsx` | Page Matchs : bande des nuits + calendrier natif du téléphone |

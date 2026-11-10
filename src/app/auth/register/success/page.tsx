@@ -1,16 +1,17 @@
-import { ReturnButton } from "@/components/auth/return-button";
+import { EmailSentScreen } from "@/components/auth/email-sent-screen";
+import { SendVerificationEmailForm } from "@/components/auth/send-verification-email-form";
 
 export default function RegisterSuccessPage() {
   return (
-    <div className="px-8 py-16 container mx-auto max-w-screen-lg space-y-8">
-      <div className="space-y-8">
-        <ReturnButton href="/auth/login" label="Login" />
-        <h1 className="text-3xl font-bold">Success</h1>
-      </div>
-      <p className="text-muted-foreground">
-        Success! You have registered. Please check your email for the
-        verification link.
+    <EmailSentScreen
+      title="Plus qu'une étape !"
+      footer={<SendVerificationEmailForm label="Toujours rien après quelques minutes ? Renvoie-le :" />}
+    >
+      <p>
+        On vient de t&apos;envoyer un e-mail pour <b className="text-white">confirmer ton adresse</b>. Clique sur le
+        bouton qu&apos;il contient : ton compte s&apos;active et tu es connecté directement.
       </p>
-    </div>
+      <p className="text-zinc-500">Le lien est valable 1 heure.</p>
+    </EmailSentScreen>
   );
 }

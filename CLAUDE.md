@@ -108,3 +108,5 @@ npm run db:diagnose-bracket      # Diagnostic données bracket
 - Un nouveau contrôle de cohérence va dans `getHealthOverview()` ; une nouvelle tâche dans `update-jobs.ts`.
 - Invitations : bouton « Inviter » (Santé, Joueurs) → `src/actions/admin/invitations.ts`, e-mail dans
   `src/lib/emails/invitation-email.ts` (aperçu `/api/admin/invitation-preview`).
+- E-mails (Gmail SMTP, souvent en spam au 1er envoi) : pas d'emoji dans l'objet, pas de texte caché, toujours
+  une version texte. Écrans « e-mail envoyé » : `src/components/auth/email-sent-screen.tsx` (encadré « Rien reçu ? »).

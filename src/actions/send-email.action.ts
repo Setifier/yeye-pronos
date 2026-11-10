@@ -114,6 +114,22 @@ export async function sendEmailAction({
     </html>
   `;
 
+  // Version texte : un e-mail sans elle (HTML seul) est plus souvent classé en spam
+  const plainDescription = meta.description
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+  const text = [
+    subject,
+    "",
+    plainDescription,
+    "",
+    meta.link,
+    "",
+    "Si tu n'as pas demandé cet e-mail, tu peux l'ignorer.",
+    ...(contact ? [`Une question, un bug ? ${contact}`] : []),
+  ].join("\n");
+
   const mailOptions = {
     from: {
       name: "Yeye Pronos",
@@ -122,6 +138,7 @@ export async function sendEmailAction({
     to,
     subject: `Yeye Pronos - ${subject}`,
     html: emailTemplate,
+    text,
   };
 
   try {

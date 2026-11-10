@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-11-09 — Stats NBA sur mobile, e-mails moins souvent en spam
+
+### Mobile
+- Onglet **Stats NBA** de retour en bas (Accueil · Matchs · Parier · Classement · Stats NBA). Mes pronos :
+  pastille des points en haut (surlignée quand on y est) et menu. Le menu gagne « Infirmerie ».
+- Sous-menu des stats : le lien actif est amené au milieu de la barre qui défile.
+
+### E-mails
+- Invitation : objet sans emoji, plus de texte caché, moins de vocabulaire publicitaire, rappel « Non spam »
+  en pied d'e-mail.
+- E-mails automatiques (confirmation d'adresse, mot de passe oublié, alertes) : version texte ajoutée.
+- Pages « e-mail envoyé » (inscription, mot de passe oublié, renvoi, lien expiré) en français, avec l'encadré
+  « Rien reçu ? » (spams, onglet Promotions, « Non spam », nom de l'expéditeur) et le renvoi de l'e-mail.
+
 ## 2026-11-08 — Version mobile et invitations
 
 ### Version mobile (écrans < 768 px)

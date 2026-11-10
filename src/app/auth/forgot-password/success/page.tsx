@@ -1,16 +1,24 @@
-import { ReturnButton } from "@/components/auth/return-button";
+import Link from "next/link";
+import { EmailSentScreen } from "@/components/auth/email-sent-screen";
 
 export default function ForgotPasswordSuccessPage() {
   return (
-    <div className="px-8 py-16 container mx-auto max-w-screen-lg space-y-8">
-      <div className="space-y-8">
-        <ReturnButton href="/auth/login" label="Login" />
-        <h1 className="text-3xl font-bold">Success</h1>
-      </div>
-      <p className="text-muted-foreground">
-        Success! You have requested a password reset. Please check your email
-        for the reset password link.
+    <EmailSentScreen
+      title="E-mail envoyé"
+      footer={
+        <p className="text-sm text-zinc-400">
+          Toujours rien ?{" "}
+          <Link href="/auth/forgot-password" className="font-medium text-[#5096ff] hover:text-[#5096ff]/80">
+            Redemander un lien
+          </Link>
+        </p>
+      }
+    >
+      <p>
+        Si un compte existe avec cette adresse, tu vas recevoir un lien pour{" "}
+        <b className="text-white">choisir un nouveau mot de passe</b>.
       </p>
-    </div>
+      <p className="text-zinc-500">Le lien est valable 1 heure.</p>
+    </EmailSentScreen>
   );
 }

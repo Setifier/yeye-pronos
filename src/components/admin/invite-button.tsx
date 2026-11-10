@@ -194,7 +194,10 @@ function ResultView({ result, onRestart, onClose }: { result: Done; onRestart: (
             <p className="text-base font-bold text-white">
               {result.sent.length === 1 ? "Invitation envoyée" : `${result.sent.length} invitations envoyées`}
             </p>
-            <p className="text-xs text-zinc-500">Pense à prévenir : l&apos;e-mail peut arriver dans les spams.</p>
+            <p className="text-xs text-zinc-500">
+              Préviens-les : l&apos;e-mail peut arriver dans les spams. Un clic sur « Non spam » et les suivants
+              (confirmation d&apos;inscription…) arriveront au bon endroit.
+            </p>
           </div>
         )}
         {result.sent.length === 0 && (

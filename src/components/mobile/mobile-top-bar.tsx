@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Archive, BarChart3, BookOpen, ChevronRight, Crown, LogOut, Medal, Settings, Shield, Target, Trophy, User, Users, X,
+  Archive, BookOpen, ChevronRight, Crown, HeartPulse, LogOut, Medal, Settings, Shield, Target, Trophy, User, Users, X,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -22,14 +22,16 @@ export interface MobileUser {
 }
 
 /**
- * Barre du haut sur mobile (remplace la barre de navigation) : logo, points, rang, avatar.
- * L'avatar ouvre le menu (profil, stats NBA, amis, réglages…). Hauteur 4rem, comme la barre ordinateur :
+ * Barre du haut sur mobile (remplace la barre de navigation) : logo, rang, points (= Mes pronos), avatar.
+ * L'avatar ouvre le menu (profil, amis, paris de saison, réglages…). Hauteur 4rem, comme la barre ordinateur :
  * les sous-menus collants (top-16) restent bien placés.
  */
 export function MobileTopBar({ user }: { user: MobileUser }) {
   useHudSync();
   const hud = useHud();
+  const pathname = usePathname() ?? "";
   const [menuOpen, setMenuOpen] = useState(false);
+  const onPronos = pathname === "/pronos" || pathname.startsWith("/pronos/");
 
   return (
     <>
@@ -50,8 +52,11 @@ export function MobileTopBar({ user }: { user: MobileUser }) {
             </Link>
             <Link
               href="/pronos"
-              className="flex h-9 items-center gap-1 rounded-full bg-[#dcff50]/10 px-3 text-sm font-black tabular-nums text-[#dcff50] ring-1 ring-[#dcff50]/25 active:scale-95 transition-transform"
-              aria-label="Mes points"
+              className={`flex h-9 items-center gap-1 rounded-full px-3 text-sm font-black tabular-nums text-[#dcff50] active:scale-95 transition-transform ${
+                onPronos ? "bg-[#dcff50]/20 ring-2 ring-[#dcff50]/70" : "bg-[#dcff50]/10 ring-1 ring-[#dcff50]/25"
+              }`}
+              aria-label="Mes points et mes pronos"
+              aria-current={onPronos ? "page" : undefined}
             >
               {hud ? fmtNumber(hud.points) : "–"}
               <span className="text-[10px] font-bold uppercase opacity-70">pts</span>
@@ -73,13 +78,14 @@ export function MobileTopBar({ user }: { user: MobileUser }) {
   );
 }
 
+/** Raccourcis du menu : à moi (1re ligne), puis la NBA (les stats ont leur onglet en bas). */
 const TILES: { href: string; label: string; icon: LucideIcon; tint: string }[] = [
-  { href: "/pronos/matchs",    label: "Mes pronos",      icon: Target,    tint: "bg-[#5096ff]/15 text-[#5096ff]" },
-  { href: "/pronos/preseason", label: "Paris de saison", icon: Medal,     tint: "bg-amber-400/15 text-amber-400" },
-  { href: "/standings",        label: "Stats NBA",       icon: BarChart3, tint: "bg-emerald-400/15 text-emerald-400" },
-  { href: "/nba-cup",          label: "NBA Cup",         icon: Trophy,    tint: "bg-amber-500/15 text-amber-500" },
-  { href: "/playoffs",         label: "Playoffs",        icon: Crown,     tint: "bg-yellow-400/15 text-yellow-400" },
-  { href: "/amis",             label: "Amis",            icon: Users,     tint: "bg-[#ff5050]/15 text-[#ff5050]" },
+  { href: "/pronos",             label: "Mes pronos",      icon: Target,     tint: "bg-[#5096ff]/15 text-[#5096ff]" },
+  { href: "/pronos/preseason",   label: "Paris de saison", icon: Medal,      tint: "bg-amber-400/15 text-amber-400" },
+  { href: "/amis",               label: "Amis",            icon: Users,      tint: "bg-[#ff5050]/15 text-[#ff5050]" },
+  { href: "/nba-cup",            label: "NBA Cup",         icon: Trophy,     tint: "bg-amber-500/15 text-amber-500" },
+  { href: "/playoffs",           label: "Playoffs",        icon: Crown,      tint: "bg-yellow-400/15 text-yellow-400" },
+  { href: "/joueurs/infirmerie", label: "Infirmerie",      icon: HeartPulse, tint: "bg-rose-400/15 text-rose-400" },
 ];
 
 function MobileMenu({ user, onClose }: { user: MobileUser; onClose: () => void }) {

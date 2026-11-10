@@ -10,6 +10,9 @@ import { getCurrentSeason, getSeasonLabel } from "@/types/season";
  *
  * Mise en page en tableaux et styles en ligne : c'est ce que Gmail, Outlook et Apple Mail
  * affichent correctement. Fond sombre aux couleurs de l'app. Aperçu : /api/admin/invitation-preview.
+ *
+ * Contre le classement en spam : pas d'emoji dans l'objet, pas de texte caché (pré-en-tête invisible),
+ * pas de vocabulaire publicitaire (« gratuit », « sans pub »), une version texte complète.
  */
 
 export interface InvitationEmail {
@@ -67,9 +70,8 @@ export function buildInvitationEmail(input: InvitationInput): InvitationEmail {
   const badge = input.isBeta ? `Accès bêta · saison test ${input.seasonLabel}` : `Saison ${input.seasonLabel}`;
 
   const subject = input.inviterName
-    ? `${input.inviterName} t'invite sur Yeye Pronos 🏀`
-    : "Rejoins Yeye Pronos 🏀";
-  const preheader = "Chaque nuit, choisis tes vainqueurs NBA, marque des points et grimpe au classement entre potes.";
+    ? `${input.inviterName} t'invite à jouer sur Yeye Pronos`
+    : "Invitation à jouer sur Yeye Pronos";
   const intro = inviter
     ? `<strong style="color:#ffffff;">${inviter}</strong> t'invite sur <strong style="color:#ffffff;">Yeye Pronos</strong>, le jeu de pronos NBA entre potes.`
     : `Rejoins <strong style="color:#ffffff;">Yeye Pronos</strong>, le jeu de pronos NBA entre potes.`;
@@ -134,7 +136,6 @@ export function buildInvitationEmail(input: InvitationInput): InvitationEmail {
   <title>${esc(subject)}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#09090b;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-  <div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all;">${esc(preheader)}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#09090b" style="background-color:#09090b;">
     <tr>
       <td align="center" style="padding:32px 12px 40px;">
@@ -171,7 +172,7 @@ export function buildInvitationEmail(input: InvitationInput): InvitationEmail {
                         </td>
                       </tr>
                     </table>
-                    <p style="margin:12px 0 0;font-size:12px;color:#71717a;">Gratuit · sans pub · inscription en 30 secondes</p>
+                    <p style="margin:12px 0 0;font-size:12px;color:#71717a;">Inscription en 30 secondes, avec Google ou ton e-mail</p>
                   </td>
                 </tr>
 
@@ -190,6 +191,7 @@ ${deadlineBlock}${betaBlock}
           <tr>
             <td align="center" style="padding:22px 16px 0;font-size:12px;line-height:1.6;color:#52525b;">
               ${why} Pas intéressé&nbsp;? Ignore-le, tu ne recevras rien d'autre.${contact}
+              <br>Trouvé dans les spams&nbsp;? Clique sur «&nbsp;Non spam&nbsp;»&nbsp;: les prochains e-mails de Yeye Pronos (confirmation d'inscription…) arriveront au bon endroit.
               <br><a href="${input.appUrl}" style="color:#5096ff;text-decoration:none;">${esc(host)}</a>
             </td>
           </tr>
@@ -214,6 +216,7 @@ ${deadlineBlock}${betaBlock}
     ...(input.isBeta ? ["", "Version bêta, saison test : quelques bugs peuvent traîner, signale-les depuis l'appli."] : []),
     "",
     "Pas intéressé ? Ignore cet e-mail, tu ne recevras rien d'autre.",
+    "Trouvé dans les spams ? Clique sur « Non spam » : les prochains e-mails de Yeye Pronos arriveront au bon endroit.",
   ].join("\n");
 
   return { subject, html, text };

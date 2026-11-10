@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NbaHubLink } from "./nba-hub-link";
 
 export function NbaCupNavbar() {
   const pathname = usePathname();
@@ -22,7 +23,9 @@ export function NbaCupNavbar() {
   return (
     <div className="border-b border-zinc-800 bg-zinc-900/50 sticky top-16 z-40 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-center gap-1 h-12 overflow-x-auto">
+        {/* justify-start sur téléphone : centré + défilant, le 1er lien serait coupé à gauche */}
+        <div className="flex h-12 items-center justify-start gap-1 overflow-x-auto [scrollbar-width:none] md:justify-center">
+          <NbaHubLink />
           {links.map(({ href, label }) => (
             <Link
               key={href}

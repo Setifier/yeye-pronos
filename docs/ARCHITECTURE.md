@@ -143,16 +143,33 @@ chaque écran mobile est en `md:hidden`, la version ordinateur en `hidden md:blo
 
 | Fichier | Rôle |
 |---|---|
-| `src/components/mobile/mobile-top-bar.tsx` | Barre du haut (remplace la navigation du site) : logo, rang (→ classement), points (→ Mes pronos), avatar → menu (Mes pronos, paris de saison, amis, NBA Cup, playoffs, infirmerie, profil, règles, saisons passées, paramètres, admin, signaler un bug, déconnexion, mentions légales) |
-| `src/components/layout/mobile-tab-bar.tsx` | Onglets Accueil · Matchs · **Parier** · Classement · Stats NBA. « Parier » ouvre directement la fenêtre de pari avec les paris manquants de la nuit, depuis n'importe quelle page |
+| `src/components/mobile/mobile-top-bar.tsx` | Barre du haut (remplace la navigation du site) : logo, rang, points, avatar → menu (gros bouton **Stats NBA** → `/nba`, paris de saison, amis, règles, profil, saisons passées, paramètres, admin, signaler un bug, déconnexion, mentions légales) |
+| `src/components/layout/mobile-tab-bar.tsx` | Onglets Accueil · Matchs · **Parier** · Classement · Pronos. « Parier » ouvre directement la fenêtre de pari avec les paris manquants de la nuit, depuis n'importe quelle page |
+| `src/app/nba/page.tsx` | « Stats NBA » : tout le contenu NBA au même endroit (classement, leaders, joueurs, infirmerie, NBA Cup, playoffs, archives). Sur téléphone, les sous-menus NBA commencent par « Tout » (`nba-hub-link.tsx`) |
 | `src/components/mobile/use-hud.ts` + `GET /api/me/hud` | Points, rang et paris ouverts de la nuit (rechargés à la navigation et après chaque prono ; jamais chargés sur ordinateur) |
 | `src/components/mobile/mobile-home.tsx` | Accueil : nuit en cours (anneau de progression, bouton « Jouer »), matchs, hier soir en une ligne, course au classement |
 | `src/components/mobile/night-picker.tsx` | Page Matchs : bande des nuits + calendrier natif du téléphone |
-| `game-bet-card.tsx` (`MobileGameCard`) | Carte compacte : un toucher sur un logo = prono, le centre ouvre les bonus (ou les stats d'un match terminé) |
+| `game-bet-card.tsx` (`MobileGameCard`) | Carte compacte : un toucher sur un logo = prono, le centre ouvre les bonus (ou les stats d'un match terminé). Match terminé : détail du pari ligne par ligne (vainqueur, écart, marqueur, combo, ✓ / ✗, points, vrai résultat si raté) |
 
 Le pied de page est masqué sur mobile pour un joueur connecté (ses liens sont dans le menu).
 Pas d'onglets sur `/admin`, l'onboarding et les formulaires Classement / Bracket des paris de saison (bouton « Enregistrer » en bas).
 Les sous-menus collants restent en `top-16` : la barre du haut mobile fait la même hauteur que celle de l'ordinateur.
+Sous-menus qui défilent sur téléphone : `justify-start` (jamais `justify-center` seul, le 1er lien serait coupé).
+
+## Fiches et pronos des autres joueurs
+
+Un toucher sur un joueur (classement, amis, recherche, demandes) ouvre sa fiche.
+
+| Fichier | Rôle |
+|---|---|
+| `src/lib/public-profile.ts` | Fiche d'un joueur (serveur) : stats de la saison, rang et points comme le classement, derniers pronos terminés, lien d'amitié |
+| `src/app/joueur/[id]` | Fiche d'un autre joueur (depuis le classement, les amis, la recherche) : boutons **Pronos**, **Ajouter en ami** / Demande envoyée / Accepter / **Ami ✓**, Comparer. Sa propre fiche → `/profile` |
+| `src/lib/player-bets.ts` + `GET /api/users/[id]/bets?night=` | Ses pronos **terminés** nuit par nuit, à côté des miens, bonus compris. Jamais un match pas encore joué (FINAL + traité, pronos notés) |
+| `src/app/joueur/[id]/pronos` | La page : bande des nuits (« +32 · toi +18 »), score de la nuit, chaque match avec les deux paris. No Spoil : hier et ce soir masqués jusqu'au clic |
+| `src/components/friends/friend-button.tsx` | Bouton d'amitié de la fiche |
+
+Stats d'un joueur (`getUserStats(userId, season)`) : saison en cours, pronos annulés exclus. Pas de « compétitions »
+pendant la bêta (pas en place : retirées des stats et de la comparaison).
 
 ## Classement des joueurs de l'app
 

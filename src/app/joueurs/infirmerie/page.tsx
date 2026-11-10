@@ -120,9 +120,9 @@ export default function InfirmeriePage() {
   groupedByTeam.sort((a, b) => b.players.length - a.players.length);
 
   return (
-    <main className="container mx-auto px-4 py-8 max-w-7xl flex-1">
+    <main className="container mx-auto px-4 py-5 md:py-8 max-w-7xl flex-1">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-5 md:mb-8">
         <Link
           href="/joueurs"
           className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-400 mb-4 transition"
@@ -131,16 +131,16 @@ export default function InfirmeriePage() {
           <span>Retour</span>
         </Link>
 
-        <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-          <Activity className="h-10 w-10 text-red-400" />
+        <h1 className="text-2xl md:text-4xl font-bold mb-2 flex items-center gap-3">
+          <Activity className="h-7 w-7 md:h-10 md:w-10 text-red-400" />
           Infirmerie NBA
         </h1>
         <p className="text-zinc-400">Suivi des blessures - Saison {getSeasonLabel(getCurrentSeason())}</p>
       </div>
 
       {/* Stats */}
-      <div className="grid sm:grid-cols-4 gap-4 mb-8">
-        <div className="bg-red-950/30 border border-red-800/50 rounded-lg p-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-5 md:mb-8">
+        <div className="bg-red-950/30 border border-red-800/50 rounded-lg p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-2">
             <AlertCircle className="h-5 w-5 text-red-400" />
             <p className="text-sm text-zinc-400">Out</p>
@@ -150,7 +150,7 @@ export default function InfirmeriePage() {
           </p>
         </div>
 
-        <div className="bg-yellow-950/30 border border-yellow-800/50 rounded-lg p-4">
+        <div className="bg-yellow-950/30 border border-yellow-800/50 rounded-lg p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="h-5 w-5 text-yellow-400" />
             <p className="text-sm text-zinc-400">Day-to-Day</p>
@@ -160,7 +160,7 @@ export default function InfirmeriePage() {
           </p>
         </div>
 
-        <div className="bg-orange-950/30 border border-orange-800/50 rounded-lg p-4">
+        <div className="bg-orange-950/30 border border-orange-800/50 rounded-lg p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-2">
             <AlertCircle className="h-5 w-5 text-orange-400" />
             <p className="text-sm text-zinc-400">Questionable</p>
@@ -170,7 +170,7 @@ export default function InfirmeriePage() {
           </p>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 sm:p-4">
           <div className="flex items-center gap-2 mb-2">
             <Activity className="h-5 w-5 text-zinc-400" />
             <p className="text-sm text-zinc-400">Total</p>
@@ -195,7 +195,7 @@ export default function InfirmeriePage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3 md:space-y-6">
           {groupedByTeam.map((group) => {
             const isExpanded = expandedTeams.has(group.team.id);
 
@@ -207,7 +207,7 @@ export default function InfirmeriePage() {
                 {/* Team Header - Clickable */}
                 <button
                   onClick={() => toggleTeam(group.team.id)}
-                  className="w-full bg-zinc-800/50 border-b border-zinc-700 px-6 py-4 hover:bg-zinc-800/70 transition"
+                  className="w-full bg-zinc-800/50 border-b border-zinc-700 px-4 py-3 md:px-6 md:py-4 hover:bg-zinc-800/70 transition"
                 >
                   <div className="flex items-center gap-4">
                     {/* Expand/Collapse Icon */}
@@ -220,7 +220,7 @@ export default function InfirmeriePage() {
                     </div>
 
                     {/* Team Logo */}
-                    <div className="relative w-12 h-12 flex-shrink-0">
+                    <div className="relative w-10 h-10 md:w-12 md:h-12 flex-shrink-0">
                       <Image
                         src={getTeamLogo(group.team.abbreviation)}
                         alt={group.team.name}
@@ -231,7 +231,7 @@ export default function InfirmeriePage() {
 
                     {/* Team Info */}
                     <div className="flex-1 text-left">
-                      <h2 className="text-xl font-bold">
+                      <h2 className="text-base md:text-xl font-bold">
                         {group.team.city} {group.team.name}
                       </h2>
                       <p className="text-sm text-zinc-400">
@@ -251,7 +251,7 @@ export default function InfirmeriePage() {
                         <Link
                           key={player.id}
                           href={`/joueurs/${player.id}`}
-                          className="grid grid-cols-1 md:grid-cols-[2fr_1fr_2fr_2fr] gap-4 px-6 py-4 hover:bg-zinc-800/30 transition cursor-pointer"
+                          className="grid grid-cols-1 md:grid-cols-[2fr_1fr_2fr_2fr] gap-2 md:gap-4 px-4 py-3 md:px-6 md:py-4 hover:bg-zinc-800/30 transition cursor-pointer"
                         >
                           {/* Player */}
                           <div className="flex items-center gap-3">

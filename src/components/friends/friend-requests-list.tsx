@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Check, X, Inbox } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -78,9 +79,9 @@ export function FriendRequestsList({
             key={request.id}
             className="bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800 hover:border-[#5096ff]/30 rounded-xl p-4 transition-all hover:shadow-lg hover:shadow-[#5096ff]/5"
           >
-            <div className="flex items-center justify-between gap-4">
-              {/* Sender info */}
-              <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-3 md:gap-4">
+              {/* Sender info (touche → sa fiche) */}
+              <Link href={`/joueur/${request.sender.id}`} className="flex items-center gap-3 flex-1 min-w-0">
                 {request.sender.image ? (
                   <img
                     src={request.sender.image}
@@ -103,25 +104,27 @@ export function FriendRequestsList({
                     })}
                   </p>
                 </div>
-              </div>
+              </Link>
 
-              {/* Actions */}
-              <div className="flex gap-2">
+              {/* Actions (icônes seules sur téléphone) */}
+              <div className="flex flex-shrink-0 gap-2">
                 <button
                   onClick={() => onAccept(request.id)}
                   disabled={isProcessing}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-[#5096ff]/10 hover:bg-[#5096ff] border border-[#5096ff]/50 hover:border-[#5096ff] text-[#5096ff] hover:text-white rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Accepter"
+                  className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-[#5096ff]/10 hover:bg-[#5096ff] border border-[#5096ff]/50 hover:border-[#5096ff] text-[#5096ff] hover:text-white rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Check className="w-4 h-4" />
-                  Accepter
+                  <span className="hidden sm:inline">Accepter</span>
                 </button>
                 <button
                   onClick={() => onReject(request.id)}
                   disabled={isProcessing}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-red-500/10 hover:bg-red-500 border border-red-500/50 hover:border-red-500 text-red-400 hover:text-white rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Refuser"
+                  className="flex items-center gap-1.5 px-3 py-2 sm:px-4 bg-red-500/10 hover:bg-red-500 border border-red-500/50 hover:border-red-500 text-red-400 hover:text-white rounded-lg transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <X className="w-4 h-4" />
-                  Refuser
+                  <span className="hidden sm:inline">Refuser</span>
                 </button>
               </div>
             </div>

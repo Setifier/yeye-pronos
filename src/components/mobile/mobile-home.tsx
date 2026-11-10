@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Check, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Medal, Moon, Sparkles, Trophy, Zap } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, ChevronRight, Eye, EyeOff, Lock, Medal, Moon, Sparkles, Star, Target, Trophy, Zap } from "lucide-react";
 import type { BetGame } from "@/types/bet";
 import { formatCountdown, formatNight, formatParisTime } from "@/lib/game-night";
 import { getSeasonLabel } from "@/types/season";
@@ -271,7 +271,13 @@ function ResultLine({ game }: { game: BetGame }) {
       </span>
       <span className={`w-9 text-right text-sm font-bold ${final && awayWon ? "text-zinc-500" : "text-white"}`}>{game.homeTeam.abbreviation}</span>
       <span className={`rounded-full p-0.5 ${ring(pickedHome)}`}><TeamLogo abbreviation={game.homeTeam.abbreviation} size={24} /></span>
-      <span className={`w-12 text-right text-xs font-black tabular-nums ${p?.result === "WON" ? "text-emerald-400" : "text-zinc-600"}`}>
+      {/* Bonus gagnés : écart, meilleur marqueur, combo */}
+      <span className="flex w-10 items-center justify-end gap-0.5">
+        {p && p.marginBonusPoints > 0 && <Target className="h-3 w-3 text-orange-400" aria-label="Bon écart" />}
+        {p && p.topScorerBonusPoints > 0 && <Star className="h-3 w-3 text-cyan-400" aria-label="Meilleur marqueur trouvé" />}
+        {p && p.comboBonusPoints > 0 && <Zap className="h-3 w-3 text-purple-300" aria-label="Combo" />}
+      </span>
+      <span className={`w-10 text-right text-xs font-black tabular-nums ${p && p.pointsEarned > 0 ? "text-emerald-400" : "text-zinc-600"}`}>
         {p && (p.result === "WON" || p.result === "LOST") ? (p.pointsEarned > 0 ? `+${p.pointsEarned}` : "0") : p ? "…" : "–"}
       </span>
     </div>

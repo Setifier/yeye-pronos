@@ -18,10 +18,7 @@ export interface UserStats {
   topScorerBonusPoints: number;
   comboBonusCount: number;
   comboBonusPoints: number;
-  // Competitions
-  competitionsParticipated: number;
-  competitionsWon: number;
-  competitionsWinRate: number;
+  // Les « compétitions » ne sont pas en place (bêta) : rien à afficher ni à calculer.
 }
 
 export interface RecentPrediction {
@@ -72,13 +69,21 @@ export interface LeaderboardData {
 }
 
 /**
- * Récupère les statistiques d'un utilisateur
+ * Statistiques des pronos match d'un utilisateur.
+ * `season` (ex. "2026-27") : uniquement les matchs de cette saison, comme le classement. Sans : toutes saisons.
+ * Les pronos annulés (match annulé) ne comptent pas.
  */
-export async function getUserStats(userId: string): Promise<UserStats> {
+export async function getUserStats(userId: string, season?: string): Promise<UserStats> {
+  const scope = {
+    userId,
+    result: { not: PredictionResult.CANCELLED },
+    ...(season ? { game: { season } } : {}),
+  };
+
   // 1. Compter les pronos par résultat
   const predictionCounts = await prisma.prediction.groupBy({
     by: ["result"],
-    where: { userId },
+    where: scope,
     _count: { result: true },
     _sum: { pointsEarned: true },
   });
@@ -118,7 +123,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
   const [bonusSums, marginBonusCount, topScorerBonusCount, comboBonusCount] =
     await Promise.all([
       prisma.prediction.aggregate({
-        where: { userId },
+        where: scope,
         _sum: {
           marginBonusPoints: true,
           topScorerBonusPoints: true,
@@ -126,74 +131,15 @@ export async function getUserStats(userId: string): Promise<UserStats> {
         },
       }),
       prisma.prediction.count({
-        where: { userId, marginBonusPoints: { gt: 0 } },
+        where: { ...scope, marginBonusPoints: { gt: 0 } },
       }),
       prisma.prediction.count({
-        where: { userId, topScorerBonusPoints: { gt: 0 } },
+        where: { ...scope, topScorerBonusPoints: { gt: 0 } },
       }),
       prisma.prediction.count({
-        where: { userId, comboBonusPoints: { gt: 0 } },
+        where: { ...scope, comboBonusPoints: { gt: 0 } },
       }),
     ]);
-
-  // 3. Calculer les participations aux compétitions
-  const competitions = await prisma.competitionSeason.findMany();
-  let competitionsParticipated = 0;
-  let competitionsWon = 0;
-
-  for (const competition of competitions) {
-    // Vérifier si l'utilisateur a participé à cette compétition
-    const participationCount = await prisma.prediction.count({
-      where: {
-        userId,
-        game: {
-          gameDate: {
-            gte: competition.startDate,
-            lte: competition.endDate,
-          },
-        },
-      },
-    });
-
-    if (participationCount > 0) {
-      competitionsParticipated++;
-
-      // Vérifier si l'utilisateur a gagné cette compétition
-      const competitionRanking = await prisma.prediction.groupBy({
-        by: ["userId"],
-        where: {
-          game: {
-            gameDate: {
-              gte: competition.startDate,
-              lte: competition.endDate,
-            },
-          },
-        },
-        _sum: {
-          pointsEarned: true,
-        },
-        orderBy: {
-          _sum: {
-            pointsEarned: "desc",
-          },
-        },
-        take: 1,
-      });
-
-      if (
-        competitionRanking.length > 0 &&
-        competitionRanking[0].userId === userId
-      ) {
-        competitionsWon++;
-      }
-    }
-  }
-
-  // Calculer le ratio de victoires dans les compétitions
-  const competitionsWinRate =
-    competitionsParticipated > 0
-      ? Math.round((competitionsWon / competitionsParticipated) * 100 * 10) / 10
-      : 0;
 
   return {
     totalPredictions,
@@ -208,9 +154,6 @@ export async function getUserStats(userId: string): Promise<UserStats> {
     topScorerBonusPoints: bonusSums._sum.topScorerBonusPoints || 0,
     comboBonusCount,
     comboBonusPoints: bonusSums._sum.comboBonusPoints || 0,
-    competitionsParticipated,
-    competitionsWon,
-    competitionsWinRate,
   };
 }
 

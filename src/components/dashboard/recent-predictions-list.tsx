@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, X, Clock } from "lucide-react";
+import { Check, X, Clock, Target, Star, Zap } from "lucide-react";
 import type { RecentPrediction } from "@/lib/dashboard-queries";
 import { getTeamLogo } from "@/lib/nba-logos";
 
@@ -23,10 +23,47 @@ export function RecentPredictionsList({
   }
 
   return (
-    <div className="space-y-3">
-      {predictions.map((prediction) => (
-        <PredictionCard key={prediction.id} prediction={prediction} />
-      ))}
+    <>
+      {/* Téléphone : une ligne par prono */}
+      <div className="divide-y divide-zinc-800/80 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/50 md:hidden">
+        {predictions.map((prediction) => (
+          <MobilePredictionLine key={prediction.id} prediction={prediction} />
+        ))}
+      </div>
+      <div className="hidden space-y-3 md:block">
+        {predictions.map((prediction) => (
+          <PredictionCard key={prediction.id} prediction={prediction} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function MobilePredictionLine({ prediction: p }: { prediction: RecentPrediction }) {
+  const won = p.result === "WON";
+  const pickedAway = p.predictedTeam.abbreviation === p.awayTeam.abbreviation;
+  const day = new Date(p.gameDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short", timeZone: "America/New_York" });
+  const ring = (picked: boolean) => (picked ? (won ? "ring-2 ring-emerald-500/70" : "ring-2 ring-red-500/50") : "");
+  return (
+    <div className="flex items-center gap-2 px-3 py-2.5">
+      <span className="w-12 flex-shrink-0 text-[11px] text-zinc-500">{day}</span>
+      <span className={`rounded-full p-0.5 ${ring(pickedAway)}`}>
+        <img src={getTeamLogo(p.awayTeam.abbreviation)} alt={p.awayTeam.abbreviation} className="h-6 w-6 object-contain" />
+      </span>
+      <span className="flex-1 text-center text-xs tabular-nums text-zinc-400">
+        {p.finalScore.away !== null && p.finalScore.home !== null ? `${p.finalScore.away} – ${p.finalScore.home}` : "@"}
+      </span>
+      <span className={`rounded-full p-0.5 ${ring(!pickedAway)}`}>
+        <img src={getTeamLogo(p.homeTeam.abbreviation)} alt={p.homeTeam.abbreviation} className="h-6 w-6 object-contain" />
+      </span>
+      <span className="flex w-16 flex-shrink-0 items-center justify-end gap-1">
+        {p.marginBonusPoints > 0 && <Target className="h-3 w-3 text-orange-400" aria-label="Bon écart" />}
+        {p.topScorerBonusPoints > 0 && <Star className="h-3 w-3 text-cyan-400" aria-label="Meilleur marqueur trouvé" />}
+        {p.comboBonusPoints > 0 && <Zap className="h-3 w-3 text-purple-300" aria-label="Combo" />}
+        <span className={`text-xs font-black tabular-nums ${won ? "text-emerald-400" : "text-zinc-600"}`}>
+          {p.pointsEarned > 0 ? `+${p.pointsEarned}` : "0"}
+        </span>
+      </span>
     </div>
   );
 }

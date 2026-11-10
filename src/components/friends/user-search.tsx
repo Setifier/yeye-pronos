@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Search, UserPlus, Loader2, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -85,7 +86,7 @@ export function UserSearch({ onSendRequest, sendingToId = null }: UserSearchProp
                 key={user.id}
                 className="flex items-center justify-between p-4 bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800 hover:border-[#5096ff]/30 rounded-xl transition-all hover:shadow-lg hover:shadow-[#5096ff]/5"
               >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
+                <Link href={`/joueur/${user.id}`} className="flex items-center gap-3 flex-1 min-w-0">
                   {user.image ? (
                     <img
                       src={user.image}
@@ -103,7 +104,7 @@ export function UserSearch({ onSendRequest, sendingToId = null }: UserSearchProp
                       {user.friendCode || `#${user.id.slice(0, 8)}`}
                     </p>
                   </div>
-                </div>
+                </Link>
 
                 <button
                   onClick={() => onSendRequest(user.id)}

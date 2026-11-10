@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, CalendarDays, Check, Home, Loader2, Trophy, Zap } from "lucide-react";
+import { CalendarDays, Check, Home, Loader2, Target, Trophy, Zap } from "lucide-react";
 import { toast } from "sonner";
 import type { BetGame } from "@/types/bet";
 import { isBettable, missingBets } from "@/types/bet";
@@ -16,8 +16,8 @@ const LEFT = [
   { href: "/matchs",    label: "Matchs",  icon: CalendarDays, match: ["/matchs"] },
 ];
 const RIGHT = [
-  { href: "/classement", label: "Classement", icon: Trophy,    match: ["/classement"] },
-  { href: "/standings",  label: "Stats NBA",  icon: BarChart3, match: ["/standings", "/leaders", "/joueurs", "/joueur", "/nba-cup", "/playoffs"] },
+  { href: "/classement", label: "Classement", icon: Trophy, match: ["/classement", "/joueur", "/comparer"] },
+  { href: "/pronos",     label: "Pronos",     icon: Target, match: ["/pronos"] },
 ];
 
 /** Pas de barre d'onglets : connexion, profil à compléter, admin, et les deux formulaires avec un bouton « Enregistrer » fixé en bas. */
@@ -31,8 +31,7 @@ interface SheetState {
 /**
  * Barre d'onglets en bas d'écran (mobile, utilisateur connecté).
  * Au centre, le bouton « Parier » : un clic ouvre directement les paris de la nuit qui manquent,
- * depuis n'importe quelle page. Mes pronos : pastille des points en haut (et menu). Amis, paris de saison,
- * règles… : menu (avatar en haut).
+ * depuis n'importe quelle page. Stats NBA (tout le contenu NBA), amis, paris de saison… : menu (avatar en haut).
  */
 export function MobileTabBar() {
   const pathname = usePathname() ?? "";

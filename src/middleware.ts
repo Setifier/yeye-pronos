@@ -13,6 +13,8 @@ const protectedRoutes = [
   "/dashboard",
   "/pronos",
   "/onboarding",
+  "/joueur",   // fiches des joueurs de l'app et leurs pronos (pas /joueurs : stats NBA publiques)
+  "/comparer",
 ];
 
 /**

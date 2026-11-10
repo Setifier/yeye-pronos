@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getUserStats } from "@/lib/dashboard-queries";
+import { getCurrentSeason } from "@/types/season";
 
 /**
  * API Friends Compare: Comparer ses stats avec un ami
@@ -50,10 +51,11 @@ export async function GET(
       );
     }
 
-    // 2. Récupérer les stats des deux utilisateurs en parallèle
+    // 2. Récupérer les stats des deux utilisateurs en parallèle (saison en cours, comme le classement)
+    const season = getCurrentSeason();
     const [myStats, friendStats, friend] = await Promise.all([
-      getUserStats(userId),
-      getUserStats(friendId),
+      getUserStats(userId, season),
+      getUserStats(friendId, season),
       prisma.user.findUnique({
         where: { id: friendId },
         select: {
@@ -75,8 +77,6 @@ export async function GET(
       wonPredictions: myStats.wonPredictions - friendStats.wonPredictions,
       totalPredictions:
         myStats.totalPredictions - friendStats.totalPredictions,
-      competitionsWon:
-        myStats.competitionsWon - friendStats.competitionsWon,
     };
 
     return NextResponse.json({

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Trophy, TrendingUp, TrendingDown, User, ArrowLeft } from "lucide-react";
+import { Loader2, Trophy, TrendingUp, TrendingDown, User, ArrowLeft, Target, Star, CalendarDays, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import type { UserStats } from "@/lib/dashboard-queries";
 
@@ -42,7 +42,7 @@ function ComparisonBar({
   const isTie = myValue === friendValue;
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 md:p-6">
       {/* Title */}
       <div className="flex items-center gap-2 mb-4">
         {icon && <div className="text-zinc-400">{icon}</div>}
@@ -202,80 +202,95 @@ export default function ComparerPage({
   }
 
   return (
-    <div className="space-y-8 py-8 px-4 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-5 px-4 py-5 md:space-y-8 md:py-8">
       {/* Back button */}
       <Link
         href="/amis"
-        className="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors"
+        className="inline-flex items-center gap-2 text-sm text-zinc-400 transition-colors hover:text-white md:text-base"
       >
         <ArrowLeft className="w-4 h-4" />
         Retour à mes amis
       </Link>
 
-      {/* Header - Vous vs Ami */}
-      <div className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 border border-zinc-800 rounded-2xl p-8">
-        <div className="flex items-center justify-center gap-8 flex-wrap">
+      {/* Header - Vous vs Ami (une seule ligne sur téléphone) */}
+      <div className="rounded-2xl border border-zinc-800 bg-gradient-to-br from-zinc-900 via-zinc-900 to-zinc-800 p-4 md:p-8">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:flex md:flex-wrap md:justify-center md:gap-8">
           {/* Me */}
-          <div className="flex flex-col items-center gap-3 flex-1 min-w-[200px]">
+          <div className="flex min-w-0 flex-col items-center gap-2 md:min-w-[200px] md:flex-1 md:gap-3">
             {comparison.me.user.image ? (
               <img
                 src={comparison.me.user.image}
                 alt={comparison.me.user.name}
-                className="w-24 h-24 rounded-full object-cover border-4 border-blue-500"
+                className="h-16 w-16 rounded-full border-4 border-blue-500 object-cover md:h-24 md:w-24"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center border-4 border-blue-500">
-                <User className="w-12 h-12 text-white" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-blue-500 bg-gradient-to-br from-blue-500 to-blue-600 md:h-24 md:w-24">
+                <User className="h-8 w-8 text-white md:h-12 md:w-12" />
               </div>
             )}
-            <div className="text-center">
-              <p className="text-xl font-bold text-white">
+            <div className="w-full min-w-0 text-center">
+              <p className="truncate text-base font-bold text-white md:text-xl">
                 {comparison.me.user.name}
               </p>
-              <p className="text-sm text-blue-400">Vous</p>
+              <p className="text-xs text-blue-400 md:text-sm">Toi</p>
             </div>
           </div>
 
           {/* VS */}
           <div className="flex items-center justify-center">
-            <div className="text-5xl font-black text-transparent bg-gradient-to-r from-blue-500 via-purple-500 to-purple-500 bg-clip-text">
+            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-purple-500 bg-clip-text text-3xl font-black text-transparent md:text-5xl">
               VS
             </div>
           </div>
 
           {/* Friend */}
-          <div className="flex flex-col items-center gap-3 flex-1 min-w-[200px]">
+          <div className="flex min-w-0 flex-col items-center gap-2 md:min-w-[200px] md:flex-1 md:gap-3">
             {comparison.friend.user.image ? (
               <img
                 src={comparison.friend.user.image}
                 alt={comparison.friend.user.name}
-                className="w-24 h-24 rounded-full object-cover border-4 border-purple-500"
+                className="h-16 w-16 rounded-full border-4 border-purple-500 object-cover md:h-24 md:w-24"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center border-4 border-purple-500">
-                <User className="w-12 h-12 text-white" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-purple-500 bg-gradient-to-br from-purple-500 to-purple-600 md:h-24 md:w-24">
+                <User className="h-8 w-8 text-white md:h-12 md:w-12" />
               </div>
             )}
-            <div className="text-center">
-              <p className="text-xl font-bold text-white">
+            <div className="w-full min-w-0 text-center">
+              <p className="truncate text-base font-bold text-white md:text-xl">
                 {comparison.friend.user.name}
               </p>
-              <p className="text-sm text-purple-400">Ami</p>
+              <p className="text-xs text-purple-400 md:text-sm">Ami</p>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Comparaison nuit par nuit, avec les bonus */}
+      <Link
+        href={`/joueur/${comparison.friend.user.id}/pronos`}
+        className="flex items-center gap-3 rounded-2xl border border-[#5096ff]/30 bg-[#5096ff]/10 p-4 transition-colors hover:bg-[#5096ff]/15"
+      >
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[#5096ff]/20">
+          <CalendarDays className="h-5 w-5 text-[#5096ff]" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-bold text-white">Comparer nuit par nuit</span>
+          <span className="block text-xs text-zinc-400">Vos paris match par match, avec les bonus et les points</span>
+        </span>
+        <ChevronRight className="h-5 w-5 flex-shrink-0 text-[#5096ff]" />
+      </Link>
+
       {/* Comparison Charts */}
       <div>
-        <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+        <h2 className="mb-4 flex items-center gap-3 text-xl font-bold text-white md:mb-6 md:text-2xl">
           <div className="p-2 bg-gradient-to-br from-blue-900/30 to-zinc-800 rounded-lg">
             <Trophy className="h-6 w-6 text-blue-400" />
           </div>
           Comparaison des Statistiques
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6">
           {/* Total Points */}
           <ComparisonBar
             title="Points Totaux"
@@ -317,35 +332,22 @@ export default function ComparerPage({
             icon={<Trophy className="w-5 h-5" />}
           />
 
-          {/* Competitions Participated */}
+          {/* Bonus */}
           <ComparisonBar
-            title="Compétitions Participées"
-            myValue={comparison.me.competitionsParticipated}
-            friendValue={comparison.friend.competitionsParticipated}
+            title="Bons écarts"
+            myValue={comparison.me.marginBonusCount}
+            friendValue={comparison.friend.marginBonusCount}
             myLabel={comparison.me.user.name}
             friendLabel={comparison.friend.user.name}
-            icon={<Trophy className="w-5 h-5" />}
+            icon={<Target className="w-5 h-5" />}
           />
-
-          {/* Competitions Won */}
           <ComparisonBar
-            title="Compétitions Gagnées"
-            myValue={comparison.me.competitionsWon}
-            friendValue={comparison.friend.competitionsWon}
+            title="Meilleurs marqueurs trouvés"
+            myValue={comparison.me.topScorerBonusCount}
+            friendValue={comparison.friend.topScorerBonusCount}
             myLabel={comparison.me.user.name}
             friendLabel={comparison.friend.user.name}
-            icon={<Trophy className="w-5 h-5" />}
-          />
-
-          {/* Competition Win Rate */}
-          <ComparisonBar
-            title="Ratio Victoires Compétitions"
-            myValue={comparison.me.competitionsWinRate}
-            friendValue={comparison.friend.competitionsWinRate}
-            myLabel={comparison.me.user.name}
-            friendLabel={comparison.friend.user.name}
-            formatValue={(v) => `${v}%`}
-            icon={<TrendingUp className="w-5 h-5" />}
+            icon={<Star className="w-5 h-5" />}
           />
         </div>
       </div>
@@ -465,58 +467,6 @@ export default function ComparerPage({
                       : ""}
                     {comparison.me.totalPredictions -
                       comparison.friend.totalPredictions}
-                  </span>
-                </td>
-              </tr>
-              <tr className="hover:bg-zinc-800/30 transition-colors">
-                <td className="p-4 text-white font-medium">
-                  Compétitions Participées
-                </td>
-                <td className="p-4 text-center text-white font-bold">
-                  {comparison.me.competitionsParticipated}
-                </td>
-                <td className="p-4 text-center text-white font-bold">
-                  {comparison.friend.competitionsParticipated}
-                </td>
-                <td className="p-4 text-center">
-                  <span className="font-bold text-zinc-500">
-                    {comparison.me.competitionsParticipated >
-                    comparison.friend.competitionsParticipated
-                      ? "+"
-                      : ""}
-                    {comparison.me.competitionsParticipated -
-                      comparison.friend.competitionsParticipated}
-                  </span>
-                </td>
-              </tr>
-              <tr className="hover:bg-zinc-800/30 transition-colors">
-                <td className="p-4 text-white font-medium">
-                  Compétitions Gagnées
-                </td>
-                <td className="p-4 text-center text-white font-bold">
-                  {comparison.me.competitionsWon}
-                </td>
-                <td className="p-4 text-center text-white font-bold">
-                  {comparison.friend.competitionsWon}
-                </td>
-                <td className="p-4 text-center">
-                  <span
-                    className={`font-bold ${
-                      comparison.me.competitionsWon >
-                      comparison.friend.competitionsWon
-                        ? "text-green-500"
-                        : comparison.me.competitionsWon <
-                          comparison.friend.competitionsWon
-                        ? "text-red-500"
-                        : "text-zinc-500"
-                    }`}
-                  >
-                    {comparison.me.competitionsWon >
-                    comparison.friend.competitionsWon
-                      ? "+"
-                      : ""}
-                    {comparison.me.competitionsWon -
-                      comparison.friend.competitionsWon}
                   </span>
                 </td>
               </tr>

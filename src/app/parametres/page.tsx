@@ -129,13 +129,13 @@ export default function ParametresPage() {
     <div className="min-h-screen bg-zinc-950">
       {/* Header */}
       <div className="bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-center gap-4 mb-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
+          <div className="flex items-center gap-4 md:mb-4">
             <div className="p-3 bg-gradient-to-br from-[#5096ff]/20 to-[#5096ff]/10 rounded-xl border border-[#5096ff]/30">
               <Settings className="h-8 w-8 text-[#5096ff]" />
             </div>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-white">
+              <h1 className="text-2xl md:text-4xl font-bold text-white">
                 Paramètres
               </h1>
               <p className="text-zinc-400 mt-1">
@@ -147,11 +147,11 @@ export default function ParametresPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 md:py-8">
+        <div className="space-y-4 md:space-y-8">
 
           {/* ── Profil ── */}
-          <section className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+          <section className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 md:p-6">
             <div className="flex items-center gap-3 mb-6">
               <User className="h-6 w-6 text-[#5096ff]" />
               <h2 className="text-xl font-bold text-white">Profil</h2>
@@ -226,7 +226,7 @@ export default function ParametresPage() {
           </section>
 
           {/* ── Favoris ── */}
-          <section className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+          <section className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 md:p-6">
             <div className="flex items-center gap-3 mb-6">
               <Trophy className="h-6 w-6 text-[#5096ff]" />
               <h2 className="text-xl font-bold text-white">Favoris</h2>

@@ -36,23 +36,23 @@ export default function ArchivesPage() {
     <div className="min-h-screen flex flex-col bg-zinc-950">
       {/* Hero Section */}
       <div className="bg-gradient-to-b from-zinc-900 to-zinc-950 border-b border-zinc-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
           <div className="flex flex-col items-center gap-3 mb-4">
-            <Archive className="h-12 w-12 text-[#5096ff]" />
+            <Archive className="h-9 w-9 md:h-12 md:w-12 text-[#5096ff]" />
             <h1 className="text-3xl md:text-4xl font-bold">
               <span className="bg-gradient-to-r from-[#ff5050] via-[#5096ff] to-[#dcff50] bg-clip-text text-transparent">
                 Archives
               </span>
             </h1>
           </div>
-          <p className="text-center text-zinc-400 text-lg">
+          <p className="text-center text-zinc-400 text-sm md:text-lg">
             Consultez les saisons passées dans leur intégralité
           </p>
         </div>
       </div>
 
       {/* Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-[#5096ff]" />

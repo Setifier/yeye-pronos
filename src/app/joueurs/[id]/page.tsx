@@ -28,15 +28,15 @@ export default async function PlayerPage({ params }: PageProps) {
   return (
     <>
       <StatsNavbar />
-      <main className="min-h-screen bg-zinc-950 text-zinc-50 py-8">
+      <main className="min-h-screen bg-zinc-950 text-zinc-50 py-5 md:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-6">
+          <div className="mb-4 md:mb-6">
             <BackButton />
           </div>
 
           {/* Player Header */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8 mb-6">
-            <div className="flex items-start gap-6">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 md:p-8 mb-4 md:mb-6">
+            <div className="flex items-start gap-4 md:gap-6">
               {/* Avatar */}
               {player.headshot ? (
                 <Image
@@ -44,21 +44,21 @@ export default async function PlayerPage({ params }: PageProps) {
                   alt={player.fullName}
                   width={160}
                   height={160}
-                  className="w-28 h-28 md:w-40 md:h-40 rounded-full object-cover flex-shrink-0 border-2 border-zinc-700"
+                  className="w-20 h-20 md:w-40 md:h-40 rounded-full object-cover flex-shrink-0 border-2 border-zinc-700"
                 />
               ) : (
-                <div className="w-28 h-28 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-4xl font-bold flex-shrink-0">
+                <div className="w-20 h-20 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl md:text-4xl font-bold flex-shrink-0">
                   {player.firstName[0]}
                   {player.lastName[0]}
                 </div>
               )}
 
               {/* Info */}
-              <div className="flex-1">
-                <h1 className="text-4xl font-bold mb-2">{player.fullName}</h1>
-                <div className="flex items-center gap-4 text-zinc-400">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2">{player.fullName}</h1>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 md:gap-4 text-zinc-400">
                   {player.team && (
-                    <span className="text-lg">{player.team.city} {player.team.name}</span>
+                    <span className="text-sm md:text-lg">{player.team.city} {player.team.name}</span>
                   )}
                   {player.position && (
                     <span className="px-3 py-1 bg-zinc-700/50 text-zinc-300 rounded-full text-sm font-medium">
@@ -66,7 +66,7 @@ export default async function PlayerPage({ params }: PageProps) {
                     </span>
                   )}
                   {player.jerseyNumber && (
-                    <span className="text-lg">#{player.jerseyNumber}</span>
+                    <span className="text-sm md:text-lg">#{player.jerseyNumber}</span>
                   )}
                 </div>
 
@@ -83,11 +83,11 @@ export default async function PlayerPage({ params }: PageProps) {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 mb-4 md:mb-6">
             {/* Height */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 md:p-6">
               <p className="text-sm text-zinc-400 mb-1">Taille</p>
-              <p className="text-2xl font-bold">
+              <p className="text-lg md:text-2xl font-bold">
                 {player.height || "-"}
                 {player.heightMetric && (
                   <span className="text-sm text-zinc-500 ml-2">({player.heightMetric}m)</span>
@@ -96,9 +96,9 @@ export default async function PlayerPage({ params }: PageProps) {
             </div>
 
             {/* Weight */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 md:p-6">
               <p className="text-sm text-zinc-400 mb-1">Poids</p>
-              <p className="text-2xl font-bold">
+              <p className="text-lg md:text-2xl font-bold">
                 {player.weight ? `${player.weight} lbs` : "-"}
                 {player.weightMetric && (
                   <span className="text-sm text-zinc-500 ml-2">({player.weightMetric}kg)</span>
@@ -107,15 +107,15 @@ export default async function PlayerPage({ params }: PageProps) {
             </div>
 
             {/* College */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 md:p-6">
               <p className="text-sm text-zinc-400 mb-1">Formation</p>
-              <p className="text-lg font-semibold">{player.college || "-"}</p>
+              <p className="text-sm md:text-lg font-semibold">{player.college || "-"}</p>
             </div>
 
             {/* Country */}
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 md:p-6">
               <p className="text-sm text-zinc-400 mb-1">Pays</p>
-              <p className="text-lg font-semibold">{player.country || "-"}</p>
+              <p className="text-sm md:text-lg font-semibold">{player.country || "-"}</p>
             </div>
           </div>
 

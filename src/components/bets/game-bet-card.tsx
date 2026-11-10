@@ -292,18 +292,15 @@ function MobileGameCard({ game, now, noSpoil, saving, onQuickPick, onOpen, onSho
         {homeButton}
       </div>
 
+      {showResult && p && <MobileResultBreakdown game={game} />}
+
       {(p || bettable || (isFinal && onShowBoxscore)) && (
         <div className="mt-1.5 flex min-h-8 items-center justify-between gap-2 border-t border-zinc-800/70 px-1 pt-2">
           <div className="flex min-w-0 flex-wrap items-center gap-1">
             {showResult && p ? (
-              <>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-black ${p.result === "WON" ? "bg-emerald-500/15 text-emerald-400" : "bg-zinc-800 text-zinc-400"}`}>
-                  {p.pointsEarned > 0 ? `+${p.pointsEarned} pts` : "0 pt"}
-                </span>
-                {p.marginBonusPoints > 0 && <Target className="h-3.5 w-3.5 text-emerald-400" />}
-                {p.topScorerBonusPoints > 0 && <Star className="h-3.5 w-3.5 text-emerald-400" />}
-                {p.comboBonusPoints > 0 && <Zap className="h-3.5 w-3.5 text-purple-300" />}
-              </>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-black ${p.pointsEarned > 0 ? "bg-emerald-500/15 text-emerald-400" : "bg-zinc-800 text-zinc-400"}`}>
+                {p.pointsEarned > 0 ? `Total +${p.pointsEarned} pts` : "0 pt"}
+              </span>
             ) : p ? (
               <>
                 {p.predictedScoreMargin && <Chip icon={<Target className="h-3 w-3" />}>{marginLabel(p.predictedScoreMargin)}</Chip>}
@@ -338,6 +335,65 @@ function MobileGameCard({ game, now, noSpoil, saving, onQuickPick, onOpen, onSho
           ) : null}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Match terminé (mobile) : détail du pari, ligne par ligne — vainqueur, écart, meilleur marqueur, combo —
+ * avec ✓ / ✗, les points gagnés et le vrai résultat quand c'est raté. Rien si le pari n'avait pas de bonus.
+ */
+function MobileResultBreakdown({ game }: { game: BetGame }) {
+  const p = game.prediction;
+  if (!p || (!p.predictedScoreMargin && !p.predictedTopScorer && p.comboBonusPoints === 0)) return null;
+
+  const bonus = p.marginBonusPoints + p.topScorerBonusPoints + p.comboBonusPoints;
+  const team = p.predictedTeamId === game.homeTeam.id ? game.homeTeam : game.awayTeam;
+  const lastName = (full: string) => full.split(" ").slice(-1)[0];
+  const realScorer = game.topScorer
+    ? `${lastName(game.topScorer.fullName)}${game.topScorer.points ? ` (${game.topScorer.points})` : ""}`
+    : null;
+
+  const rows: { key: string; icon: React.ReactNode; label: string; ok: boolean; pts: number; real: string | null }[] = [
+    { key: "team", icon: null, label: `Vainqueur ${team.abbreviation}`, ok: p.result === "WON", pts: Math.max(0, p.pointsEarned - bonus), real: null },
+  ];
+  if (p.predictedScoreMargin) {
+    const ok = p.marginBonusPoints > 0;
+    rows.push({
+      key: "margin", icon: <Target className="h-3 w-3" />, label: `Écart ${marginLabel(p.predictedScoreMargin)}`, ok, pts: p.marginBonusPoints,
+      real: !ok ? marginLabel(game.scoreMarginCategory) : null,
+    });
+  }
+  if (p.predictedTopScorer) {
+    const ok = p.topScorerBonusPoints > 0;
+    rows.push({
+      key: "scorer", icon: <Star className="h-3 w-3" />, label: lastName(p.predictedTopScorer.fullName), ok, pts: p.topScorerBonusPoints,
+      real: !ok ? realScorer : null,
+    });
+  }
+  if (p.comboBonusPoints > 0) {
+    rows.push({ key: "combo", icon: <Zap className="h-3 w-3" />, label: "Combo ultime", ok: true, pts: p.comboBonusPoints, real: null });
+  }
+
+  return (
+    <div className="mt-1.5 space-y-1 border-t border-zinc-800/70 px-1 pt-2">
+      {rows.map((r) => (
+        <div key={r.key} className="flex items-center gap-2 text-xs">
+          <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full ${r.ok ? "bg-emerald-500" : "bg-zinc-700"}`}>
+            {r.ok ? <Check className="h-2.5 w-2.5 stroke-[3] text-zinc-950" /> : <X className="h-2.5 w-2.5 stroke-[3] text-zinc-400" />}
+          </span>
+          <span className={`flex min-w-0 flex-1 items-center gap-1 ${r.ok ? "text-zinc-200" : "text-zinc-500"}`}>
+            {r.icon}
+            <span className="truncate">
+              {r.label}
+              {r.real && <span className="text-zinc-600"> · réel : {r.real}</span>}
+            </span>
+          </span>
+          <span className={`flex-shrink-0 font-bold tabular-nums ${r.ok ? "text-emerald-400" : "text-zinc-600"}`}>
+            {r.ok ? `+${r.pts}` : "0"}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

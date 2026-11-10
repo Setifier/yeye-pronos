@@ -94,8 +94,17 @@ npm run db:diagnose-bracket      # Diagnostic données bracket
 - Pensée « jeu mobile », même données : écrans mobiles en `md:hidden`, version ordinateur en `hidden md:block`
   (ne jamais changer l'affichage ordinateur en touchant au mobile).
 - `src/components/mobile/*` (barre du haut + menu, accueil, bande des nuits, `useHud` ← `/api/me/hud`),
-  onglets `src/components/layout/mobile-tab-bar.tsx` (bouton central « Parier » = paris manquants de la nuit),
-  carte compacte `MobileGameCard` dans `game-bet-card.tsx`.
+  onglets `src/components/layout/mobile-tab-bar.tsx` (Accueil · Matchs · « Parier » · Classement · Pronos ; ne pas
+  y mettre les stats NBA), carte compacte `MobileGameCard` dans `game-bet-card.tsx` (détail des bonus d'un match terminé).
+- Stats NBA sur mobile : bouton du menu → `/nba` (tout le contenu NBA). Sous-menus qui défilent : `justify-start`.
+
+## Joueurs de l'app
+
+- Fiche `/joueur/[id]` (`src/lib/public-profile.ts`) : Pronos, Ajouter en ami / Ami ✓, Comparer. Un toucher sur un
+  joueur (classement, amis…) l'ouvre.
+- Pronos des autres : `/joueur/[id]/pronos` (`src/lib/player-bets.ts`), nuit par nuit à côté des miens, bonus compris.
+  **Jamais un match pas encore joué** (FINAL + traité, pronos notés).
+- Pas de « compétitions » pendant la bêta (pas en place) : ne rien afficher qui en parle.
 - `savePrediction` émet `yeye:prediction-saved` : les listes de matchs et les compteurs suivent partout.
 - Barre du haut mobile = 4rem, comme l'ordinateur : les sous-menus collants restent en `top-16`.
 

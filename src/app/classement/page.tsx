@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Crown, Loader2, Medal, Trophy, Users } from "lucide-react";
 import { getCurrentSeason, getSeasonLabel } from "@/types/season";
 
@@ -108,9 +109,10 @@ export default function ClassementPage() {
               </div>
               <ol className="divide-y divide-zinc-800/80">
                 {list.map((e) => (
-                  <li
-                    key={e.id}
-                    className={`grid grid-cols-[2.5rem_1fr_auto] items-center gap-2 px-4 py-3 sm:grid-cols-[3rem_1fr_7rem_5rem_5rem] ${
+                  // Toucher un joueur → sa fiche (ses pronos, ajouter en ami)
+                  <li key={e.id}><Link
+                    href={profileHref(e)}
+                    className={`grid grid-cols-[2.5rem_1fr_auto] items-center gap-2 px-4 py-3 transition-colors hover:bg-zinc-800/50 active:bg-zinc-800/70 sm:grid-cols-[3rem_1fr_7rem_5rem_5rem] ${
                       e.isCurrentUser ? "bg-[#5096ff]/10" : ""
                     }`}
                   >
@@ -137,7 +139,7 @@ export default function ClassementPage() {
                       <span className="block text-base font-bold tabular-nums text-white">{e.totalPoints}</span>
                       {e.specialPoints > 0 && <span className="block text-[10px] text-zinc-500">dont {e.specialPoints} saison</span>}
                     </span>
-                  </li>
+                  </Link></li>
                 ))}
               </ol>
             </div>
@@ -167,12 +169,20 @@ function PodiumCard({ entry, tall }: { entry: LeaderboardEntry; tall: boolean })
     entry.rank === 2 ? { ring: "border-zinc-400/30 from-zinc-400/10", icon: <Medal className="h-4 w-4 text-zinc-300" /> } :
                        { ring: "border-orange-500/30 from-orange-500/10", icon: <Medal className="h-4 w-4 text-orange-400" /> };
   return (
-    <div className={`flex flex-col items-center rounded-2xl border bg-gradient-to-b to-transparent px-2 text-center ${style.ring} ${tall ? "pb-5 pt-6" : "pb-4 pt-4"} ${entry.isCurrentUser ? "ring-2 ring-[#5096ff]" : ""}`}>
+    <Link
+      href={profileHref(entry)}
+      className={`flex flex-col items-center rounded-2xl border bg-gradient-to-b to-transparent px-2 text-center transition-transform active:scale-95 ${style.ring} ${tall ? "pb-5 pt-6" : "pb-4 pt-4"} ${entry.isCurrentUser ? "ring-2 ring-[#5096ff]" : ""}`}
+    >
       <span className="mb-2 flex items-center gap-1 text-xs font-bold text-zinc-300">{style.icon}{entry.rank}</span>
       <Avatar name={entry.name} image={entry.image} size={tall ? 64 : 48} />
       <p className="mt-2 w-full truncate text-sm font-semibold text-white">{entry.name}</p>
       <p className="text-lg font-black tabular-nums text-[#dcff50]">{entry.totalPoints}</p>
       <p className="text-[11px] text-zinc-500">{entry.winRate}% réussite</p>
-    </div>
+    </Link>
   );
+}
+
+/** Un toucher sur un joueur ouvre sa fiche (ses pronos, ajouter en ami) ; sur soi-même, son profil. */
+function profileHref(e: LeaderboardEntry): string {
+  return e.isCurrentUser ? "/profile" : `/joueur/${e.id}`;
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Users, Trophy, TrendingUp, HeartPulse, Award, Crown } from "lucide-react";
+import { NbaHubLink } from "./nba-hub-link";
 
 const LINKS = [
   { href: "/standings",           label: "Classement NBA", icon: Trophy,     exact: true },
@@ -37,7 +38,8 @@ export function StatsNavbar() {
   return (
     <div className="sticky top-16 z-20 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div ref={scrollerRef} className="relative flex h-12 items-center justify-start gap-1 overflow-x-auto lg:justify-center">
+        <div ref={scrollerRef} className="relative flex h-12 items-center justify-start gap-1 overflow-x-auto [scrollbar-width:none] lg:justify-center">
+          <NbaHubLink />
           {LINKS.map(({ href, label, icon: Icon, exact }) => {
             const active = isActive(href, exact);
             return (

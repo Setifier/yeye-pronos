@@ -53,14 +53,14 @@ export function FriendsList({
           Aucun ami pour le moment
         </p>
         <p className="text-zinc-600 text-sm text-center">
-          Utilisez l&apos;onglet &quot;Rechercher&quot; pour trouver des amis
+          Utilise l&apos;onglet « Rechercher », ou touche un joueur dans le classement puis « Ajouter en ami »
         </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-4 lg:grid-cols-3">
       {friends.map((friend) => (
         <FriendCard
           key={friend.id}

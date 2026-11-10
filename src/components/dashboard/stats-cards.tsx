@@ -1,25 +1,29 @@
 "use client";
 
-import { CheckCircle, FileText, Percent, Award, Trophy, Crown, Target, Crosshair, Zap } from "lucide-react";
+import { CheckCircle, FileText, Percent, Award, Target, Crosshair, Zap } from "lucide-react";
 import type { UserStats } from "@/lib/dashboard-queries";
 
 interface StatsCardsProps {
   stats: UserStats | null;
 }
 
+/**
+ * Stats d'un joueur (profil, fiche). Sur téléphone : tuiles compactes 3 + 2 par ligne ;
+ * à partir de md : grandes cartes (inchangé).
+ */
 export function StatsCards({ stats }: StatsCardsProps) {
   if (!stats) {
     return <StatsCardsSkeleton />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Section 1: Pronos */}
       <div>
-        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 md:mb-3 md:text-sm">
           Pronos
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-2 md:gap-4">
           <StatCard
             icon={CheckCircle}
             label="Pronos Réussis"
@@ -38,7 +42,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
           />
           <StatCard
             icon={Percent}
-            label="Win Rate"
+            label="Réussite"
             value={`${stats.winRate}%`}
             gradient="from-[#ff5050] to-[#ff5050]/70"
             bgGradient="from-[#ff5050]/10 to-[#ff5050]/5"
@@ -49,10 +53,10 @@ export function StatsCards({ stats }: StatsCardsProps) {
 
       {/* Section 2: Points */}
       <div>
-        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-400 md:mb-3 md:text-sm">
           Points
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-4">
           <StatCard
             icon={Award}
             label="Total Points"
@@ -90,39 +94,6 @@ export function StatsCards({ stats }: StatsCardsProps) {
           />
         </div>
       </div>
-
-      {/* Section 3: Compétitions */}
-      <div>
-        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-          Compétitions
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatCard
-            icon={Trophy}
-            label="Participations"
-            value={stats.competitionsParticipated}
-            gradient="from-purple-500 to-purple-500/70"
-            bgGradient="from-purple-500/10 to-purple-500/5"
-            iconColor="text-purple-500"
-          />
-          <StatCard
-            icon={Crown}
-            label="Victoires"
-            value={stats.competitionsWon}
-            gradient="from-yellow-500 to-yellow-500/70"
-            bgGradient="from-yellow-500/10 to-yellow-500/5"
-            iconColor="text-yellow-500"
-          />
-          <StatCard
-            icon={Percent}
-            label="Ratio Victoires"
-            value={`${stats.competitionsWinRate}%`}
-            gradient="from-amber-500 to-amber-500/70"
-            bgGradient="from-amber-500/10 to-amber-500/5"
-            iconColor="text-amber-500"
-          />
-        </div>
-      </div>
     </div>
   );
 }
@@ -148,36 +119,36 @@ function StatCard({
 }: StatCardProps) {
   return (
     <div
-      className={`group relative overflow-hidden rounded-xl border border-zinc-800 bg-gradient-to-br ${bgGradient} p-6 transition-all hover:scale-105 hover:border-zinc-700`}
+      className={`group relative overflow-hidden rounded-xl border border-zinc-800 bg-gradient-to-br ${bgGradient} p-3 transition-all md:p-6 md:hover:scale-105 md:hover:border-zinc-700`}
     >
       {/* Icon */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between md:mb-4">
         <div
-          className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${bgGradient}`}
+          className={`flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br md:h-12 md:w-12 md:rounded-xl ${bgGradient}`}
         >
-          <Icon className={`h-6 w-6 ${iconColor}`} />
+          <Icon className={`h-4 w-4 md:h-6 md:w-6 ${iconColor}`} />
         </div>
       </div>
 
       {/* Value */}
       <div
-        className={`mb-1 text-3xl font-bold bg-gradient-to-r ${gradient} bg-clip-text text-transparent`}
+        className={`mb-0.5 bg-gradient-to-r bg-clip-text text-xl font-bold text-transparent md:mb-1 md:text-3xl ${gradient}`}
       >
         {value}
       </div>
 
       {/* Subtitle (bonus points) */}
       {subtitle && (
-        <div className={`text-sm font-semibold ${iconColor} opacity-80`}>
+        <div className={`text-xs font-semibold opacity-80 md:text-sm ${iconColor}`}>
           {subtitle}
         </div>
       )}
 
       {/* Label */}
-      <div className="text-sm text-zinc-400">{label}</div>
+      <div className="text-[11px] leading-tight text-zinc-400 md:text-sm">{label}</div>
 
       {/* Hover effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/5 opacity-0 transition-opacity group-hover:opacity-100" />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/0 to-white/5 opacity-0 transition-opacity md:group-hover:opacity-100" />
     </div>
   );
 }
@@ -185,18 +156,18 @@ function StatCard({
 function StatsCardsSkeleton() {
   return (
     <div className="space-y-6">
-      {[1, 2, 3].map((section) => (
+      {[1, 2].map((section) => (
         <div key={section}>
           <div className="mb-3 h-4 w-24 rounded bg-zinc-800 animate-pulse" />
-          <div className={`grid grid-cols-1 ${section === 2 ? "md:grid-cols-4" : "md:grid-cols-3"} gap-4`}>
+          <div className={`grid gap-2 md:gap-4 ${section === 2 ? "grid-cols-2 md:grid-cols-4" : "grid-cols-3"}`}>
             {[...Array(section === 2 ? 4 : 3)].map((_, index) => (
               <div
                 key={index}
-                className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-6 animate-pulse"
+                className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3 animate-pulse md:p-6"
               >
-                <div className="mb-4 h-12 w-12 rounded-xl bg-zinc-800" />
-                <div className="mb-2 h-8 w-20 rounded bg-zinc-800" />
-                <div className="h-4 w-24 rounded bg-zinc-800" />
+                <div className="mb-4 h-8 w-8 rounded-xl bg-zinc-800 md:h-12 md:w-12" />
+                <div className="mb-2 h-6 w-16 rounded bg-zinc-800 md:h-8 md:w-20" />
+                <div className="h-4 w-20 rounded bg-zinc-800 md:w-24" />
               </div>
             ))}
           </div>

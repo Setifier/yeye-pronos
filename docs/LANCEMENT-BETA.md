@@ -56,7 +56,8 @@ Ensuite, chaque `git push` sur `main` redéploie automatiquement.
 | Paris de début de saison | `/pronos/preseason` : classement → bracket → NBA Cup → MVP → DPOY → Rookie, avant le **dimanche 15 nov. 23h59** |
 | Pari d'un match | Accueil → « Faire mes N paris » ; un clic sur une équipe enregistre ; bonus dans la fenêtre |
 | Le lendemain | Points affichés sur la carte et dans « Hier soir », classement mis à jour. No Spoil actif par défaut : bouton « No Spoil » en haut (→ « Scores visibles », mémorisé sur l'appareil) ou « Afficher » sur la dernière nuit |
-| Mobile | Barre du haut (rang, points → Mes pronos, avatar → menu), onglets en bas (dont Stats NBA) ; le bouton central « Parier » ouvre les paris manquants de la nuit ; un toucher sur un logo enregistre le prono |
+| Mobile | Barre du haut (rang, points, avatar → menu avec « Stats NBA »), onglets en bas ; le bouton central « Parier » ouvre les paris manquants de la nuit ; un toucher sur un logo enregistre le prono ; match terminé : détail des bonus |
+| Les autres joueurs | Classement → toucher un joueur → sa fiche : « Pronos » (ses matchs terminés à côté des miens), « Ajouter en ami » → « Ami ✓ » une fois acceptée |
 
 ## 4. Limites connues de la bêta
 

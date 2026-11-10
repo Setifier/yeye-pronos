@@ -1,10 +1,33 @@
 # Changelog
 
+## 2026-11-10 — Pronos des autres joueurs, amis, Stats NBA sur mobile
+
+### Pronos des autres joueurs
+- **Fiche d'un joueur** (`/joueur/[id]`), ouverte d'un toucher depuis le classement (podium et liste), les amis,
+  la recherche ou les demandes : boutons **Pronos**, **Ajouter en ami** (→ « Demande envoyée », « Accepter sa
+  demande » s'il a demandé, **Ami ✓** quand c'est fait) et « Comparer nos stats » entre amis.
+- **Ses pronos nuit par nuit** (`/joueur/[id]/pronos`) : uniquement les matchs terminés, à côté des miens, avec
+  l'équipe, l'écart, le meilleur marqueur, le combo et les points de chacun ; score de la nuit (« Tu gagnes la
+  nuit (+14) »). No Spoil : la nuit d'hier et celle de ce soir restent masquées jusqu'au clic.
+- Fiche et comparaison : stats de la **saison en cours**, rang et points identiques au classement.
+
+### Mobile
+- Matchs terminés : **détail des bonus** sur la carte (vainqueur, écart, marqueur, combo : ✓ / ✗, points, vrai
+  résultat si raté). « Hier soir » de l'accueil : icônes des bonus gagnés.
+- Onglets remis comme avant (Accueil · Matchs · Parier · Classement · Pronos). **Stats NBA** : gros bouton du
+  menu → nouvelle page `/nba` qui regroupe tout le contenu NBA (classement, leaders, joueurs, infirmerie, NBA Cup,
+  playoffs, saisons passées). Les sous-menus NBA commencent par « Tout » sur téléphone.
+- Pages revues sur téléphone : Amis (une ligne par ami, onglets qui tiennent), fiche et profil, comparaison,
+  derniers pronos, Infirmerie, fiche d'un joueur NBA, Paramètres, Archives. Sous-menus NBA Cup et Playoffs : le
+  1er lien (« Bracket ») n'est plus coupé.
+
+### Bêta
+- Plus aucune trace des « compétitions » (pas en place) : stats du profil, comparaison, calcul côté serveur.
+
 ## 2026-11-09 — Stats NBA sur mobile, e-mails moins souvent en spam
 
 ### Mobile
-- Onglet **Stats NBA** de retour en bas (Accueil · Matchs · Parier · Classement · Stats NBA). Mes pronos :
-  pastille des points en haut (surlignée quand on y est) et menu. Le menu gagne « Infirmerie ».
+- Onglet Stats NBA en bas (remplacé le 10/11 par le bouton Stats NBA du menu et la page `/nba`).
 - Sous-menu des stats : le lien actif est amené au milieu de la barre qui défile.
 
 ### E-mails

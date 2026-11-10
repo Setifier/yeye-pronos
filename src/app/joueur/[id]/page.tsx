@@ -1,51 +1,21 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { requireAuth } from "@/lib/auth-helpers";
+import { prisma } from "@/lib/prisma";
+import { getPublicProfile } from "@/lib/public-profile";
 import { JoueurProfileClient } from "./joueur-profile-client";
-import { cookies } from "next/headers";
-import { getAppBaseUrl } from "@/lib/app-url";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-async function getPublicProfile(userId: string) {
-  try {
-    const baseUrl = getAppBaseUrl();
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-      .getAll()
-      .map((cookie) => `${cookie.name}=${cookie.value}`)
-      .join("; ");
-
-    const response = await fetch(
-      `${baseUrl}/api/users/${userId}/public-profile`,
-      {
-        cache: "no-store",
-        headers: {
-          Cookie: cookieHeader,
-        },
-      }
-    );
-
-    if (!response.ok) {
-      console.error("Public profile API error:", response.status, response.statusText);
-      return null;
-    }
-
-    const data = await response.json();
-    return data.profile;
-  } catch (error) {
-    console.error("Error fetching public profile:", error);
-    return null;
-  }
-}
-
+/** Fiche d'un joueur de l'app (depuis le classement, les amis…). Sa propre fiche → /profile. */
 export default async function JoueurPage({ params }: PageProps) {
   const { id } = await params;
-  const profile = await getPublicProfile(id);
+  const session = await requireAuth(`/joueur/${id}`);
+  if (id === session.user.id) redirect("/profile");
 
-  if (!profile) {
-    notFound();
-  }
+  const profile = await getPublicProfile(prisma, id, session.user.id);
+  if (!profile) notFound();
 
   return <JoueurProfileClient profile={profile} />;
 }

@@ -208,16 +208,16 @@ export default function AmisPage() {
   ];
 
   return (
-    <div className="space-y-6 py-8 px-4 max-w-7xl mx-auto">
+    <div className="mx-auto max-w-7xl space-y-4 px-4 py-5 md:space-y-6 md:py-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">Mes Amis</h1>
-        <p className="text-zinc-400 mt-2">
+        <h1 className="text-2xl font-bold text-white md:text-3xl">Mes Amis</h1>
+        <p className="mt-1 text-sm text-zinc-400 md:mt-2 md:text-base">
           Gérez vos amis et trouvez de nouveaux joueurs
         </p>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs (même largeur sur téléphone, icônes à partir de md) */}
       <div className="border-b border-zinc-800">
         <div className="flex gap-1">
           {tabs.map((tab) => {
@@ -229,7 +229,7 @@ export default function AmisPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
-                  flex items-center gap-2 px-4 py-3 font-medium transition-colors relative
+                  relative flex flex-1 items-center justify-center gap-2 px-2 py-3 text-sm font-medium transition-colors md:flex-none md:px-4 md:text-base
                   ${
                     isActive
                       ? "text-[#5096ff]"
@@ -237,7 +237,7 @@ export default function AmisPage() {
                   }
                 `}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="hidden h-4 w-4 md:block" />
                 <span>{tab.label}</span>
                 {tab.count !== null && tab.count > 0 && (
                   <span
@@ -263,7 +263,7 @@ export default function AmisPage() {
       </div>
 
       {/* Tab Content */}
-      <div className="mt-6">
+      <div className="mt-4 md:mt-6">
         {activeTab === "friends" && (
           <FriendsList
             friends={friends}
@@ -331,21 +331,21 @@ export default function AmisPage() {
                     <p className="text-zinc-400">Aucune demande envoyée</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 md:gap-4 lg:grid-cols-3">
                     {sentRequests.map((request) => (
                       <div
                         key={request.id}
-                        className="bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-all"
+                        className="bg-gradient-to-br from-zinc-900 to-zinc-900/50 border border-zinc-800 rounded-xl p-3 md:p-4 hover:border-zinc-700 transition-all"
                       >
-                        <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center gap-3 mb-2 md:mb-3">
                           {request.receiver.image ? (
                             <img
                               src={request.receiver.image}
                               alt={request.receiver.name}
-                              className="w-14 h-14 rounded-full object-cover ring-2 ring-zinc-800"
+                              className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover ring-2 ring-zinc-800"
                             />
                           ) : (
-                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#5096ff] to-[#3b7dd8] flex items-center justify-center text-white font-bold text-lg ring-2 ring-zinc-800">
+                            <div className="h-12 w-12 md:h-14 md:w-14 rounded-full bg-gradient-to-br from-[#5096ff] to-[#3b7dd8] flex items-center justify-center text-white font-bold text-lg ring-2 ring-zinc-800">
                               {request.receiver.name.charAt(0).toUpperCase()}
                             </div>
                           )}

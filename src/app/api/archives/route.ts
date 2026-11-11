@@ -1,36 +1,41 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSeasonRanking } from "@/lib/season-ranking";
 import { getCurrentSeason } from "@/types/season";
+
+export const dynamic = "force-dynamic";
 
 /**
  * GET /api/archives
- * Retourne la liste des saisons archivées (toutes sauf la saison en cours)
+ * Saisons terminées (toutes sauf la saison en cours) : matchs, pronos, joueurs classés et champion.
+ * Le détail des classements d'une saison : /archives/[saison] (← GET /api/classement?season=…).
  */
 export async function GET() {
   try {
     const currentSeason = getCurrentSeason();
 
-    // Récupérer toutes les saisons distinctes
     const allSeasons = await prisma.game.findMany({
-      where: {
-        season: { not: currentSeason },
-      },
+      where: { season: { not: currentSeason } },
       select: { season: true },
       distinct: ["season"],
       orderBy: { season: "desc" },
     });
 
-    // Pour chaque saison archivée, compter les matchs et pronos
     const seasons = await Promise.all(
       allSeasons.map(async ({ season }) => {
-        const [totalGames, totalPredictions] = await Promise.all([
+        const [totalGames, totalPredictions, ranking] = await Promise.all([
           prisma.game.count({ where: { season } }),
-          prisma.prediction.count({
-            where: { game: { season } },
-          }),
+          prisma.prediction.count({ where: { game: { season } } }),
+          getSeasonRanking(prisma, season),
         ]);
-
-        return { season, totalGames, totalPredictions };
+        const first = ranking[0];
+        return {
+          season,
+          totalGames,
+          totalPredictions,
+          players: ranking.length,
+          champion: first ? { name: first.name, image: first.image, points: first.points } : null,
+        };
       })
     );
 

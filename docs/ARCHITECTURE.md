@@ -145,7 +145,7 @@ chaque écran mobile est en `md:hidden`, la version ordinateur en `hidden md:blo
 |---|---|
 | `src/components/mobile/mobile-top-bar.tsx` | Barre du haut (remplace la navigation du site) : logo, rang, points, avatar → menu (gros bouton **Stats NBA** → `/nba`, paris de saison, amis, règles, profil, saisons passées, paramètres, admin, signaler un bug, déconnexion, mentions légales) |
 | `src/components/layout/mobile-tab-bar.tsx` | Onglets Accueil · Matchs · **Parier** · Classement · Pronos. « Parier » ouvre directement la fenêtre de pari avec les paris manquants de la nuit, depuis n'importe quelle page |
-| `src/app/nba/page.tsx` | « Stats NBA » : tout le contenu NBA au même endroit (classement, leaders, joueurs, infirmerie, NBA Cup, playoffs, archives). Sur téléphone, les sous-menus NBA commencent par « Tout » (`nba-hub-link.tsx`) |
+| `src/app/nba/page.tsx` | « Stats NBA » : tout le contenu NBA au même endroit (classement, leaders, joueurs, infirmerie, NBA Cup, playoffs). Sur téléphone, les sous-menus NBA commencent par « Tout » (`nba-hub-link.tsx`) |
 | `src/components/mobile/use-hud.ts` + `GET /api/me/hud` | Points, rang et paris ouverts de la nuit (rechargés à la navigation et après chaque prono ; jamais chargés sur ordinateur) |
 | `src/components/mobile/mobile-home.tsx` | Accueil : nuit en cours (anneau de progression, bouton « Jouer »), matchs, hier soir en une ligne, course au classement |
 | `src/components/mobile/night-picker.tsx` | Page Matchs : bande des nuits + calendrier natif du téléphone |
@@ -173,8 +173,22 @@ pendant la bêta (pas en place : retirées des stats et de la comparaison).
 
 ## Classement des joueurs de l'app
 
-`src/lib/season-ranking.ts` : par saison (défaut : saison en cours, `?season=all` pour toutes),
-points = pronos match + paris de saison, ex æquo au même rang. Utilisé par `/api/classement` et `/api/home`.
+`src/lib/season-ranking.ts` : par saison, points = pronos match + paris de saison, ex æquo au même rang
+(`getSeasonRanking`) ; bonus trouvés par joueur (`getSeasonBonusTotals`, une requête).
+
+Page Classement = **saison en cours seulement**, 5 classements (`src/lib/ranking-boards.ts`, tri côté client,
+affichage `src/components/ranking/ranking-board.tsx`) :
+
+| Onglet | Tri (puis départage) |
+|---|---|
+| Points | points (réussite) |
+| Réussite | % de bons vainqueurs (nombre de bons pronos), 10 pronos terminés minimum, les autres à la suite sans rang |
+| Bons écarts | nombre (points de ces bonus) |
+| Meilleur marqueur | nombre (points de ces bonus : les choix osés rapportent plus) |
+| Combo ultime | nombre (points) |
+
+Saisons passées : `/archives` (une carte par saison, avec le champion) → `/archives/[saison]`, les mêmes
+5 classements. Données : `GET /api/classement?season=2025-26` (sans paramètre : saison en cours).
 
 ## Limites connues
 

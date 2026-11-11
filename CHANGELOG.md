@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-11-11 — Classements de la saison, saisons passées
+
+### Classement
+- Saison en cours seulement (« Saison en cours »), plus de choix de saison ni « Toutes saisons ».
+- **5 classements** : Points · Réussite (10 pronos terminés minimum) · Bons écarts · Meilleur marqueur ·
+  Combo ultime, chacun avec son podium. Toucher un joueur ouvre toujours sa fiche.
+
+### Saisons passées (Archives)
+- Une carte par saison terminée, avec son champion, qui ouvre ses classements (`/archives/[saison]`, mêmes
+  5 onglets). La page existait déjà en lien mais menait à une page introuvable.
+- Lien « Saisons passées » en bas du classement ; retiré de la page Stats NBA (ce n'est pas du contenu NBA).
+
 ## 2026-11-10 — Pronos des autres joueurs, amis, Stats NBA sur mobile
 
 ### Pronos des autres joueurs

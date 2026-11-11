@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  Archive, Award, BarChart2, ChevronRight, Crown, HeartPulse, LayoutGrid, Network, Shield, TrendingUp, Trophy, Users,
+  Award, BarChart2, ChevronRight, Crown, HeartPulse, LayoutGrid, Network, Shield, TrendingUp, Trophy, Users,
   type LucideIcon,
 } from "lucide-react";
 import { getCurrentSeason, getSeasonLabel } from "@/types/season";
@@ -38,7 +38,7 @@ const PLAYOFFS: Entry[] = [
 
 /**
  * « Stats NBA » : tout le contenu NBA de l'app au même endroit (menu mobile → Stats NBA).
- * Saison régulière, NBA Cup, playoffs, saisons passées.
+ * Saison régulière, NBA Cup, playoffs. (Les saisons passées des pronos : /archives, dans le menu.)
  */
 export default function NbaHubPage() {
   const season = getSeasonLabel(getCurrentSeason());
@@ -87,20 +87,6 @@ export default function NbaHubPage() {
         tint="text-yellow-400 bg-yellow-400/15 border-yellow-400/20"
         entries={PLAYOFFS}
       />
-
-      <Link
-        href="/archives"
-        className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 transition-transform active:scale-[0.98]"
-      >
-        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-300">
-          <Archive className="h-5 w-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-bold text-white">Saisons passées</span>
-          <span className="block text-xs text-zinc-400">Les archives des saisons terminées</span>
-        </span>
-        <ChevronRight className="h-5 w-5 flex-shrink-0 text-zinc-600" />
-      </Link>
     </div>
   );
 }

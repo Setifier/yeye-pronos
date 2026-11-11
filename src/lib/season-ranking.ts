@@ -23,7 +23,7 @@ export interface SeasonRankingEntry {
   winRate:       number; // % sur les pronos terminés
 }
 
-/** `season` = "2026-27" ou "all" (toutes saisons). */
+/** `season` = "2026-27" (ou "all" : toutes saisons, plus utilisé par l'interface). */
 export async function getSeasonRanking(
   prisma: PrismaClient,
   season: string | "all"
@@ -95,4 +95,46 @@ export async function getSeasonRanking(
     lastRank = rank;
     return { rank, ...e };
   });
+}
+
+/** Bonus trouvés par un joueur sur une saison (classements Bons écarts, Meilleur marqueur, Combo ultime). */
+export interface SeasonBonusTotals {
+  marginHits:   number;
+  marginPoints: number;
+  scorerHits:   number;
+  scorerPoints: number;
+  comboHits:    number;
+  comboPoints:  number;
+}
+
+export const NO_BONUS: SeasonBonusTotals = {
+  marginHits: 0, marginPoints: 0, scorerHits: 0, scorerPoints: 0, comboHits: 0, comboPoints: 0,
+};
+
+/** Une seule requête : les pronos de la saison qui ont rapporté au moins un bonus. */
+export async function getSeasonBonusTotals(
+  prisma: PrismaClient,
+  season: string
+): Promise<Map<string, SeasonBonusTotals>> {
+  const rows = await prisma.prediction.findMany({
+    where: {
+      game: { season },
+      OR: [
+        { marginBonusPoints: { gt: 0 } },
+        { topScorerBonusPoints: { gt: 0 } },
+        { comboBonusPoints: { gt: 0 } },
+      ],
+    },
+    select: { userId: true, marginBonusPoints: true, topScorerBonusPoints: true, comboBonusPoints: true },
+  });
+
+  const byUser = new Map<string, SeasonBonusTotals>();
+  for (const r of rows) {
+    const t = byUser.get(r.userId) ?? { ...NO_BONUS };
+    if (r.marginBonusPoints > 0)    { t.marginHits += 1; t.marginPoints += r.marginBonusPoints; }
+    if (r.topScorerBonusPoints > 0) { t.scorerHits += 1; t.scorerPoints += r.topScorerBonusPoints; }
+    if (r.comboBonusPoints > 0)     { t.comboHits += 1;  t.comboPoints += r.comboBonusPoints; }
+    byUser.set(r.userId, t);
+  }
+  return byUser;
 }

@@ -187,6 +187,9 @@ affichage `src/components/ranking/ranking-board.tsx`) :
 | Meilleur marqueur | nombre (points de ces bonus : les choix osés rapportent plus) |
 | Combo ultime | nombre (points) |
 
+Un toucher sur une ligne déplie le détail des points (bons vainqueurs = points match − bonus, écarts, marqueurs,
+combos, paris de début de saison), avec les liens « Ses pronos » et « Sa fiche ». Podium : lien direct vers la fiche.
+
 Saisons passées : `/archives` (une carte par saison, avec le champion) → `/archives/[saison]`, les mêmes
 5 classements. Données : `GET /api/classement?season=2025-26` (sans paramètre : saison en cours).
 

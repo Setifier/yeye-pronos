@@ -5,7 +5,10 @@
 ### Classement
 - Saison en cours seulement (« Saison en cours »), plus de choix de saison ni « Toutes saisons ».
 - **5 classements** : Points · Réussite (10 pronos terminés minimum) · Bons écarts · Meilleur marqueur ·
-  Combo ultime, chacun avec son podium. Toucher un joueur ouvre toujours sa fiche.
+  Combo ultime, chacun avec son podium (un toucher sur le podium ouvre la fiche).
+- Toucher une ligne déplie **le détail de ses points** : bons vainqueurs, bons écarts, meilleurs marqueurs,
+  combos ultimes, paris de début de saison (« à venir » tant qu'ils ne sont pas notés), total ; boutons
+  « Ses pronos » et « Sa fiche ». Plus de « dont X saison » sous les points.
 
 ### Saisons passées (Archives)
 - Une carte par saison terminée, avec son champion, qui ouvre ses classements (`/archives/[saison]`, mêmes

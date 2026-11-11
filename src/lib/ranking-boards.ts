@@ -30,7 +30,7 @@ export interface BoardPlayer {
 export const MIN_FINISHED_FOR_RATE = 10;
 
 export const BOARDS: { key: BoardKey; label: string; hint: string }[] = [
-  { key: "points",   label: "Points",           hint: "Pronos des matchs + paris de saison" },
+  { key: "points",   label: "Points",           hint: "Touche un joueur pour voir d'où viennent ses points" },
   { key: "reussite", label: "Réussite",         hint: `Part de bons vainqueurs · ${MIN_FINISHED_FOR_RATE} pronos terminés minimum` },
   { key: "ecarts",   label: "Bons écarts",      hint: "Nombre de bons écarts trouvés" },
   { key: "marqueur", label: "Meilleur marqueur", hint: "Nombre de meilleurs marqueurs trouvés" },
@@ -44,7 +44,7 @@ export interface BoardRow {
   /** Valeur principale affichée (« 1 240 », « 68 % », « 12 ») */
   value: string;
   unit: string;
-  /** Détail sous la valeur (« dont 150 saison », « 34/50 », « +120 pts ») */
+  /** Détail sous la valeur (« 34/50 », « +120 pts ») */
   sub: string | null;
   /** Rien sur ce tableau (0 bon écart…) : ligne atténuée */
   empty: boolean;
@@ -66,7 +66,8 @@ function score(p: BoardPlayer, key: BoardKey): [number, number] {
 function display(p: BoardPlayer, key: BoardKey): Pick<BoardRow, "value" | "unit" | "sub"> {
   switch (key) {
     case "points":
-      return { value: fmt(p.points), unit: "pts", sub: p.specialPoints > 0 ? `dont ${fmt(p.specialPoints)} saison` : null };
+      // Le détail (vainqueurs, écarts, marqueurs, combos, paris de saison) s'affiche au toucher de la ligne
+      return { value: fmt(p.points), unit: "pts", sub: null };
     case "reussite":
       return { value: `${p.winRate}`, unit: "%", sub: `${p.won}/${p.won + p.lost}` };
     case "ecarts":

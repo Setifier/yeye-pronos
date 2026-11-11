@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Archive, ArrowLeft, ChevronRight, Crown, Loader2, Medal, Percent, Star, Target, Trophy, Users, Zap, type LucideIcon } from "lucide-react";
+import {
+  Archive, ArrowLeft, ChevronDown, ChevronRight, ClipboardList, Crown, Loader2, Medal, Percent, Star, Target, Trophy, User,
+  Users, Zap, type LucideIcon,
+} from "lucide-react";
 import { Avatar } from "@/components/mobile/ui";
 import { BOARDS, buildBoard, type BoardKey, type BoardPlayer, type BoardRow } from "@/lib/ranking-boards";
 import { getSeasonLabel } from "@/types/season";
@@ -35,6 +38,8 @@ export function RankingBoard({ season }: { season?: string }) {
   const [players, setPlayers] = useState<BoardPlayer[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [board, setBoard] = useState<BoardKey>("points");
+  // Ligne dépliée : détail des points du joueur
+  const [openId, setOpenId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -135,31 +140,13 @@ export function RankingBoard({ season }: { season?: string }) {
 
             <ol className="divide-y divide-zinc-800/80 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60">
               {rows.map((r) => (
-                // Toucher un joueur → sa fiche (ses pronos, ajouter en ami)
-                <li key={r.player.id}>
-                  <Link
-                    href={profileHref(r.player)}
-                    className={`grid grid-cols-[2.5rem_1fr_auto] items-center gap-2 px-4 py-3 transition-colors hover:bg-zinc-800/50 active:bg-zinc-800/70 sm:grid-cols-[3rem_1fr_auto] ${
-                      r.player.isCurrentUser ? "bg-[#5096ff]/10" : ""
-                    } ${r.empty ? "opacity-60" : ""}`}
-                  >
-                    <span className={`text-sm font-bold ${rankColor(r.rank)}`}>{r.rank ?? "–"}</span>
-                    <span className="flex min-w-0 items-center gap-3">
-                      <Avatar name={r.player.name} image={r.player.image} size={36} />
-                      <span className="block truncate text-sm font-medium text-white">
-                        {r.player.name}
-                        {r.player.isCurrentUser && <span className="ml-1.5 text-xs text-[#5096ff]">(toi)</span>}
-                      </span>
-                    </span>
-                    <span className="text-right">
-                      <span className="block text-base font-bold tabular-nums text-white">
-                        {r.value}
-                        {r.unit && <span className="ml-1 text-[11px] font-semibold text-zinc-500">{r.unit}</span>}
-                      </span>
-                      {r.sub && <span className="block text-[10px] text-zinc-500">{r.sub}</span>}
-                    </span>
-                  </Link>
-                </li>
+                <RankRow
+                  key={r.player.id}
+                  row={r}
+                  open={openId === r.player.id}
+                  onToggle={() => setOpenId((id) => (id === r.player.id ? null : r.player.id))}
+                  archived={archived}
+                />
               ))}
             </ol>
           </>
@@ -185,6 +172,94 @@ export function RankingBoard({ season }: { season?: string }) {
   );
 }
 
+/** Une ligne du classement : un toucher déplie le détail des points (et les liens vers ses pronos, sa fiche). */
+function RankRow({ row: r, open, onToggle, archived }: { row: BoardRow; open: boolean; onToggle: () => void; archived: boolean }) {
+  const p = r.player;
+  return (
+    <li className={p.isCurrentUser ? "bg-[#5096ff]/10" : ""}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={`grid w-full grid-cols-[2.5rem_1fr_auto_1rem] items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-zinc-800/50 active:bg-zinc-800/70 sm:grid-cols-[3rem_1fr_auto_1rem] ${
+          r.empty && !open ? "opacity-60" : ""
+        }`}
+      >
+        <span className={`text-sm font-bold ${rankColor(r.rank)}`}>{r.rank ?? "–"}</span>
+        <span className="flex min-w-0 items-center gap-3">
+          <Avatar name={p.name} image={p.image} size={36} />
+          <span className="block truncate text-sm font-medium text-white">
+            {p.name}
+            {p.isCurrentUser && <span className="ml-1.5 text-xs text-[#5096ff]">(toi)</span>}
+          </span>
+        </span>
+        <span className="text-right">
+          <span className="block text-base font-bold tabular-nums text-white">
+            {r.value}
+            {r.unit && <span className="ml-1 text-[11px] font-semibold text-zinc-500">{r.unit}</span>}
+          </span>
+          {r.sub && <span className="block text-[10px] text-zinc-500">{r.sub}</span>}
+        </span>
+        <ChevronDown className={`h-4 w-4 text-zinc-600 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && <PointsDetail player={p} archived={archived} />}
+    </li>
+  );
+}
+
+/** D'où viennent ses points : bons vainqueurs, écarts, marqueurs, combos, paris de début de saison. */
+function PointsDetail({ player: p, archived }: { player: BoardPlayer; archived: boolean }) {
+  const base = Math.max(0, p.matchPoints - p.marginPoints - p.scorerPoints - p.comboPoints);
+  const lines: { label: string; count: number | null; points: number | null; icon: LucideIcon; tint: string }[] = [
+    { label: "Bons vainqueurs",          count: p.won,        points: base,           icon: Trophy, tint: "text-emerald-400" },
+    { label: "Bons écarts",              count: p.marginHits, points: p.marginPoints, icon: Target, tint: "text-orange-400" },
+    { label: "Meilleurs marqueurs",      count: p.scorerHits, points: p.scorerPoints, icon: Star,   tint: "text-cyan-400" },
+    { label: "Combos ultimes",           count: p.comboHits,  points: p.comboPoints,  icon: Zap,    tint: "text-purple-300" },
+    // Paris de début de saison : points attribués au fil des résultats (NBA Cup, fin de saison)
+    { label: "Paris de début de saison", count: null,         points: p.specialPoints > 0 || archived ? p.specialPoints : null, icon: Medal, tint: "text-amber-400" },
+  ];
+  const fmt = (n: number) => n.toLocaleString("fr-FR");
+
+  return (
+    <div className="border-t border-zinc-800/60 bg-zinc-950/40 px-4 pb-4 pt-3">
+      <ul className="space-y-1.5">
+        {lines.map(({ label, count, points, icon: Icon, tint }) => (
+          <li key={label} className="flex items-center gap-2 text-sm">
+            <Icon className={`h-3.5 w-3.5 flex-shrink-0 ${tint}`} />
+            <span className="min-w-0 flex-1 truncate text-zinc-300">
+              {label}
+              {count !== null && <span className="text-zinc-500"> · {count}</span>}
+            </span>
+            <span className={`flex-shrink-0 font-bold tabular-nums ${points ? "text-white" : "text-zinc-500"}`}>
+              {points === null ? <span className="text-xs font-medium">à venir</span> : `+${fmt(points)}`}
+            </span>
+          </li>
+        ))}
+        <li className="flex items-center justify-between border-t border-zinc-800/60 pt-1.5 text-sm">
+          <span className="font-semibold text-zinc-400">Total</span>
+          <span className="font-black tabular-nums text-[#dcff50]">{fmt(p.points)} pts</span>
+        </li>
+      </ul>
+
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <Link
+          href={p.isCurrentUser ? "/pronos/matchs" : `/joueur/${p.id}/pronos`}
+          className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-zinc-800 text-xs font-bold text-white hover:bg-zinc-700"
+        >
+          <ClipboardList className="h-4 w-4 text-[#5096ff]" /> {p.isCurrentUser ? "Mes pronos" : "Ses pronos"}
+        </Link>
+        <Link
+          href={profileHref(p)}
+          className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-zinc-800 text-xs font-bold text-white hover:bg-zinc-700"
+        >
+          <User className="h-4 w-4 text-zinc-400" /> {p.isCurrentUser ? "Mon profil" : "Sa fiche"}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 function rankColor(rank: number | null) {
   return rank === 1 ? "text-yellow-400" : rank === 2 ? "text-zinc-300" : rank === 3 ? "text-orange-400" : "text-zinc-500";
 }
@@ -205,9 +280,9 @@ function PodiumCard({ row, tall }: { row: BoardRow; tall: boolean }) {
       <p className="mt-2 w-full truncate text-sm font-semibold text-white">{player.name}</p>
       <p className="text-lg font-black tabular-nums text-[#dcff50]">
         {row.value}
-        {row.unit && <span className="ml-0.5 text-xs font-bold">{row.unit === "pts" || row.unit === "%" ? row.unit : ""}</span>}
+        {row.unit && <span className="ml-0.5 text-xs font-bold">{row.unit}</span>}
       </p>
-      <p className="text-[11px] text-zinc-500">{row.sub ?? row.unit}</p>
+      {row.sub && <p className="text-[11px] text-zinc-500">{row.sub}</p>}
     </Link>
   );
 }

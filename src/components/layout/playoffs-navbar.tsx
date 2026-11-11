@@ -4,23 +4,31 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Network, BarChart2, TrendingUp } from "lucide-react";
 import { NbaHubLink } from "./nba-hub-link";
+import { useArchiveSeason, useSeasonHref } from "@/components/archives/season-context";
 
+/** Sous-menu Playoffs. Dans une saison passée (archives), les liens restent dans cette saison. */
 export function PlayoffsNavbar() {
   const pathname = usePathname();
+  const archive = useArchiveSeason();
+  const href = useSeasonHref();
 
-  const isActive = (path: string) =>
-    path === "/playoffs"
-      ? pathname === "/playoffs"
-      : pathname === path || pathname?.startsWith(path + "/");
+  const isActive = (p: string) => {
+    const path = href(p);
+    return (
+      p === "/playoffs"
+        ? pathname === path
+        : pathname === path || pathname?.startsWith(path + "/")
+    );
+  };
 
   return (
     <div className="border-b border-zinc-800 bg-zinc-900/50 sticky top-16 z-40 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* justify-start sur téléphone : centré + défilant, le 1er lien serait coupé à gauche */}
         <div className="flex h-12 items-center justify-start gap-1 overflow-x-auto [scrollbar-width:none] md:justify-center">
-          <NbaHubLink />
+          {!archive && <NbaHubLink />}
           <Link
-            href="/playoffs"
+            href={href("/playoffs")}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
               isActive("/playoffs")
                 ? "bg-zinc-800 text-white"
@@ -32,7 +40,7 @@ export function PlayoffsNavbar() {
           </Link>
 
           <Link
-            href="/playoffs/equipes"
+            href={href("/playoffs/equipes")}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
               isActive("/playoffs/equipes")
                 ? "bg-zinc-800 text-white"
@@ -44,7 +52,7 @@ export function PlayoffsNavbar() {
           </Link>
 
           <Link
-            href="/playoffs/joueurs"
+            href={href("/playoffs/joueurs")}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
               isActive("/playoffs/joueurs")
                 ? "bg-zinc-800 text-white"

@@ -77,8 +77,11 @@ npm run db:diagnose-bracket      # Diagnostic données bracket
 - « Nuit NBA » (`src/lib/game-night.ts`) : nuit en cours = date US Eastern de maintenant. Les paris manquants
   de l'accueil ne concernent que cette nuit.
 - Classement des joueurs de l'app : par saison (`src/lib/season-ranking.ts`), paris de saison inclus.
-  Page Classement = saison en cours seulement, 5 onglets (Points, Réussite, Bons écarts, Meilleur marqueur, Combo
-  ultime : `src/lib/ranking-boards.ts`). Saisons passées : `/archives/[saison]`, mêmes onglets.
+  Page « Classement général » = saison en cours seulement (badge « Saison 2026-2027 »), 5 onglets (Points,
+  Réussite, Bons écarts, Meilleur marqueur, Combo ultime : `src/lib/ranking-boards.ts`).
+- Saisons passées : menu → Saisons passées → `/archives/[saison]`, navigation en haut (classement général, mes
+  pronos, classement NBA, leaders, NBA Cup, playoffs) = les pages de la saison en cours avec `useViewedSeason()`
+  (`src/components/archives/season-context.tsx`) : une page qui doit y marcher passe `?season=` à son API.
 - Deux sortes de paris : les paris de match et 6 paris de début de saison (classement, bracket, NBA Cup, MVP,
   DPOY, Rookie). Les paris des playoffs (`/pronos/postseason`) sont mis de côté : futurs événements créés depuis l'admin.
 - Paris de début de saison : fermeture au **coup d'envoi du 1er match de saison régulière** (règle officielle).

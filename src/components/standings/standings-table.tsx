@@ -28,7 +28,8 @@ export function StandingsTable({
   title: string;
   accentClass: string;
   showPlayoffLines?: boolean;
-  onTeamClick: (id: string) => void;
+  /** Absent (saisons passées) : pas de fiche équipe, elle montre l'effectif actuel */
+  onTeamClick?: (id: string) => void;
 }) {
   if (teams.length === 0) return null;
 
@@ -60,8 +61,8 @@ export function StandingsTable({
           return (
             <div key={team.id}>
               <div
-                className="grid grid-cols-1 lg:grid-cols-[2.5rem_3fr_repeat(10,1fr)] gap-1 px-4 py-3 hover:bg-zinc-800/40 transition-colors border-b border-zinc-800/40 relative cursor-pointer"
-                onClick={() => onTeamClick(team.id)}
+                className={`grid grid-cols-1 lg:grid-cols-[2.5rem_3fr_repeat(10,1fr)] gap-1 px-4 py-3 hover:bg-zinc-800/40 transition-colors border-b border-zinc-800/40 relative ${onTeamClick ? "cursor-pointer" : ""}`}
+                onClick={onTeamClick ? () => onTeamClick(team.id) : undefined}
               >
                 {team.primaryColor && <div className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ backgroundColor: team.primaryColor }} />}
                 <div className="hidden lg:flex items-center justify-center gap-1">

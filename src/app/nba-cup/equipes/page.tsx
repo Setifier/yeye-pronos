@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { NbaCupNavbar } from "@/components/layout/nba-cup-navbar";
+import { useViewedSeason } from "@/components/archives/season-context";
 import { getTeamLogo } from "@/lib/nba-logos";
 import type { NbaCupTeamStats, NbaCupTeamsResponse } from "@/app/api/nba-cup/equipes/route";
 
@@ -50,6 +51,8 @@ function fmt(v: number, decimals: number, isPercent?: boolean, isSigned?: boolea
 // ─── Page ─────────────────────────────────────────────────────
 
 export default function NbaCupEquipesPage() {
+  // Saison en cours, ou saison passée dans /archives/[saison]/…
+  const viewed = useViewedSeason();
   const [data, setData]       = useState<NbaCupTeamsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>("wins");
@@ -57,11 +60,11 @@ export default function NbaCupEquipesPage() {
   const [conf, setConf]       = useState<"all" | "East" | "West">("all");
 
   useEffect(() => {
-    fetch("/api/nba-cup/equipes")
+    fetch(`/api/nba-cup/equipes?season=${viewed}`)
       .then((r) => r.json())
       .then(setData)
       .finally(() => setLoading(false));
-  }, []);
+  }, [viewed]);
 
   const handleSort = (key: SortKey) => {
     if (key === sortKey) setSortDir((d) => (d === "desc" ? "asc" : "desc"));

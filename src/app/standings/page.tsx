@@ -5,7 +5,8 @@ import { StatsNavbar } from "@/components/layout/stats-navbar";
 import { TeamDetailsModal } from "@/components/matchs/team-details-modal";
 import { StandingsTable } from "@/components/standings/standings-table";
 import type { StandingsTeam } from "@/app/api/standings/route";
-import { getCurrentSeason, getSeasonLabel } from "@/types/season";
+import { getSeasonLabel } from "@/types/season";
+import { useArchiveSeason, useViewedSeason } from "@/components/archives/season-context";
 
 // ─── Division membership ────────────────────────────────────────────────────
 
@@ -28,7 +29,10 @@ const DIVISIONS = {
 export default function StandingsPage() {
   const [east, setEast]     = useState<StandingsTeam[]>([]);
   const [west, setWest]     = useState<StandingsTeam[]>([]);
-  const [season, setSeason] = useState(getCurrentSeason());
+  // Saison en cours, ou saison passée dans /archives/[saison]/standings
+  const viewed  = useViewedSeason();
+  const archive = useArchiveSeason();
+  const [season, setSeason] = useState(viewed);
   const [loading, setLoading]   = useState(true);
   const [viewMode, setViewMode] = useState<"conference" | "division" | "league">("conference");
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
@@ -37,19 +41,22 @@ export default function StandingsPage() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/standings");
+        const res = await fetch(`/api/standings?season=${viewed}`);
         if (!res.ok) throw new Error("fetch failed");
         const data = await res.json();
         setEast(data.EAST ?? []);
         setWest(data.WEST ?? []);
-        setSeason(data.season ?? getCurrentSeason());
+        setSeason(data.season ?? viewed);
       } catch (e) {
         console.error(e);
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [viewed]);
+
+  // Fiche équipe = effectif et blessés actuels : pas dans une saison passée
+  const teamClick = archive ? undefined : setSelectedTeam;
 
   const all = [...east, ...west];
 
@@ -74,7 +81,7 @@ export default function StandingsPage() {
 
   return (
     <>
-      <StatsNavbar />
+      {!archive && <StatsNavbar />}
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="mb-6">
           <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">Classement NBA</h1>
@@ -107,18 +114,18 @@ export default function StandingsPage() {
           <div className="space-y-6">
             {viewMode === "conference" && (
               <>
-                <StandingsTable teams={east} title="Eastern Conference" accentClass="text-blue-400" showPlayoffLines onTeamClick={setSelectedTeam} />
-                <StandingsTable teams={west} title="Western Conference" accentClass="text-red-400" showPlayoffLines onTeamClick={setSelectedTeam} />
+                <StandingsTable teams={east} title="Eastern Conference" accentClass="text-blue-400" showPlayoffLines onTeamClick={teamClick} />
+                <StandingsTable teams={west} title="Western Conference" accentClass="text-red-400" showPlayoffLines onTeamClick={teamClick} />
               </>
             )}
             {viewMode === "division" && (
               <>
-                {DIVISIONS.EAST.map((div) => <StandingsTable key={div} teams={divisionTeams(div)} title={`${div} Division`} accentClass="text-blue-400" onTeamClick={setSelectedTeam} />)}
-                {DIVISIONS.WEST.map((div) => <StandingsTable key={div} teams={divisionTeams(div)} title={`${div} Division`} accentClass="text-red-400" onTeamClick={setSelectedTeam} />)}
+                {DIVISIONS.EAST.map((div) => <StandingsTable key={div} teams={divisionTeams(div)} title={`${div} Division`} accentClass="text-blue-400" onTeamClick={teamClick} />)}
+                {DIVISIONS.WEST.map((div) => <StandingsTable key={div} teams={divisionTeams(div)} title={`${div} Division`} accentClass="text-red-400" onTeamClick={teamClick} />)}
               </>
             )}
             {viewMode === "league" && (
-              <StandingsTable teams={leagueTeams} title="Classement général" accentClass="text-purple-400" onTeamClick={setSelectedTeam} />
+              <StandingsTable teams={leagueTeams} title="Classement général" accentClass="text-purple-400" onTeamClick={teamClick} />
             )}
           </div>
         )}

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { getTeamLogo } from "@/lib/nba-logos";
 import { NbaCupNavbar } from "@/components/layout/nba-cup-navbar";
+import { useViewedSeason } from "@/components/archives/season-context";
 import type { GroupData, TeamStanding, NbaCupApiResponse } from "@/app/api/nba-cup/route";
 
 // ─── Qual badge ───────────────────────────────────────────────────────────────
@@ -117,16 +118,18 @@ function GroupCard({ group }: { group: GroupData }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function NbaCupGroupesPage() {
+  // Saison en cours, ou saison passée dans /archives/[saison]/…
+  const viewed = useViewedSeason();
   const [data,    setData]    = useState<NbaCupApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/nba-cup")
+    fetch(`/api/nba-cup?season=${viewed}`)
       .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() as Promise<NbaCupApiResponse>; })
       .then((d) => { setData(d); setLoading(false); })
       .catch((e: Error) => { setError(e.message); setLoading(false); });
-  }, []);
+  }, [viewed]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">

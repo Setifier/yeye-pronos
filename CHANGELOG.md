@@ -2,18 +2,23 @@
 
 ## 2026-11-11 — Classements de la saison, saisons passées
 
-### Classement
-- Saison en cours seulement (« Saison en cours »), plus de choix de saison ni « Toutes saisons ».
+### Classement général
+- Page renommée « Classement général », saison en cours seulement (badge « Saison 2026-2027 »), plus de choix
+  de saison ni « Toutes saisons ».
 - **5 classements** : Points · Réussite (10 pronos terminés minimum) · Bons écarts · Meilleur marqueur ·
   Combo ultime, chacun avec son podium (un toucher sur le podium ouvre la fiche).
 - Toucher une ligne déplie **le détail de ses points** : bons vainqueurs, bons écarts, meilleurs marqueurs,
   combos ultimes, paris de début de saison (« à venir » tant qu'ils ne sont pas notés), total ; boutons
   « Ses pronos » et « Sa fiche ». Plus de « dont X saison » sous les points.
 
-### Saisons passées (Archives)
-- Une carte par saison terminée, avec son champion, qui ouvre ses classements (`/archives/[saison]`, mêmes
-  5 onglets). La page existait déjà en lien mais menait à une page introuvable.
-- Lien « Saisons passées » en bas du classement ; retiré de la page Stats NBA (ce n'est pas du contenu NBA).
+### Saisons passées (menu → Saisons passées)
+- Une carte par saison terminée, avec son champion. Elle ouvre la saison (`/archives/[saison]`) avec, en haut,
+  sa navigation : **Classement général** (mêmes 5 onglets) · **Mes pronos** (nuit par nuit, bonus compris ;
+  ceux des autres depuis le classement) · **Classement NBA** · **Leaders** · **NBA Cup** (bracket, groupes,
+  wild card, stats équipes et joueurs) · **Playoffs** (bracket, stats équipes et joueurs). Ce sont les pages
+  de la saison en cours, avec les données de la saison choisie. Avant, le lien menait à une page introuvable.
+- Pas de fiche équipe dans le classement NBA d'une saison passée (elle montre l'effectif actuel).
+- Retiré de la page Stats NBA (ce n'est pas du contenu NBA).
 
 ## 2026-11-10 — Pronos des autres joueurs, amis, Stats NBA sur mobile
 

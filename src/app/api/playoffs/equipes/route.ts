@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/types/season";
 
@@ -30,9 +30,10 @@ export interface PlayoffTeamsResponse {
   teams:     PlayoffTeamStats[];
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const season = getCurrentSeason();
+    // ?season=2025-26 : saisons passées (Archives) ; par défaut la saison en cours
+    const season = request.nextUrl.searchParams.get("season") ?? getCurrentSeason();
 
     // Toutes les équipes présentes en playoffs
     const teams = await prisma.team.findMany({

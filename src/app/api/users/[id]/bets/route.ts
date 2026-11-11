@@ -7,7 +7,8 @@ import { getCurrentSeason } from "@/types/season";
 
 /**
  * Pronos TERMINÉS d'un joueur pour une nuit, à côté des miens (bonus compris).
- * GET /api/users/[id]/bets?night=YYYY-MM-DD — sans `night` : sa dernière nuit avec des pronos notés.
+ * GET /api/users/[id]/bets?season=2025-26&night=YYYY-MM-DD — sans `season` : saison en cours ;
+ * sans `night` : sa dernière nuit avec des pronos notés.
  * Connexion requise. Jamais de prono sur un match pas encore joué.
  */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -22,7 +23,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const target = await prisma.user.findUnique({ where: { id: targetId }, select: { id: true, name: true, image: true } });
     if (!target) return NextResponse.json({ error: "Joueur introuvable" }, { status: 404 });
 
-    const season = getCurrentSeason();
+    const asked = request.nextUrl.searchParams.get("season");
+    const season = asked && /^\d{4}-\d{2}$/.test(asked) ? asked : getCurrentSeason();
     const [nights, ranking] = await Promise.all([
       getPlayerNights(prisma, targetId, viewerId, season),
       getSeasonRanking(prisma, season),

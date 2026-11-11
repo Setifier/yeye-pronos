@@ -14,7 +14,10 @@ interface ArchivedSeason {
   champion: { name: string; image: string | null; points: number } | null;
 }
 
-/** Saisons passées : une carte par saison terminée (champion), qui ouvre ses classements (/archives/[saison]). */
+/**
+ * Saisons passées : une carte par saison terminée (champion). Elle ouvre /archives/[saison], avec en haut la
+ * navigation de cette saison (classement général, mes pronos, classement NBA, leaders, NBA Cup, playoffs).
+ */
 export default function ArchivesPage() {
   const [seasons, setSeasons] = useState<ArchivedSeason[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +44,7 @@ export default function ArchivesPage() {
             </h1>
           </div>
           <p className="text-center text-zinc-400 text-sm md:text-lg">
-            Les classements des pronos de chaque saison terminée
+            Chaque saison terminée : classement général, tes pronos, stats NBA, NBA Cup et playoffs
           </p>
         </div>
       </div>

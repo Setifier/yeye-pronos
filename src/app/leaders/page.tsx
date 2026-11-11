@@ -7,7 +7,7 @@ import { TrendingUp, Users, ChevronLeft, ChevronRight, Info, ArrowUp, ArrowDown 
 import { StatsNavbar } from "@/components/layout/stats-navbar";
 import type { LeaderPlayer, LeadersResponse } from "@/app/api/leaders/route";
 import { positionLabel } from "@/lib/position";
-import { getCurrentSeason } from "@/types/season";
+import { useArchiveSeason, useViewedSeason } from "@/components/archives/season-context";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -717,9 +717,11 @@ function Pagination({ page, totalPages, onPage }: {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-const SEASON = getCurrentSeason();
+// Saison affichée : en cours, ou saison passée dans /archives/[saison]/… (voir useViewedSeason)
 
 export default function LeadersPage() {
+  const SEASON = useViewedSeason();
+  const archive = useArchiveSeason();
   const [activeStat, setActiveStat] = useState<string>("points");
   const [sortDir, setSortDir]       = useState<"desc" | "asc">("desc");
   const [page, setPage]             = useState(1);
@@ -744,7 +746,7 @@ export default function LeadersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [SEASON]);
 
   useEffect(() => {
     fetchLeaders(activeStat, page, sortDir);
@@ -790,7 +792,7 @@ export default function LeadersPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <StatsNavbar />
+      {!archive && <StatsNavbar />}
 
       {/* Page header */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-4">

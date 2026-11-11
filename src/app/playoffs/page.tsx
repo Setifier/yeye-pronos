@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Loader2, Swords } from "lucide-react";
 import { PlayoffsNavbar } from "@/components/layout/playoffs-navbar";
+import { useViewedSeason } from "@/components/archives/season-context";
 import {
   Series, PlayInData,
   DesktopBracket, MobileBracket, SeriesModal, PlayInSection, SpoilGate,
@@ -10,6 +11,8 @@ import {
 import { Eye, EyeOff } from "lucide-react";
 
 export default function PlayoffsPage() {
+  // Saison en cours, ou saison passée dans /archives/[saison]/…
+  const viewed = useViewedSeason();
   const [bracket, setBracket]   = useState<Series[]>([]);
   const [season, setSeason]     = useState<string>("");
   const [playIn, setPlayIn]     = useState<PlayInData | null>(null);
@@ -23,8 +26,8 @@ export default function PlayoffsPage() {
       try {
         setLoading(true);
         const [bracketRes, playInRes] = await Promise.all([
-          fetch("/api/playoffs/bracket"),
-          fetch("/api/playoffs/playin"),
+          fetch(`/api/playoffs/bracket?season=${viewed}`),
+          fetch(`/api/playoffs/playin?season=${viewed}`),
         ]);
         if (!bracketRes.ok) throw new Error("Failed to fetch bracket");
         const bracketData = await bracketRes.json();
@@ -41,7 +44,7 @@ export default function PlayoffsPage() {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [viewed]);
 
   const handleToggleNoSpoil = () => {
     setNoSpoil((v) => {

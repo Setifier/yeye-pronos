@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Archive, ArrowLeft, ChevronDown, ChevronRight, ClipboardList, Crown, Loader2, Medal, Percent, Star, Target, Trophy, User,
-  Users, Zap, type LucideIcon,
+  ChevronDown, ClipboardList, Crown, Loader2, Medal, Percent, Star, Target, Trophy, User, Users, Zap, type LucideIcon,
 } from "lucide-react";
 import { Avatar } from "@/components/mobile/ui";
+import { useArchiveSeason, useViewedSeason } from "@/components/archives/season-context";
 import { BOARDS, buildBoard, type BoardKey, type BoardPlayer, type BoardRow } from "@/lib/ranking-boards";
 import { getSeasonLabel } from "@/types/season";
 
@@ -31,10 +31,13 @@ const profileHref = (p: BoardPlayer) => (p.isCurrentUser ? "/profile" : `/joueur
 
 /**
  * Classements des pronos d'une saison : Points · Réussite · Bons écarts · Meilleur marqueur · Combo ultime.
- * Page Classement : saison en cours. Archives : une saison passée (`season`).
+ * Page Classement : saison en cours. Dans /archives/[saison] : la saison passée (ArchiveSeasonProvider).
  */
-export function RankingBoard({ season }: { season?: string }) {
-  const archived = !!season;
+export function RankingBoard() {
+  // Dans /archives/[saison] : la saison passée (sa barre de navigation affiche déjà la saison)
+  const archive = useArchiveSeason();
+  const archived = !!archive;
+  const season = useViewedSeason();
   const [players, setPlayers] = useState<BoardPlayer[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [board, setBoard] = useState<BoardKey>("points");
@@ -43,7 +46,7 @@ export function RankingBoard({ season }: { season?: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/classement${season ? `?season=${season}` : ""}`)
+    fetch(`/api/classement?season=${season}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d: { players: BoardPlayer[] }) => { if (!cancelled) setPlayers(d.players); })
       .catch(() => { if (!cancelled) setFailed(true); });
@@ -59,16 +62,13 @@ export function RankingBoard({ season }: { season?: string }) {
     <div className="min-h-screen bg-zinc-950 pb-10">
       <div className="border-b border-zinc-800 bg-gradient-to-b from-zinc-900 to-zinc-950">
         <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 md:py-6">
-          {archived && (
-            <Link href="/archives" className="mb-2 inline-flex items-center gap-1.5 text-sm text-zinc-400 hover:text-white">
-              <ArrowLeft className="h-4 w-4" /> Saisons passées
-            </Link>
-          )}
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-black tracking-tight text-white">Classement</h1>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${archived ? "bg-zinc-800 text-zinc-300" : "bg-[#5096ff]/15 text-[#5096ff]"}`}>
-              {season ? `Saison ${getSeasonLabel(season)}` : "Saison en cours"}
-            </span>
+            <h1 className="text-2xl font-black tracking-tight text-white">Classement général</h1>
+            {!archived && (
+              <span className="rounded-full bg-[#5096ff]/15 px-2.5 py-0.5 text-xs font-bold text-[#5096ff]">
+                Saison {getSeasonLabel(season)}
+              </span>
+            )}
           </div>
 
           {/* Les 5 classements */}
@@ -145,35 +145,20 @@ export function RankingBoard({ season }: { season?: string }) {
                   row={r}
                   open={openId === r.player.id}
                   onToggle={() => setOpenId((id) => (id === r.player.id ? null : r.player.id))}
-                  archived={archived}
+                  archive={archive}
                 />
               ))}
             </ol>
           </>
         )}
 
-        {!archived && (
-          <Link
-            href="/archives"
-            className="mt-5 flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 transition-colors hover:bg-zinc-900"
-          >
-            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-300">
-              <Archive className="h-5 w-5" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-bold text-white">Saisons passées</span>
-              <span className="block text-xs text-zinc-400">Les classements des saisons terminées</span>
-            </span>
-            <ChevronRight className="h-5 w-5 flex-shrink-0 text-zinc-600" />
-          </Link>
-        )}
       </div>
     </div>
   );
 }
 
 /** Une ligne du classement : un toucher déplie le détail des points (et les liens vers ses pronos, sa fiche). */
-function RankRow({ row: r, open, onToggle, archived }: { row: BoardRow; open: boolean; onToggle: () => void; archived: boolean }) {
+function RankRow({ row: r, open, onToggle, archive }: { row: BoardRow; open: boolean; onToggle: () => void; archive: string | null }) {
   const p = r.player;
   return (
     <li className={p.isCurrentUser ? "bg-[#5096ff]/10" : ""}>
@@ -203,13 +188,18 @@ function RankRow({ row: r, open, onToggle, archived }: { row: BoardRow; open: bo
         <ChevronDown className={`h-4 w-4 text-zinc-600 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && <PointsDetail player={p} archived={archived} />}
+      {open && <PointsDetail player={p} archive={archive} />}
     </li>
   );
 }
 
 /** D'où viennent ses points : bons vainqueurs, écarts, marqueurs, combos, paris de début de saison. */
-function PointsDetail({ player: p, archived }: { player: BoardPlayer; archived: boolean }) {
+function PointsDetail({ player: p, archive }: { player: BoardPlayer; archive: string | null }) {
+  const archived = !!archive;
+  // Ses pronos de la saison affichée (saison passée : dans les archives)
+  const pronosHref = archive
+    ? `/archives/${archive}/pronos${p.isCurrentUser ? "" : `/${p.id}`}`
+    : p.isCurrentUser ? "/pronos/matchs" : `/joueur/${p.id}/pronos`;
   const base = Math.max(0, p.matchPoints - p.marginPoints - p.scorerPoints - p.comboPoints);
   const lines: { label: string; count: number | null; points: number | null; icon: LucideIcon; tint: string }[] = [
     { label: "Bons vainqueurs",          count: p.won,        points: base,           icon: Trophy, tint: "text-emerald-400" },
@@ -244,7 +234,7 @@ function PointsDetail({ player: p, archived }: { player: BoardPlayer; archived: 
 
       <div className="mt-3 grid grid-cols-2 gap-2">
         <Link
-          href={p.isCurrentUser ? "/pronos/matchs" : `/joueur/${p.id}/pronos`}
+          href={pronosHref}
           className="flex h-10 items-center justify-center gap-1.5 rounded-xl bg-zinc-800 text-xs font-bold text-white hover:bg-zinc-700"
         >
           <ClipboardList className="h-4 w-4 text-[#5096ff]" /> {p.isCurrentUser ? "Mes pronos" : "Ses pronos"}

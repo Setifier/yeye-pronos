@@ -176,7 +176,7 @@ pendant la bêta (pas en place : retirées des stats et de la comparaison).
 `src/lib/season-ranking.ts` : par saison, points = pronos match + paris de saison, ex æquo au même rang
 (`getSeasonRanking`) ; bonus trouvés par joueur (`getSeasonBonusTotals`, une requête).
 
-Page Classement = **saison en cours seulement**, 5 classements (`src/lib/ranking-boards.ts`, tri côté client,
+Page « Classement général » = **saison en cours seulement** (badge « Saison 2026-2027 »), 5 classements (`src/lib/ranking-boards.ts`, tri côté client,
 affichage `src/components/ranking/ranking-board.tsx`) :
 
 | Onglet | Tri (puis départage) |
@@ -190,8 +190,25 @@ affichage `src/components/ranking/ranking-board.tsx`) :
 Un toucher sur une ligne déplie le détail des points (bons vainqueurs = points match − bonus, écarts, marqueurs,
 combos, paris de début de saison), avec les liens « Ses pronos » et « Sa fiche ». Podium : lien direct vers la fiche.
 
-Saisons passées : `/archives` (une carte par saison, avec le champion) → `/archives/[saison]`, les mêmes
-5 classements. Données : `GET /api/classement?season=2025-26` (sans paramètre : saison en cours).
+Données : `GET /api/classement?season=2025-26` (sans paramètre : saison en cours).
+
+## Saisons passées (`/archives`)
+
+`/archives` : une carte par saison terminée (champion) → `/archives/[saison]`. Le `layout.tsx` de la saison
+vérifie le paramètre (la saison en cours renvoie vers `/classement`), affiche la navigation de la saison
+(`src/components/archives/archive-nav.tsx`) et fournit la saison aux pages (`ArchiveSeasonProvider`).
+
+| Archive | Page réutilisée |
+|---|---|
+| `/archives/[saison]` | Classement général (`RankingBoard`) |
+| `/archives/[saison]/pronos` (+ `/[id]`) | Mes pronos / ceux d'un joueur (`PlayerPronosView`) |
+| `/archives/[saison]/standings`, `/leaders` | `src/app/standings`, `src/app/leaders` |
+| `/archives/[saison]/nba-cup/…`, `/playoffs/…` | `src/app/nba-cup/…`, `src/app/playoffs/…` |
+
+Règle : une page qui doit marcher dans les archives lit sa saison avec `useViewedSeason()` (saison en cours hors
+archives), la passe à son API (`?season=`), et ses liens internes passent par `useSeasonHref()`
+(`src/components/archives/season-context.tsx`). Pas de fiche équipe ni de liste des joueurs dans les archives
+(effectifs actuels).
 
 ## Limites connues
 

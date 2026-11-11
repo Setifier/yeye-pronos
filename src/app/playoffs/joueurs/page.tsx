@@ -6,7 +6,7 @@ import Link from "next/link";
 import { TrendingUp, Users, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from "lucide-react";
 import { PlayoffsNavbar } from "@/components/layout/playoffs-navbar";
 import { positionLabel } from "@/lib/position";
-import { getCurrentSeason } from "@/types/season";
+import { useViewedSeason } from "@/components/archives/season-context";
 import type { PlayoffLeaderPlayer, PlayoffLeadersResponse, PlayoffStatKey } from "@/app/api/playoffs/joueurs/route";
 
 // ─── Types locaux ─────────────────────────────────────────────
@@ -223,9 +223,10 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
 
 // ─── Page principale ──────────────────────────────────────────
 
-const SEASON = getCurrentSeason();
+// Saison affichée : en cours, ou saison passée dans /archives/[saison]/… (voir useViewedSeason)
 
 export default function PlayoffJoueursPage() {
+  const SEASON = useViewedSeason();
   const [activeStat, setActiveStat] = useState<PlayoffStatKey>("points");
   const [sortDir, setSortDir]       = useState<"desc" | "asc">("desc");
   const [page, setPage]             = useState(1);
@@ -248,7 +249,7 @@ export default function PlayoffJoueursPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [SEASON]);
 
   useEffect(() => { fetchLeaders(activeStat, page, sortDir); }, [activeStat, page, sortDir, fetchLeaders]);
 

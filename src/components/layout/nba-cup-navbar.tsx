@@ -3,14 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NbaHubLink } from "./nba-hub-link";
+import { useArchiveSeason, useSeasonHref } from "@/components/archives/season-context";
 
+/** Sous-menu NBA Cup. Dans une saison passée (archives), les liens restent dans cette saison. */
 export function NbaCupNavbar() {
   const pathname = usePathname();
+  const archive = useArchiveSeason();
+  const href = useSeasonHref();
 
-  const isActive = (path: string) =>
-    path === "/nba-cup"
-      ? pathname === "/nba-cup"
-      : pathname === path || pathname?.startsWith(path + "/");
+  const isActive = (path: string) => {
+    const full = href(path);
+    return path === "/nba-cup"
+      ? pathname === full
+      : pathname === full || pathname?.startsWith(full + "/");
+  };
 
   const links = [
     { href: "/nba-cup",          label: "Bracket"       },
@@ -25,18 +31,18 @@ export function NbaCupNavbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* justify-start sur téléphone : centré + défilant, le 1er lien serait coupé à gauche */}
         <div className="flex h-12 items-center justify-start gap-1 overflow-x-auto [scrollbar-width:none] md:justify-center">
-          <NbaHubLink />
-          {links.map(({ href, label }) => (
+          {!archive && <NbaHubLink />}
+          {links.map((link) => (
             <Link
-              key={href}
-              href={href}
+              key={link.href}
+              href={href(link.href)}
               className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
-                isActive(href)
+                isActive(link.href)
                   ? "bg-zinc-800 text-white"
                   : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50"
               }`}
             >
-              {label}
+              {link.label}
             </Link>
           ))}
         </div>

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Users, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from "lucide-react";
 import { NbaCupNavbar } from "@/components/layout/nba-cup-navbar";
 import { positionLabel } from "@/lib/position";
-import { getCurrentSeason } from "@/types/season";
+import { useViewedSeason } from "@/components/archives/season-context";
 import type { NbaCupLeaderPlayer, NbaCupLeadersResponse, NbaCupStatKey } from "@/app/api/nba-cup/joueurs/route";
 
 // ─── Types ────────────────────────────────────────────────────
@@ -217,9 +217,10 @@ function Pagination({ page, totalPages, onPage }: { page: number; totalPages: nu
 
 // ─── Page principale ──────────────────────────────────────────
 
-const SEASON = getCurrentSeason();
+// Saison affichée : en cours, ou saison passée dans /archives/[saison]/… (voir useViewedSeason)
 
 export default function NbaCupJoueursPage() {
+  const SEASON = useViewedSeason();
   const [activeStat, setActiveStat] = useState<NbaCupStatKey>("points");
   const [sortDir, setSortDir]       = useState<"desc" | "asc">("desc");
   const [page, setPage]             = useState(1);
@@ -242,7 +243,7 @@ export default function NbaCupJoueursPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [SEASON]);
 
   useEffect(() => { fetchLeaders(activeStat, page, sortDir); }, [activeStat, page, sortDir, fetchLeaders]);
 

@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { TrendingUp, Users, ChevronLeft, ChevronRight, Info, ArrowUp, ArrowDown } from "lucide-react";
+import { TrendingUp, Users, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { StatsNavbar } from "@/components/layout/stats-navbar";
+import { StatTabs } from "@/components/stats/stat-tabs";
 import type { LeaderPlayer, LeadersResponse } from "@/app/api/leaders/route";
 import { positionLabel } from "@/lib/position";
 import { useArchiveSeason, useViewedSeason } from "@/components/archives/season-context";
@@ -807,61 +808,15 @@ export default function LeadersPage() {
         </div>
       </div>
 
-      {/* Stat category tabs — 2 lignes fixes centrées */}
-      <div className="sticky top-[calc(4rem+3rem)] z-30 bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-800">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-1.5 space-y-1">
-            {/* Ligne 1 : Points → FP (indices 0-8) */}
-            <div className="flex justify-center gap-1">
-              {CATEGORIES.slice(0, 11).map((cat) => {
-                const isActive = activeStat === cat.key;
-                return (
-                  <button
-                    key={cat.key}
-                    onClick={() => handleTabChange(cat.key)}
-                    className={`flex-shrink-0 inline-flex items-center gap-0.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                      isActive
-                        ? "bg-orange-500 text-white"
-                        : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-                    }`}
-                  >
-                    {cat.tab}
-                    {isActive && (
-                      sortDir === "desc"
-                        ? <ArrowDown className="h-3 w-3 flex-shrink-0" />
-                        : <ArrowUp   className="h-3 w-3 flex-shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            {/* Ligne 2 : TR → MJ (indices 11-22) */}
-            <div className="flex justify-center gap-1">
-              {CATEGORIES.slice(11).map((cat) => {
-                const isActive = activeStat === cat.key;
-                return (
-                  <button
-                    key={cat.key}
-                    onClick={() => handleTabChange(cat.key)}
-                    className={`flex-shrink-0 inline-flex items-center gap-0.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                      isActive
-                        ? "bg-orange-500 text-white"
-                        : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-                    }`}
-                  >
-                    {cat.tab}
-                    {isActive && (
-                      sortDir === "desc"
-                        ? <ArrowDown className="h-3 w-3 flex-shrink-0" />
-                        : <ArrowUp   className="h-3 w-3 flex-shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Onglets des stats (téléphone : une ligne qui défile ; ordinateur : 2 lignes centrées) */}
+      <StatTabs
+        categories={CATEGORIES}
+        active={activeStat}
+        dir={sortDir}
+        onSelect={handleTabChange}
+        activeClass="bg-orange-500 text-white"
+        stickyTop={archive ? "top-16" : undefined /* saison passée : pas de sous-menu Stats au-dessus */}
+      />
 
       {/* Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6" ref={tableRef}>

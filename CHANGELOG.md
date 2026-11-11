@@ -20,6 +20,11 @@
 - Pas de fiche équipe dans le classement NBA d'une saison passée (elle montre l'effectif actuel).
 - Retiré de la page Stats NBA (ce n'est pas du contenu NBA).
 
+### Mobile
+- Onglets des stats joueurs (Points, PD, REB… sur Leaders, NBA Cup et Playoffs) : une ligne qui défile sur
+  téléphone, l'onglet actif ramené au milieu. Avant, les deux lignes centrées dépassaient l'écran et les onglets
+  des bords étaient coupés et impossibles à toucher. Ordinateur inchangé (`src/components/stats/stat-tabs.tsx`).
+
 ## 2026-11-10 — Pronos des autres joueurs, amis, Stats NBA sur mobile
 
 ### Pronos des autres joueurs

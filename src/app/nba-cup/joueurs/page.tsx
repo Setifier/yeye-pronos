@@ -3,8 +3,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Users, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from "lucide-react";
+import { Users, ChevronLeft, ChevronRight } from "lucide-react";
 import { NbaCupNavbar } from "@/components/layout/nba-cup-navbar";
+import { StatTabs } from "@/components/stats/stat-tabs";
 import { positionLabel } from "@/lib/position";
 import { useViewedSeason } from "@/components/archives/season-context";
 import type { NbaCupLeaderPlayer, NbaCupLeadersResponse, NbaCupStatKey } from "@/app/api/nba-cup/joueurs/route";
@@ -271,20 +272,6 @@ export default function NbaCupJoueursPage() {
       tiedSet.add(i);
   }
 
-  const tabBtn = (cat: StatCategory) => {
-    const isActive = activeStat === cat.key;
-    return (
-      <button key={cat.key} onClick={() => handleTabChange(cat.key)}
-        className={`flex-shrink-0 inline-flex items-center gap-0.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-          isActive ? "bg-amber-500 text-white" : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60"
-        }`}
-      >
-        {cat.tab}
-        {isActive && (sortDir === "desc" ? <ArrowDown className="h-3 w-3 flex-shrink-0" /> : <ArrowUp className="h-3 w-3 flex-shrink-0" />)}
-      </button>
-    );
-  };
-
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <NbaCupNavbar />
@@ -296,15 +283,8 @@ export default function NbaCupJoueursPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="sticky top-[calc(4rem+3rem)] z-30 bg-zinc-950/95 backdrop-blur-sm border-b border-zinc-800">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-1.5 space-y-1">
-            <div className="flex justify-center gap-1">{CATEGORIES.slice(0, 11).map(tabBtn)}</div>
-            <div className="flex justify-center gap-1">{CATEGORIES.slice(11).map(tabBtn)}</div>
-          </div>
-        </div>
-      </div>
+      {/* Onglets des stats (téléphone : une ligne qui défile ; ordinateur : 2 lignes centrées) */}
+      <StatTabs categories={CATEGORIES} active={activeStat} dir={sortDir} onSelect={handleTabChange} activeClass="bg-amber-500 text-white" />
 
       {/* Contenu */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6" ref={tableRef}>

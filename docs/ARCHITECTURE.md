@@ -155,6 +155,8 @@ Le pied de page est masqué sur mobile pour un joueur connecté (ses liens sont 
 Pas d'onglets sur `/admin`, l'onboarding et les formulaires Classement / Bracket des paris de saison (bouton « Enregistrer » en bas).
 Les sous-menus collants restent en `top-16` : la barre du haut mobile fait la même hauteur que celle de l'ordinateur.
 Sous-menus qui défilent sur téléphone : `justify-start` (jamais `justify-center` seul, le 1er lien serait coupé).
+Onglets des stats joueurs (Leaders, NBA Cup, Playoffs) : `src/components/stats/stat-tabs.tsx` (une ligne qui défile
+sur téléphone, deux lignes centrées sur ordinateur).
 
 ## Fiches et pronos des autres joueurs
 

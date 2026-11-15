@@ -3,8 +3,8 @@
 import { useEffect, useRef } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
 
-export interface StatTab {
-  key: string;
+export interface StatTab<K extends string = string> {
+  key: K;
   /** Libellé court de l'onglet (« Points », « PD », « REB »…) */
   tab: string;
 }
@@ -15,7 +15,8 @@ export interface StatTab {
  * plus larges que l'écran, coupées des deux côtés). Ordinateur (md+) : les deux lignes centrées, inchangées.
  * Un 2e toucher sur l'onglet actif inverse le tri (flèche).
  */
-export function StatTabs({
+// Générique : chaque page a son propre type de clés (NbaCupStatKey, PlayoffStatKey…)
+export function StatTabs<K extends string>({
   categories,
   active,
   dir,
@@ -23,10 +24,10 @@ export function StatTabs({
   activeClass,
   stickyTop = "top-[calc(4rem+3rem)]",
 }: {
-  categories: StatTab[];
-  active: string;
+  categories: StatTab<K>[];
+  active: K;
   dir: "desc" | "asc";
-  onSelect: (key: string) => void;
+  onSelect: (key: K) => void;
   /** Couleur de l'onglet actif, ex. « bg-orange-500 text-white » */
   activeClass: string;
   /** Sous la barre du haut (4rem) + le sous-menu (3rem) ; « top-16 » s'il n'y a pas de sous-menu */
@@ -42,7 +43,7 @@ export function StatTabs({
     }
   }, [active]);
 
-  const button = (cat: StatTab) => {
+  const button = (cat: StatTab<K>) => {
     const isActive = active === cat.key;
     return (
       <button

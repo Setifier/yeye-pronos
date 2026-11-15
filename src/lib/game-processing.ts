@@ -145,6 +145,8 @@ export async function processFinalGame(
       actualMargin:              scoreMarginCategory,
       predictedTopScorerId:      p.predictedTopScorerId,
       actualTopScorerId:         topScorer?.playerId ?? null,
+      // Ex æquo : tous les joueurs à égalité comptent comme meilleur marqueur
+      actualTopScorerIds:        topScorer?.tiedPlayerIds ?? [],
       predictedTopScorerAverage: p.predictedTopScorerId ? ppgMap.get(p.predictedTopScorerId)?.ppg ?? 0 : 0,
     });
 
@@ -185,7 +187,7 @@ export async function processFinalGame(
   }
 
   log(
-    `  ✓ ${label}${hasOvertime ? " (OT)" : ""} · top ${topScorer ? `${topScorer.playerName} ${topScorer.points} pts` : "inconnu"}` +
+    `  ✓ ${label}${hasOvertime ? " (OT)" : ""} · top ${topScorer ? `${topScorer.playerName} ${topScorer.points} pts${topScorer.tiedPlayerIds.length > 1 ? ` (${topScorer.tiedPlayerIds.length} ex æquo)` : ""}` : "inconnu"}` +
     ` · ${predictions.length} prono(s)` +
     (players > 0 ? ` · moyennes de ${players} joueur(s)` : "")
   );

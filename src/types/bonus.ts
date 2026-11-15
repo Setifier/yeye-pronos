@@ -160,7 +160,8 @@ export function calculateComboBonus(
  * Règles :
  * - Bonne équipe : 10 pts (BASE)
  * - Bon écart : 10 pts (seulement si bonne équipe)
- * - Bon top scorer : 40 - moyenne du joueur (INDÉPENDANT du prono)
+ * - Bon top scorer : 40 - moyenne du joueur (INDÉPENDANT du prono). Ex æquo : chaque joueur à égalité
+ *   au plus grand nombre de points est « meilleur marqueur » (actualTopScorerIds).
  * - Combo parfait : 20 pts (si les 3 sont corrects)
  */
 export function calculateTotalPoints(params: {
@@ -169,6 +170,8 @@ export function calculateTotalPoints(params: {
   actualMargin: ScoreMarginCategory | null;
   predictedTopScorerId: string | null;
   actualTopScorerId: string | null;
+  /** Tous les meilleurs marqueurs en cas d'égalité (contient actualTopScorerId) */
+  actualTopScorerIds?: string[];
   predictedTopScorerAverage?: number; // Moyenne du joueur prédit pour calculer la cote
 }): {
   basePoints: number;
@@ -183,6 +186,7 @@ export function calculateTotalPoints(params: {
     actualMargin,
     predictedTopScorerId,
     actualTopScorerId,
+    actualTopScorerIds = [],
     predictedTopScorerAverage = 0,
   } = params;
 
@@ -196,8 +200,8 @@ export function calculateTotalPoints(params: {
   const marginBonus = marginCorrect ? BONUS_POINTS.MARGIN_EXACT : 0;
 
   // Bonus top scorer (INDÉPENDANT du résultat du prono !)
-  const topScorerCorrect = predictedTopScorerId && actualTopScorerId
-    ? predictedTopScorerId === actualTopScorerId
+  const topScorerCorrect = predictedTopScorerId
+    ? predictedTopScorerId === actualTopScorerId || actualTopScorerIds.includes(predictedTopScorerId)
     : false;
   const topScorerBonus = topScorerCorrect
     ? calculateTopScorerOdds(predictedTopScorerAverage)

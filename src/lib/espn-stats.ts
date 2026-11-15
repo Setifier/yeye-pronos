@@ -341,6 +341,8 @@ export interface TopScorerResult {
   espnPlayerId: string;
   playerName: string;
   points: number;
+  /** Tous les joueurs à égalité au plus grand nombre de points (contient playerId) : tous « meilleurs marqueurs » */
+  tiedPlayerIds: string[];
 }
 
 /**
@@ -475,8 +477,17 @@ export async function fetchAndSaveGameStats(
         espnPlayerId: stats.espnPlayerId,
         playerName: stats.playerName,
         points: stats.points,
+        tiedPlayerIds: [],
       };
     }
+  }
+
+  // Ex æquo : chaque joueur au plus grand nombre de points est meilleur marqueur
+  if (topScorer) {
+    const best = topScorer.points;
+    topScorer.tiedPlayerIds = lines
+      .filter((l) => l.stats.points === best)
+      .map((l) => playerIdByEspnId.get(l.stats.espnPlayerId)!);
   }
 
   await prisma.$transaction([
@@ -485,7 +496,8 @@ export async function fetchAndSaveGameStats(
   ]);
 
   if (topScorer) {
-    console.log(`[ESPN Stats] ✅ Top scorer: ${topScorer.playerName} with ${topScorer.points} points`);
+    const tie = topScorer.tiedPlayerIds.length > 1 ? ` (ex æquo : ${topScorer.tiedPlayerIds.length} joueurs)` : "";
+    console.log(`[ESPN Stats] ✅ Top scorer: ${topScorer.playerName} with ${topScorer.points} points${tie}`);
   }
 
   return topScorer;

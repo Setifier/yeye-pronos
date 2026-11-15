@@ -87,3 +87,64 @@ export async function getReferencePpgMap(
   }
   return result;
 }
+
+/** A-t-il joué ? (mêmes règles que les moyennes de saison : DNP exclus) */
+function hasPlayed(minutes: string | null): boolean {
+  if (!minutes || minutes === "0:00" || minutes === "-") return false;
+  const mmss = minutes.match(/^(\d+):(\d{2})$/);
+  if (mmss) return parseInt(mmss[1], 10) > 0 || parseInt(mmss[2], 10) > 0;
+  const dec = parseFloat(minutes);
+  return !isNaN(dec) && dec > 0;
+}
+
+/**
+ * Moyenne de référence telle qu'elle était juste AVANT un match (`before` = coup d'envoi) : pour recalculer
+ * une cote après coup (correctifs) comme si le match était noté le soir même. Saison en cours reconstituée
+ * depuis les box scores (saison régulière, finale NBA Cup exclue, DNP exclus), saison précédente telle quelle.
+ */
+export async function getReferencePpgBefore(
+  prisma: PrismaClient,
+  playerIds: string[],
+  season: string,
+  before: Date
+): Promise<Map<string, ReferencePpg>> {
+  const ids = [...new Set(playerIds.filter(Boolean))];
+  const result = new Map<string, ReferencePpg>();
+  if (ids.length === 0) return result;
+
+  const [lines, prevRows] = await Promise.all([
+    prisma.gamePlayerStats.findMany({
+      where: {
+        playerId: { in: ids },
+        game: {
+          season,
+          status: "FINAL",
+          seasonType: "Regular Season",
+          gameDate: { lt: before },
+          OR: [{ nbaCupRound: null }, { nbaCupRound: { not: "Championship" } }],
+        },
+      },
+      select: { playerId: true, points: true, minutes: true },
+    }),
+    prisma.playerSeasonStats.findMany({
+      where:  { playerId: { in: ids }, season: getPreviousSeason(season) },
+      select: { playerId: true, pointsPerGame: true, gamesPlayed: true },
+    }),
+  ]);
+
+  const totals = new Map<string, { points: number; games: number }>();
+  for (const l of lines) {
+    if (!hasPlayed(l.minutes)) continue;
+    const t = totals.get(l.playerId) ?? { points: 0, games: 0 };
+    t.points += l.points;
+    t.games += 1;
+    totals.set(l.playerId, t);
+  }
+  const previous = new Map(prevRows.map((r) => [r.playerId, { ppg: r.pointsPerGame, games: r.gamesPlayed }]));
+
+  for (const id of ids) {
+    const t = totals.get(id);
+    result.set(id, blendPpg(t ? { ppg: t.points / t.games, games: t.games } : null, previous.get(id) ?? null));
+  }
+  return result;
+}

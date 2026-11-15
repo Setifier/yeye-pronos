@@ -42,7 +42,7 @@ export default function ReglesPage() {
             <Row icon={<Star className="h-4 w-4 text-[#5096ff]" />} title="Meilleur marqueur" points={`+(${BONUS_POINTS.TOP_SCORER_BASE} − sa moyenne)`}>
               Tu trouves le joueur qui marque le plus de points du match. Plus il est inattendu, plus il rapporte :
               un joueur à 30 pts/match rapporte 10 pts, un joueur à 8 pts/match en rapporte 32.
-              Compte même si ton équipe perd.
+              Compte même si ton équipe perd. Égalité au sommet : chaque joueur à égalité est meilleur marqueur.
             </Row>
             <Row icon={<Zap className="h-4 w-4 text-purple-400" />} title="Combo" points={`+${BONUS_POINTS.COMBO_PERFECT} pts`}>
               Équipe, écart et meilleur marqueur tous justes.

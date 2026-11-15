@@ -86,6 +86,8 @@ interface BoxscoreData {
     hasOvertime: boolean;
     scoreMarginCategory: string | null;
     topScorer: { id: string; fullName: string } | null;
+    /** Ex æquo compris */
+    topScorers?: { id: string; fullName: string }[];
     topScorerPoints: number | null;
   };
   boxscore: {
@@ -292,9 +294,11 @@ export function BoxscoreModal({ isOpen, onClose, gameId, noSpoilEnabled = false 
                   <div className="mt-4 pt-4 border-t border-zinc-800 flex items-center justify-center gap-2 text-sm text-zinc-400">
                     <Trophy className="h-4 w-4 text-yellow-500" />
                     <span>
-                      Top scorer:{" "}
+                      {(data.game.topScorers?.length ?? 0) > 1 ? "Top scorers ex æquo" : "Top scorer"}:{" "}
                       <strong className="text-zinc-200">
-                        {data.game.topScorer.fullName}
+                        {data.game.topScorers?.length
+                          ? data.game.topScorers.map((t) => t.fullName).join(" et ")
+                          : data.game.topScorer.fullName}
                       </strong>{" "}
                       avec {data.game.topScorerPoints} points
                     </span>

@@ -130,6 +130,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     };
 
+    // Meilleurs marqueurs ex æquo : tous les joueurs au nombre de points du meilleur marqueur
+    const topScorers = game.topScorerPoints === null
+      ? []
+      : game.playerStats
+          .filter((s) => s.points === game.topScorerPoints)
+          .map((s) => ({ id: s.player.id, fullName: s.player.fullName }));
+
     const homeTeamTotals = calculateTeamTotals(homeTeamStats);
     const awayTeamTotals = calculateTeamTotals(awayTeamStats);
 
@@ -148,6 +155,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         scoreMarginCategory: game.scoreMarginCategory,
         actualScoreMargin: game.actualScoreMargin,
         topScorer: game.topScorer,
+        topScorers,
         topScorerPoints: game.topScorerPoints,
       },
       boxscore: {

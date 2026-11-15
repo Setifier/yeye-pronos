@@ -84,7 +84,7 @@ async function main() {
     // ============================================================
     // 2. Fetch + sauvegarde du boxscore
     // ============================================================
-    let topScorer: { playerId: string; points: number } | null = null;
+    let topScorer: { playerId: string; points: number; tiedPlayerIds: string[] } | null = null;
 
     try {
       topScorer = await fetchAndSaveGameStats(game.externalId, game.id);
@@ -139,6 +139,7 @@ async function main() {
           actualMargin: scoreMarginCategory,
           predictedTopScorerId: prediction.predictedTopScorerId,
           actualTopScorerId: topScorer?.playerId ?? null,
+          actualTopScorerIds: topScorer?.tiedPlayerIds ?? [], // ex æquo : tous meilleurs marqueurs
           predictedTopScorerAverage,
         });
 

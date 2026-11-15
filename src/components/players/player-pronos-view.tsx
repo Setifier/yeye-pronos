@@ -253,7 +253,7 @@ function GameCompare({ game, player, me }: { game: ComparedGame; player: Person;
       <p className="mt-1 text-center text-[11px] text-zinc-500">
         Écart : <span className="text-zinc-300">{marginLabel(game.margin) ?? "–"}</span>
         {game.topScorer && (
-          <> · Marqueur : <span className="text-zinc-300">{game.topScorer.fullName}{game.topScorer.points ? ` (${game.topScorer.points})` : ""}</span></>
+          <> · Marqueur{game.topScorer.names.length > 1 ? "s ex æquo" : ""} : <span className="text-zinc-300">{game.topScorer.names.join(" et ")}{game.topScorer.points ? ` (${game.topScorer.points})` : ""}</span></>
         )}
       </p>
       <div className="mt-2.5 space-y-2 border-t border-zinc-800/80 pt-2.5">
@@ -286,7 +286,7 @@ function BetLine({ label, person, bet, game }: { label: string; person: Person; 
             )}
             {bet.topScorer && (
               <Pill tone={bet.topScorerPoints > 0 ? "win" : "miss"}>
-                <Star className="h-3 w-3" /> {bet.topScorer.split(" ").slice(-1)[0]}
+                <Star className="h-3 w-3" /> {bet.topScorer}
                 {bet.topScorerPoints > 0 && <b> +{bet.topScorerPoints}</b>}
               </Pill>
             )}

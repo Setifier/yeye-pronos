@@ -102,6 +102,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/morn
 | `npm run db:verify-season` | Contrôle complet DB vs ESPN (équipes, effectifs, calendrier, horaires, classement, stats, NBA Cup, blessures). Indique la commande qui corrige chaque erreur | `--quick` (sans ESPN) · `--season=` · `--from= --to=` |
 | `npm run db:update-rosters` | Effectifs (transferts, rookies, two-way, agents libres) | `--no-free-agents` |
 | `npm run db:update-injuries` | Effectifs + infirmerie, puis liste des blessés | — |
+| `npm run db:fix-top-scorer-ties` | Meilleurs marqueurs ex æquo : redonne le bonus (et le combo) aux pronos notés avant le correctif du 15/11/2026, avec la cote du soir du match. Aperçu par défaut | `--apply` (enregistre) · `--season=` |
 | `npm run db:sync-awards` | Trophées NBA depuis ESPN (comme le CRON de midi), puis liste de ce qui est en base. Relançable sans risque | `--season=2025-26` (saison passée, pour les Archives) |
 
 ## Mise en ligne

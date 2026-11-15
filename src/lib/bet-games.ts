@@ -7,6 +7,7 @@ import type { PrismaClient } from "@/generated/prisma";
 import type { BetGame } from "@/types/bet";
 import { predictionDeadlineFor } from "@/types/bet";
 import { toNightDate, shiftNightDate } from "@/lib/game-night";
+import { getTopScorersByGame } from "@/lib/top-scorers";
 
 export async function loadBetGames(
   prisma: PrismaClient,
@@ -43,7 +44,8 @@ export async function loadBetGames(
       gameNumber: true,
       scoreMarginCategory: true,
       topScorerPoints: true,
-      topScorer: { select: { fullName: true } },
+      topScorerId: true,
+      topScorer: { select: { fullName: true, lastName: true } },
       homeTeam: { select: { id: true, abbreviation: true, name: true, city: true } },
       awayTeam: { select: { id: true, abbreviation: true, name: true, city: true } },
       // Sans utilisateur : filtre qui ne renvoie rien (garde un type de résultat unique)
@@ -57,7 +59,7 @@ export async function loadBetGames(
           marginBonusPoints: true,
           topScorerBonusPoints: true,
           comboBonusPoints: true,
-          predictedTopScorer: { select: { id: true, fullName: true, headshot: true } },
+          predictedTopScorer: { select: { id: true, fullName: true, headshot: true, lastName: true } },
         },
       },
     },
@@ -74,6 +76,9 @@ export async function loadBetGames(
     select: { teamId: true, season: true, wins: true, losses: true },
   });
   const record = new Map(stats.map((s) => [`${s.season}|${s.teamId}`, `${s.wins}-${s.losses}`]));
+
+  // Meilleurs marqueurs ex æquo (matchs terminés et traités)
+  const topScorers = await getTopScorersByGame(prisma, inNights.filter((g) => g.scoreMarginCategory !== null));
 
   return inNights.map((g) => {
     const p = g.predictions[0];
@@ -95,7 +100,16 @@ export async function loadBetGames(
       isIfNecessary: g.isIfNecessary,
       gameNumber: g.gameNumber,
       scoreMarginCategory: g.scoreMarginCategory,
-      topScorer: g.topScorer ? { fullName: g.topScorer.fullName, points: g.topScorerPoints } : null,
+      topScorer: g.topScorer
+        ? {
+            fullName: g.topScorer.fullName,
+            lastName: g.topScorer.lastName,
+            points: g.topScorerPoints,
+            others: (topScorers.get(g.id) ?? [])
+              .filter((t) => t.playerId !== g.topScorerId)
+              .map((t) => ({ fullName: t.fullName, lastName: t.lastName })),
+          }
+        : null,
       prediction: p
         ? {
             predictedTeamId: p.predictedTeamId,

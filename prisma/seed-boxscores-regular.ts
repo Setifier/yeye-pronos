@@ -193,7 +193,7 @@ async function fetchMissingBoxscores(
     );
 
     // Boxscore ESPN
-    let topScorer: { playerId: string; points: number } | null = null;
+    let topScorer: { playerId: string; points: number; tiedPlayerIds: string[] } | null = null;
     try {
       topScorer = await fetchAndSaveGameStats(game.externalId, game.id);
     } catch (error) {
@@ -243,6 +243,7 @@ async function fetchMissingBoxscores(
           actualMargin: scoreMarginCategory,
           predictedTopScorerId: prediction.predictedTopScorerId,
           actualTopScorerId: topScorer?.playerId ?? null,
+          actualTopScorerIds: topScorer?.tiedPlayerIds ?? [], // ex æquo : tous meilleurs marqueurs
           predictedTopScorerAverage,
         });
 

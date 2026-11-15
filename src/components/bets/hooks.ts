@@ -71,7 +71,7 @@ export async function savePrediction(input: SavePredictionInput): Promise<BetPre
     predictedTeamId:      p.predictedTeamId,
     predictedScoreMargin: p.predictedScoreMargin ?? null,
     predictedTopScorer:   p.predictedTopScorer
-      ? { id: p.predictedTopScorer.id, fullName: p.predictedTopScorer.fullName, headshot: p.predictedTopScorer.headshot ?? null }
+      ? { id: p.predictedTopScorer.id, fullName: p.predictedTopScorer.fullName, headshot: p.predictedTopScorer.headshot ?? null, lastName: p.predictedTopScorer.lastName ?? null }
       : null,
     result:               p.result ?? "PENDING",
     pointsEarned:         p.pointsEarned ?? 0,

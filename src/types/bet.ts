@@ -17,7 +17,8 @@ export interface BetTeam {
 export interface BetPrediction {
   predictedTeamId:      string;
   predictedScoreMargin: string | null;
-  predictedTopScorer:   { id: string; fullName: string; headshot: string | null } | null;
+  /** lastName : nom de famille ESPN (« Porter Jr. »), pour les badges : voir shortPlayerName */
+  predictedTopScorer:   { id: string; fullName: string; headshot: string | null; lastName?: string | null } | null;
   result:               BetResult;
   pointsEarned:         number;
   marginBonusPoints:    number;
@@ -42,7 +43,13 @@ export interface BetGame {
   isIfNecessary:      boolean;
   gameNumber:         number | null;
   scoreMarginCategory: string | null;
-  topScorer:          { fullName: string; points: number | null } | null;
+  /** Meilleur marqueur ; `others` = ex æquo (tous valent le bonus) */
+  topScorer:          {
+    fullName: string;
+    lastName?: string | null;
+    points: number | null;
+    others?: { fullName: string; lastName: string | null }[];
+  } | null;
   prediction:         BetPrediction | null;
 }
 

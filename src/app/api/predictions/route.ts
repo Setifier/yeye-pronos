@@ -185,6 +185,7 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             fullName: true,
+            lastName: true,
             headshot: true,
             teamId: true,
           },
@@ -285,6 +286,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             fullName: true,
+            lastName: true,
             headshot: true,
             teamId: true,
           },

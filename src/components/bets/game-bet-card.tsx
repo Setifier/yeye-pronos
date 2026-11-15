@@ -5,6 +5,7 @@ import type { BetGame, BetTeam } from "@/types/bet";
 import { isBettable, marginLabel } from "@/types/bet";
 import { formatParisTime, formatCountdown } from "@/lib/game-night";
 import { TeamLogo } from "./team-logo";
+import { shortPlayerName } from "@/lib/player-names";
 
 // ─── Étiquettes du match ─────────────────────────────────────────────────────
 
@@ -304,7 +305,7 @@ function MobileGameCard({ game, now, noSpoil, saving, onQuickPick, onOpen, onSho
             ) : p ? (
               <>
                 {p.predictedScoreMargin && <Chip icon={<Target className="h-3 w-3" />}>{marginLabel(p.predictedScoreMargin)}</Chip>}
-                {p.predictedTopScorer && <Chip icon={<Star className="h-3 w-3" />}>{p.predictedTopScorer.fullName.split(" ").slice(-1)[0]}</Chip>}
+                {p.predictedTopScorer && <Chip icon={<Star className="h-3 w-3" />}>{shortPlayerName(p.predictedTopScorer.fullName, p.predictedTopScorer.lastName)}</Chip>}
                 {!p.predictedScoreMargin && !p.predictedTopScorer && (
                   <span className="text-[11px] text-zinc-500">{bettable ? "Pas encore de bonus" : "Sans bonus"}</span>
                 )}
@@ -349,9 +350,10 @@ function MobileResultBreakdown({ game }: { game: BetGame }) {
 
   const bonus = p.marginBonusPoints + p.topScorerBonusPoints + p.comboBonusPoints;
   const team = p.predictedTeamId === game.homeTeam.id ? game.homeTeam : game.awayTeam;
-  const lastName = (full: string) => full.split(" ").slice(-1)[0];
+  // Vrai(s) meilleur(s) marqueur(s), ex æquo compris : « Brown / Tatum (31) »
   const realScorer = game.topScorer
-    ? `${lastName(game.topScorer.fullName)}${game.topScorer.points ? ` (${game.topScorer.points})` : ""}`
+    ? [game.topScorer, ...(game.topScorer.others ?? [])].map((t) => shortPlayerName(t.fullName, t.lastName)).join(" / ")
+      + (game.topScorer.points ? ` (${game.topScorer.points})` : "")
     : null;
 
   const rows: { key: string; icon: React.ReactNode; label: string; ok: boolean; pts: number; real: string | null }[] = [
@@ -367,7 +369,7 @@ function MobileResultBreakdown({ game }: { game: BetGame }) {
   if (p.predictedTopScorer) {
     const ok = p.topScorerBonusPoints > 0;
     rows.push({
-      key: "scorer", icon: <Star className="h-3 w-3" />, label: lastName(p.predictedTopScorer.fullName), ok, pts: p.topScorerBonusPoints,
+      key: "scorer", icon: <Star className="h-3 w-3" />, label: shortPlayerName(p.predictedTopScorer.fullName, p.predictedTopScorer.lastName), ok, pts: p.topScorerBonusPoints,
       real: !ok ? realScorer : null,
     });
   }

@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-11-15 — Meilleur marqueur ex æquo, noms des joueurs
+
+### Paris
+- **Meilleurs marqueurs à égalité** : tous comptent. Avant, seul le premier joueur lu dans le box score était
+  meilleur marqueur ; un prono sur un autre joueur à égalité ne gagnait ni son bonus ni le combo.
+  Chaque gagnant touche son propre bonus (40 − sa moyenne), et le combo si le reste est juste.
+- Rattrapage des matchs déjà notés : `npm run db:fix-top-scorer-ties` (aperçu), puis `-- --apply`. Le bonus est
+  recalculé avec la moyenne du joueur d'avant le match, comme le soir même.
+- Affichage des ex æquo : détail du pari sur mobile (« réel : Brown / Tatum (31) »), comparaison des pronos,
+  box score et page du match (« Top scorers ex æquo »). Règles : phrase ajoutée.
+
+### Noms des joueurs
+- Badges et détails des paris : nom de famille ESPN (« Porter Jr. », « Payton II », « da Silva », « Jones Garcia »)
+  au lieu du dernier mot du nom (« Jr. »). 35 joueurs NBA concernés aujourd'hui. `src/lib/player-names.ts`.
+
 ## 2026-11-11 — Classements de la saison, saisons passées
 
 ### Classement général

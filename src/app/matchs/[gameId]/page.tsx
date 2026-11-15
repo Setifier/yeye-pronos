@@ -63,6 +63,8 @@ interface BoxscoreData {
     hasOvertime: boolean;
     scoreMarginCategory: string | null;
     topScorer: { id: string; fullName: string } | null;
+    /** Ex æquo compris */
+    topScorers?: { id: string; fullName: string }[];
     topScorerPoints: number | null;
   };
   boxscore: {
@@ -196,7 +198,7 @@ export default function BoxscorePage() {
           {game.topScorer && (
             <div className="mt-4 pt-4 border-t border-zinc-800 flex items-center justify-center gap-2 text-sm text-zinc-400">
               <Trophy className="h-4 w-4 text-yellow-500" />
-              <span>Top scorer: <strong className="text-zinc-200">{game.topScorer.fullName}</strong> avec {game.topScorerPoints} points</span>
+              <span>{(game.topScorers?.length ?? 0) > 1 ? "Top scorers ex æquo" : "Top scorer"}: <strong className="text-zinc-200">{game.topScorers?.length ? game.topScorers.map((t) => t.fullName).join(" et ") : game.topScorer.fullName}</strong> avec {game.topScorerPoints} points</span>
             </div>
           )}
         </div>

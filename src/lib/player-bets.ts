@@ -7,10 +7,13 @@
 
 import type { PrismaClient } from "@/generated/prisma";
 import { shiftNightDate, toNightDate } from "@/lib/game-night";
+import { shortPlayerName } from "@/lib/player-names";
+import { getTopScorersByGame } from "@/lib/top-scorers";
 
 export interface ComparedBet {
   teamId: string;
   margin: string | null;
+  /** Nom court du marqueur choisi (« Porter Jr. ») */
   topScorer: string | null;
   result: "WON" | "LOST";
   points: number;
@@ -29,7 +32,8 @@ export interface ComparedGame {
   awayScore: number | null;
   /** Catégorie d'écart réelle (SERRE, CLASSIQUE… ou OVERTIME). */
   margin: string | null;
-  topScorer: { fullName: string; points: number | null } | null;
+  /** Meilleur(s) marqueur(s), ex æquo compris (tous valent le bonus) */
+  topScorer: { names: string[]; points: number | null } | null;
   /** Prono du joueur regardé. */
   theirs: ComparedBet | null;
   /** Mon prono (absent si je regarde ma propre page). */
@@ -90,7 +94,7 @@ type PredictionRow = {
   marginBonusPoints: number;
   topScorerBonusPoints: number;
   comboBonusPoints: number;
-  predictedTopScorer: { fullName: string } | null;
+  predictedTopScorer: { fullName: string; lastName: string } | null;
 };
 
 function toBet(p: PredictionRow | undefined): ComparedBet | null {
@@ -99,7 +103,7 @@ function toBet(p: PredictionRow | undefined): ComparedBet | null {
   return {
     teamId: p.predictedTeamId,
     margin: p.predictedScoreMargin,
-    topScorer: p.predictedTopScorer?.fullName ?? null,
+    topScorer: p.predictedTopScorer ? shortPlayerName(p.predictedTopScorer.fullName, p.predictedTopScorer.lastName) : null,
     result: p.result as "WON" | "LOST",
     points: p.pointsEarned,
     basePoints: Math.max(0, p.pointsEarned - bonus),
@@ -130,6 +134,7 @@ export async function getNightComparison(
       awayScore: true,
       scoreMarginCategory: true,
       topScorerPoints: true,
+      topScorerId: true,
       topScorer: { select: { fullName: true } },
       homeTeam: { select: { id: true, abbreviation: true, name: true } },
       awayTeam: { select: { id: true, abbreviation: true, name: true } },
@@ -144,14 +149,16 @@ export async function getNightComparison(
           marginBonusPoints: true,
           topScorerBonusPoints: true,
           comboBonusPoints: true,
-          predictedTopScorer: { select: { fullName: true } },
+          predictedTopScorer: { select: { fullName: true, lastName: true } },
         },
       },
     },
   });
 
-  return games
-    .filter((g) => toNightDate(g.gameDate) === night)
+  const inNight = games.filter((g) => toNightDate(g.gameDate) === night);
+  const topScorers = await getTopScorersByGame(prisma, inNight);
+
+  return inNight
     .map((g) => {
       const theirs = toBet(g.predictions.find((p) => p.userId === targetId));
       const mine = viewerId !== targetId ? toBet(g.predictions.find((p) => p.userId === viewerId)) : null;
@@ -163,7 +170,12 @@ export async function getNightComparison(
         homeScore: g.homeScore,
         awayScore: g.awayScore,
         margin: g.scoreMarginCategory,
-        topScorer: g.topScorer ? { fullName: g.topScorer.fullName, points: g.topScorerPoints } : null,
+        topScorer: g.topScorer
+          ? {
+              names: topScorers.get(g.id)?.length ? topScorers.get(g.id)!.map((t) => t.fullName) : [g.topScorer.fullName],
+              points: g.topScorerPoints,
+            }
+          : null,
         theirs,
         mine,
       };

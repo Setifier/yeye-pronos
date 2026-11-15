@@ -187,7 +187,7 @@ async function processBoxscores(season: string) {
     console.log(`\n${idx} ${game.externalId} (${game.seasonType})`);
 
     // 2a. Boxscore
-    let topScorer: { playerId: string; points: number } | null = null;
+    let topScorer: { playerId: string; points: number; tiedPlayerIds: string[] } | null = null;
     try {
       topScorer = await fetchAndSaveGameStats(game.externalId, game.id);
     } catch (e) {
@@ -230,6 +230,7 @@ async function processBoxscores(season: string) {
           actualMargin:               scoreMarginCategory,
           predictedTopScorerId:       pred.predictedTopScorerId,
           actualTopScorerId:          topScorer?.playerId ?? null,
+          actualTopScorerIds:          topScorer?.tiedPlayerIds ?? [], // ex æquo : tous meilleurs marqueurs
           predictedTopScorerAverage:  avgPts,
         });
 

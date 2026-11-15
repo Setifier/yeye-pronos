@@ -94,6 +94,9 @@ npm run db:diagnose-bracket      # Diagnostic données bracket
 - Notation des paris de saison : `src/lib/preseason-grading.ts` (progressive, idempotente, CRON du matin + admin).
   Trophées (MVP, DPOY, Rookie, MVP des Finales) saisis dans Admin → Paris de saison (table `SeasonAwardResult`).
 - Paris d'un match : fermeture au coup d'envoi (`predictionDeadlineFor()`).
+- Meilleur marqueur : **ex æquo = tous gagnants** (`actualTopScorerIds`, `src/lib/top-scorers.ts` pour l'affichage).
+  Game.topScorerId n'en garde qu'un. Noms courts des joueurs : `shortPlayerName()` (`src/lib/player-names.ts`,
+  nom de famille ESPN « Porter Jr. »), jamais le dernier mot du nom complet.
 - Couleurs : `#5096ff` (action), `#ff5050` (urgence / à faire), `#dcff50` (points), fond zinc-950.
 
 ## Interface mobile (< 768 px, joueur connecté)

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AlertTriangle, Medal, ListChecks, Trophy } from "lucide-react";
+import { AlertTriangle, Award, Medal, ListChecks, Trophy } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getSeasonBetsOverview } from "@/lib/admin-data";
 import { formatParisDateTime } from "@/lib/admin-format";
@@ -8,12 +8,27 @@ import { getSeasonLabel } from "@/types/season";
 import { Badge, Card, PageHeader, type Tone } from "@/components/admin/ui";
 import { JobButton } from "@/components/admin/job-button";
 import { AwardResults } from "@/components/admin/award-results";
+import { NbaAwardsAdmin, type CoachEntry } from "@/components/admin/nba-awards-admin";
+import { getSeasonNbaAwards } from "@/lib/nba-awards";
+import { NBA_AWARDS } from "@/types/nba-awards";
 
 export const metadata: Metadata = { title: "Admin · Paris de saison" };
 
 export default async function AdminSeasonBetsPage() {
   const o = await getSeasonBetsOverview(prisma);
   const r = o.results;
+
+  // Trophées NBA (ESPN + entraîneur de l'année) : saison en cours et saisons passées
+  const [awards, seasonRows, teams, coachRows] = await Promise.all([
+    getSeasonNbaAwards(prisma, o.season),
+    prisma.game.findMany({ distinct: ["season"], select: { season: true }, orderBy: { season: "desc" } }),
+    prisma.team.findMany({ select: { abbreviation: true, name: true }, orderBy: { abbreviation: "asc" } }),
+    prisma.nbaAward.findMany({ where: { award: "COY" }, select: { season: true, name: true, teamAbbr: true } }).catch(() => []),
+  ]);
+  const pastSeasons = seasonRows.map((g) => g.season).filter((s) => s < o.season);
+  const coaches: Record<string, CoachEntry | null> = {};
+  for (const c of coachRows) coaches[c.season] = { name: c.name, teamAbbr: c.teamAbbr };
+  const awardsDecided = new Set(awards.map((a) => a.award)).size;
 
   const auto: { label: string; value: string; tone: Tone; when: string }[] = [
     {
@@ -85,6 +100,17 @@ export default async function AdminSeasonBetsPage() {
           )}
         </Card>
       </div>
+
+      <Card title="Trophées NBA" icon={Award} padded={false}>
+        <NbaAwardsAdmin
+          season={o.season}
+          decided={awardsDecided}
+          total={NBA_AWARDS.length}
+          pastSeasons={pastSeasons}
+          teams={teams}
+          coaches={coaches}
+        />
+      </Card>
 
       <Card title="Paris" icon={ListChecks} padded={false}>
         <div className="overflow-x-auto">

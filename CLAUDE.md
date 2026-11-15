@@ -37,6 +37,7 @@
 | `src/lib/game-processing.ts` | Matchs FINAL non traités → box score, pronos, moyennes, classement, séries |
 | `src/lib/roster-sync.ts` | 30 rosters + `/injuries` → équipes, transferts, agents libres, blessures |
 | `src/lib/player-odds.ts` | Moyenne de référence de la cote top scorer |
+| `src/lib/nba-awards-sync.ts` | Trophées NBA (ESPN) → `NbaAward` ; CRON de midi `/api/cron/nba-awards`, `npm run db:sync-awards` |
 
 Règles clés :
 - Associer les équipes ESPN **par abréviation**, jamais par `Team.externalId` (IDs BallDontLie).
@@ -52,6 +53,7 @@ npm run db:verify-season         # Contrôle complet DB vs ESPN (--quick sans ES
 npm run db:seed-espn             # Calendrier complet de la saison
 npm run db:update-rosters        # Effectifs / transferts / agents libres
 npm run db:update-injuries       # Infirmerie
+npm run db:sync-awards           # Trophées NBA ESPN (--season=2025-26 pour une saison passée)
 npm run db:backfill-nba-cup      # Tours + groupes NBA Cup (--skip-scan)
 npm run db:recalculate-standings # Classement uniquement
 npm run db:backfill-postseason   # Rattrapage Play-In + Playoffs
@@ -122,5 +124,7 @@ npm run db:diagnose-bracket      # Diagnostic données bracket
 - Un nouveau contrôle de cohérence va dans `getHealthOverview()` ; une nouvelle tâche dans `update-jobs.ts`.
 - Invitations : bouton « Inviter » (Santé, Joueurs) → `src/actions/admin/invitations.ts`, e-mail dans
   `src/lib/emails/invitation-email.ts` (aperçu `/api/admin/invitation-preview`).
+- Trophées NBA : Admin → Paris de saison → Trophées NBA (récupération ESPN, entraîneur de l'année à saisir :
+  ESPN ne le publie pas). MVP / DPOY / Rookie / MVP des Finales reportés dans `SeasonAwardResult` sans écraser l'admin.
 - E-mails (Gmail SMTP, souvent en spam au 1er envoi) : pas d'emoji dans l'objet, pas de texte caché, toujours
   une version texte. Écrans « e-mail envoyé » : `src/components/auth/email-sent-screen.tsx` (encadré « Rien reçu ? »).

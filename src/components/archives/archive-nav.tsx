@@ -3,12 +3,12 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, Award, ClipboardList, Crown, TrendingUp, Trophy, Medal, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Award, BarChart3, ClipboardList, Crown, Medal, TrendingUp, Trophy, type LucideIcon } from "lucide-react";
 import { getSeasonLabel } from "@/types/season";
 
 /**
  * En haut de chaque page d'une saison passée : tout ce qu'il y avait cette saison.
- * Classement général · Mes pronos · Classement NBA · Leaders · NBA Cup · Playoffs.
+ * Classement général · Mes pronos · Classement NBA · Leaders · Trophées NBA · NBA Cup · Playoffs.
  */
 export function ArchiveNav({ season }: { season: string }) {
   const pathname = usePathname() ?? "";
@@ -18,8 +18,9 @@ export function ArchiveNav({ season }: { season: string }) {
   const links: { href: string; label: string; icon: LucideIcon; active: boolean }[] = [
     { href: base,               label: "Classement général", icon: Trophy,        active: pathname === base },
     { href: `${base}/pronos`,   label: "Mes pronos",         icon: ClipboardList, active: pathname.startsWith(`${base}/pronos`) },
-    { href: `${base}/standings`, label: "Classement NBA",    icon: Medal,         active: pathname.startsWith(`${base}/standings`) },
+    { href: `${base}/standings`, label: "Classement NBA",    icon: BarChart3,     active: pathname.startsWith(`${base}/standings`) },
     { href: `${base}/leaders`,  label: "Leaders",            icon: TrendingUp,    active: pathname.startsWith(`${base}/leaders`) },
+    { href: `${base}/trophees`, label: "Trophées NBA",       icon: Medal,         active: pathname.startsWith(`${base}/trophees`) },
     { href: `${base}/nba-cup`,  label: "NBA Cup",            icon: Award,         active: pathname.startsWith(`${base}/nba-cup`) },
     { href: `${base}/playoffs`, label: "Playoffs",           icon: Crown,         active: pathname.startsWith(`${base}/playoffs`) },
   ];

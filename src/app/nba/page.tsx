@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  Award, BarChart2, ChevronRight, Crown, HeartPulse, LayoutGrid, Network, Shield, TrendingUp, Trophy, Users,
+  Award, BarChart2, ChevronRight, Crown, HeartPulse, LayoutGrid, Medal, Network, Shield, TrendingUp, Trophy, Users,
   type LucideIcon,
 } from "lucide-react";
 import { getCurrentSeason, getSeasonLabel } from "@/types/season";
@@ -71,6 +71,21 @@ export default function NbaHubPage() {
           ))}
         </div>
       </section>
+
+      {/* Trophées NBA : MVP, All-NBA… au fil des annonces */}
+      <Link
+        href="/trophees"
+        className="flex items-center gap-3 rounded-2xl border border-amber-400/25 bg-gradient-to-br from-amber-400/15 to-zinc-900/60 p-4 transition-transform active:scale-[0.98] md:hover:border-amber-400/40"
+      >
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-400/20 text-amber-400">
+          <Medal className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-black text-white">Trophées NBA</span>
+          <span className="block text-xs text-zinc-400">MVP, défenseur, rookie, All-NBA, MVP des Finales…</span>
+        </span>
+        <ChevronRight className="h-5 w-5 flex-shrink-0 text-amber-400" />
+      </Link>
 
       <Group
         title="NBA Cup"

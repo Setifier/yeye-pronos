@@ -22,6 +22,7 @@ avant les matchs.
 |---|---|---|
 | `/api/cron/morning-update` | `0 8 * * *` → **09h00 heure de Paris** (10h00 en heure d'été) | Calendrier J-3 → J+7 · matchs terminés (pronos, stats) · classement · séries · effectifs · blessures |
 | `/api/cron/update-injuries` | `0 21 * * *` → **22h-23h heure de Paris** (23h-00h en été) = 16h-17h à New York | Effectifs + blessures, avant les premiers coups d'envoi de 19h ET (les matchs du week-end en journée ne sont pas couverts) |
+| `/api/cron/nba-awards` | `0 12 * * *` → **13h-14h heure de Paris** | Trophées NBA (ESPN) au fil des annonces : NBA Cup (déc.), All-Star (fév.), saison et playoffs (avril → juillet). Ne fait rien d'août à novembre ni en mars ; un passage sans nouveauté n'apparaît pas dans l'historique de l'admin |
 
 **Pourquoi 08:00 UTC.** Vercel planifie en UTC et ne suit pas les changements d'heure :
 
@@ -101,6 +102,7 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/morn
 | `npm run db:verify-season` | Contrôle complet DB vs ESPN (équipes, effectifs, calendrier, horaires, classement, stats, NBA Cup, blessures). Indique la commande qui corrige chaque erreur | `--quick` (sans ESPN) · `--season=` · `--from= --to=` |
 | `npm run db:update-rosters` | Effectifs (transferts, rookies, two-way, agents libres) | `--no-free-agents` |
 | `npm run db:update-injuries` | Effectifs + infirmerie, puis liste des blessés | — |
+| `npm run db:sync-awards` | Trophées NBA depuis ESPN (comme le CRON de midi), puis liste de ce qui est en base. Relançable sans risque | `--season=2025-26` (saison passée, pour les Archives) |
 
 ## Mise en ligne
 

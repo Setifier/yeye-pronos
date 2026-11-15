@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, Trophy, TrendingUp, HeartPulse, Award, Crown } from "lucide-react";
+import { Users, Trophy, TrendingUp, HeartPulse, Award, Crown, Medal } from "lucide-react";
 import { NbaHubLink } from "./nba-hub-link";
 
 const LINKS = [
@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/leaders",             label: "Leaders",        icon: TrendingUp, exact: true },
   { href: "/joueurs",             label: "Joueurs",        icon: Users,      exact: false },
   { href: "/joueurs/infirmerie",  label: "Infirmerie",     icon: HeartPulse, exact: true },
+  { href: "/trophees",            label: "Trophées",       icon: Medal,      exact: true },
   { href: "/nba-cup",             label: "NBA Cup",        icon: Award,      exact: false },
   { href: "/playoffs",            label: "Playoffs",       icon: Crown,      exact: false },
 ];

@@ -25,6 +25,22 @@
   téléphone, l'onglet actif ramené au milieu. Avant, les deux lignes centrées dépassaient l'écran et les onglets
   des bords étaient coupés et impossibles à toucher. Ordinateur inchangé (`src/components/stats/stat-tabs.tsx`).
 
+### Trophées NBA
+- Nouvelle page **Trophées NBA** (`/trophees`, Stats NBA → Trophées ; menu Stats NBA sur mobile) et onglet
+  « Trophées NBA » dans chaque saison passée : MVP, DPOY, Rookie, 6e homme, meilleure progression, clutch,
+  coéquipier, entraîneur de l'année, MVP des Finales et des finales de conférence, All-NBA, All-Defensive,
+  All-Rookie, NBA Cup (MVP, équipe type), MVP du All-Star Game. Badge « Pari de saison » sur les trophées pariés.
+- Récupérés sur ESPN : CRON quotidien `/api/cron/nba-awards` (13h-14h Paris, aux périodes d'annonces), bouton
+  Admin → Paris de saison → Trophées NBA, `npm run db:sync-awards -- --season=2025-26` pour une saison passée.
+- MVP, DPOY, Rookie et MVP des Finales reportés automatiquement pour noter les paris de saison (sans remplacer
+  une saisie de l'admin).
+- Entraîneur de l'année : ESPN ne le publie pas, saisie dans l'admin.
+- Nouvelle table `NbaAward` : `npx prisma db push`.
+
+### Correctif
+- Le déploiement de « onglets des stats sur une ligne » échouait (type des onglets NBA Cup / Playoffs) : le site
+  gardait les anciens onglets, plus larges que l'écran, qui faisaient dézoomer toute la page sur téléphone.
+
 ## 2026-11-10 — Pronos des autres joueurs, amis, Stats NBA sur mobile
 
 ### Pronos des autres joueurs

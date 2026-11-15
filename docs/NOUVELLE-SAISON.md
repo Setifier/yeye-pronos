@@ -19,6 +19,7 @@ Aucune date de saison n'est codée en dur dans l'application.
 | 9 | Cotes des trophées | Ajouter la saison dans `AWARD_RANKINGS` (`src/lib/award-odds.ts`) **avant l'ouverture des paris** : vote MVP puis All-NBA, vote DPOY puis All-Defensive, ordre de la draft de l'été (source : basketball-reference.com). Sans cette entrée, MVP et DPOY valent 1 000 pts pour tous et le pari Rookie n'a aucun candidat |
 | 10 | Paris de début de saison | Ils ferment automatiquement au coup d'envoi du 1er match. `PRESEASON_DEADLINES` ne sert qu'aux exceptions (ex. 2026-27) |
 | 11 | `npm run check:setup` | Variables d'environnement, SMTP, base, date limite |
+| 12 | Trophées NBA de la saison qui se termine | Automatiques (CRON de midi, avril → juillet). Vérifier Admin → Paris de saison → Trophées NBA en juillet, saisir l'**entraîneur de l'année** (ESPN ne le publie pas) et relancer `npm run db:sync-awards -- --season=AAAA-AA` si un trophée manque |
 
 Ensuite tout est automatique (voir [SCRIPTS.md](./SCRIPTS.md)). En cas de doute, relancer
 `npm run db:verify-season` : chaque erreur indique la commande qui la corrige.

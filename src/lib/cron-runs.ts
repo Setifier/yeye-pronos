@@ -11,7 +11,8 @@ export type JobName =
   | "refresh-night"
   | "reprocess-game"
   | "recalculate-standings"
-  | "grade-season-bets";
+  | "grade-season-bets"
+  | "nba-awards";
 
 export type JobTrigger = "cron" | "admin";
 
@@ -22,6 +23,7 @@ export const JOB_LABELS: Record<JobName, string> = {
   "reprocess-game":        "Retraitement d’un match",
   "recalculate-standings": "Recalcul du classement",
   "grade-season-bets":     "Notation des paris de saison",
+  "nba-awards":            "Trophées NBA",
 };
 
 /** Compteurs affichés dans l'admin (clé → libellé). */
@@ -44,6 +46,10 @@ export const SUMMARY_LABELS: Record<string, string> = {
   predictionsReset: "pronos recalculés",
   seasonBetsUpdated: "paris de saison mis à jour",
   seasonBetsGraded:  "paris de saison notés",
+  season:            "Saison",
+  awardsFound:       "trophées décernés",
+  awardsChanged:     "trophées nouveaux",
+  seasonBetAwards:   "trophées des paris reportés",
 };
 
 /** Résultat commun à toutes les tâches. */

@@ -11,6 +11,7 @@ import {
   reprocessGame,
   recalculateStandingsJob,
   gradeSeasonBetsJob,
+  runNbaAwardsUpdate,
 } from "@/lib/update-jobs";
 
 /**
@@ -47,4 +48,10 @@ export async function reprocessGameAction(gameId: string) {
 
 export async function gradeSeasonBetsAction() {
   return run(() => gradeSeasonBetsJob(prisma, "admin"));
+}
+
+/** Trophées NBA depuis ESPN : saison en cours, ou une saison passée (`2025-26`). */
+export async function runNbaAwardsAction(season?: string) {
+  if (season && !/^\d{4}-\d{2}$/.test(season)) throw new Error("Saison invalide");
+  return run(() => runNbaAwardsUpdate(prisma, "admin", season || undefined));
 }

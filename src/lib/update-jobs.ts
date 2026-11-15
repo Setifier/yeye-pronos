@@ -14,6 +14,7 @@ import { alertAdmins } from "@/lib/admin-alert";
 import { recordJobRun, type JobName, type JobResult, type JobTrigger } from "@/lib/cron-runs";
 import { toNightDate } from "@/lib/game-night";
 import { gradeSeasonBets } from "@/lib/preseason-grading";
+import { syncNbaAwards } from "@/lib/nba-awards-sync";
 import { getCurrentSeason } from "@/types/season";
 
 const GAME_PROCESSING_BUDGET_MS = 38_000;
@@ -243,6 +244,46 @@ export async function gradeSeasonBetsJob(prisma: PrismaClient, trigger: JobTrigg
   await gradeSeasonBetsStep(prisma, log, summary, problems);
   const result = finish();
   await recordJobRun(prisma, trigger, result);
+  return result;
+}
+
+/**
+ * Périodes où des trophées tombent : NBA Cup (déc.), All-Star (fév.), fin de saison (avril → juillet).
+ * Le CRON ne fait rien le reste de l'année (août → novembre, mars).
+ */
+export function isNbaAwardsPeriod(date: Date = new Date()): boolean {
+  return ![3, 8, 9, 10, 11].includes(date.getUTCMonth() + 1);
+}
+
+/**
+ * Trophées NBA de la saison depuis ESPN (MVP, All-NBA, NBA Cup…) : CRON de midi, bouton de l'admin,
+ * `npm run db:sync-awards`. Un trophée des paris de saison qui tombe relance la notation des paris.
+ * Un passage du CRON sans nouveauté n'est pas gardé dans l'historique (il tourne tous les jours).
+ */
+export async function runNbaAwardsUpdate(
+  prisma: PrismaClient,
+  trigger: JobTrigger,
+  season: string = getCurrentSeason()
+): Promise<JobResult> {
+  const { log, problems, summary, finish } = createJob("nba-awards", "AWARDS");
+  summary.season = season;
+  let fatal = false;
+  try {
+    const r = await syncNbaAwards(prisma, season, { log });
+    summary.awardsFound = r.found;
+    if (r.changed.length) summary.awardsChanged = r.changed.length;
+    if (r.betAwardsSet.length) {
+      summary.seasonBetAwards = r.betAwardsSet.length;
+      if (season === getCurrentSeason()) await gradeSeasonBetsStep(prisma, log, summary, problems);
+    }
+  } catch (err) {
+    fatal = true;
+    log(`❌ ${errorMessage(err)}`);
+    problems.push(`Trophées NBA : ${errorMessage(err)}`);
+  }
+  const result = finish(fatal);
+  const quiet = trigger === "cron" && result.ok && !summary.awardsChanged;
+  if (!quiet) await recordJobRun(prisma, trigger, result);
   return result;
 }
 

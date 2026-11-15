@@ -37,6 +37,7 @@
     "db:backfill-boxscore-stats": "tsx prisma/backfill-boxscore-stats.ts",
     "db:update-rosters": "tsx prisma/update-rosters.ts",
     "db:update-injuries": "tsx prisma/update-injuries.ts",
+    "db:sync-awards": "tsx prisma/sync-nba-awards.ts",
     "db:fix-player-teams": "tsx prisma/fix-player-teams.ts",
     "db:cleanup-player-stats": "tsx prisma/cleanup-player-stats.ts",
     "db:backfill-nba-cup": "tsx prisma/backfill-nba-cup.ts"

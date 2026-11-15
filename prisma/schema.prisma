@@ -209,6 +209,7 @@ model Player {
   gamesAsTopScorer       Game[]            @relation("GameTopScorer")
   favoritedBy            User[]            @relation("UserFavoritePlayer")
   awardResults           SeasonAwardResult[]
+  nbaAwards              NbaAward[]
 
   @@index([teamId])
   @@index([fullName])
@@ -613,6 +614,33 @@ model SeasonAwardResult {
 
   @@unique([season, award])
   @@map("season_award_results")
+}
+
+// ============================================
+// TROPHÉES NBA DE LA SAISON (MVP, All-NBA, NBA Cup…)
+// Source : ESPN (src/lib/nba-awards-sync.ts, CRON quotidien) ; entraîneur de l'année saisi dans l'admin.
+// ============================================
+
+model NbaAward {
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  season        String   // "2025-26"
+  award         String   // clé de src/types/nba-awards.ts (MVP, ALL_NBA_1…)
+  rank          Int      @default(0) // place dans une équipe (All-NBA…), 0 pour un trophée individuel
+  name          String   // joueur (ou entraîneur)
+  teamAbbr      String?  // équipe au moment du trophée (abréviation de la base)
+  headshot      String?
+  espnAthleteId String?
+  source        String   @default("ESPN") // "ESPN" ou "ADMIN"
+
+  playerId      String?
+  player        Player?  @relation(fields: [playerId], references: [id], onDelete: SetNull)
+
+  @@unique([season, award, rank])
+  @@index([season])
+  @@map("nba_awards")
 }
 
 // ============================================

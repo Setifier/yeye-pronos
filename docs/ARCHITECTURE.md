@@ -194,6 +194,22 @@ combos, paris de début de saison), avec les liens « Ses pronos » et « Sa fic
 
 Données : `GET /api/classement?season=2025-26` (sans paramètre : saison en cours).
 
+## Trophées NBA
+
+MVP, DPOY, Rookie, 6e homme, meilleure progression, clutch, coéquipier, MVP des Finales et des finales de
+conférence, All-NBA / All-Defensive / All-Rookie, MVP et équipe type de la NBA Cup, MVP du All-Star Game.
+
+| Fichier | Rôle |
+|---|---|
+| `src/types/nba-awards.ts` | Liste des trophées : clé, libellé, identifiant ESPN, groupe, quand il tombe, lien avec les paris de saison |
+| `src/lib/nba-awards-sync.ts` | ESPN (`sports.core.api.espn.com/…/seasons/{année de fin}/awards`) → table `NbaAward`. Lauréats rattachés à `Player` par `externalId` ; hors base : nom et photo ESPN. Un trophée n'est réécrit que s'il a changé |
+| `runNbaAwardsUpdate` (`update-jobs.ts`) | CRON `/api/cron/nba-awards` (midi), bouton de l'admin, `npm run db:sync-awards` |
+| `/trophees`, `/archives/[saison]/trophees` | Affichage (`src/components/awards/nba-awards-view.tsx`) ; « À venir » et la période pour la saison en cours |
+
+Entraîneur de l'année : ESPN ne publie pas le lauréat → saisi dans Admin → Paris de saison → Trophées NBA
+(source « ADMIN »). MVP, DPOY, Rookie et MVP des Finales sont reportés dans `SeasonAwardResult` (notation des
+paris de saison) s'ils n'y sont pas déjà : une saisie de l'admin n'est jamais remplacée.
+
 ## Saisons passées (`/archives`)
 
 `/archives` : une carte par saison terminée (champion) → `/archives/[saison]`. Le `layout.tsx` de la saison
@@ -205,6 +221,7 @@ vérifie le paramètre (la saison en cours renvoie vers `/classement`), affiche 
 | `/archives/[saison]` | Classement général (`RankingBoard`) |
 | `/archives/[saison]/pronos` (+ `/[id]`) | Mes pronos / ceux d'un joueur (`PlayerPronosView`) |
 | `/archives/[saison]/standings`, `/leaders` | `src/app/standings`, `src/app/leaders` |
+| `/archives/[saison]/trophees` | Trophées NBA de la saison (`NbaAwardsView`) |
 | `/archives/[saison]/nba-cup/…`, `/playoffs/…` | `src/app/nba-cup/…`, `src/app/playoffs/…` |
 
 Règle : une page qui doit marcher dans les archives lit sa saison avec `useViewedSeason()` (saison en cours hors
